@@ -1338,7 +1338,8 @@ function saveEditPurchase(){
       sale_price:payload.sale_price,
       extras:payload.extras,
       liga_url:payload.liga_url,
-      notes:payload.notes
+      notes:payload.notes,
+      image_url:payload.image_url
     }).eq('purchase_id',id).then(function(){
       showToast('Compra atualizada!');
       closeModal('editPurchaseModal');
