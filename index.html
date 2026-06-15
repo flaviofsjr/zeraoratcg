@@ -194,7 +194,7 @@ tr:hover td{background:var(--bg2)}
         <div style="display:flex;gap:8px"><button class="btn-secondary" onclick="openModal('importModal')"><i class="ti ti-table-import"></i> Importar Excel</button><button class="btn-primary" style="width:auto" onclick="openModal('purchaseModal')"><i class="ti ti-plus"></i> Registrar compra</button></div>
       </div>
       <div class="table-wrap">
-        <table><thead><tr><th>Foto</th><th>Descricao</th><th>Tipo</th><th>Idioma</th><th>Cond.</th><th>Qtd</th><th>Fornecedor</th><th>Total pago</th><th>Data</th><th></th></tr></thead>
+        <table><thead><tr><th>Foto</th><th onclick="sortTable('pur','description')" style="cursor:pointer;user-select:none">Descricao ↕</th><th onclick="sortTable('pur','product_type')" style="cursor:pointer;user-select:none">Tipo ↕</th><th onclick="sortTable('pur','language')" style="cursor:pointer;user-select:none">Idioma ↕</th><th onclick="sortTable('pur','condition')" style="cursor:pointer;user-select:none">Cond. ↕</th><th onclick="sortTable('pur','quantity')" style="cursor:pointer;user-select:none">Qtd ↕</th><th onclick="sortTable('pur','supplier')" style="cursor:pointer;user-select:none">Fornecedor ↕</th><th onclick="sortTable('pur','total_amount')" style="cursor:pointer;user-select:none">Total pago ↕</th><th onclick="sortTable('pur','purchase_date')" style="cursor:pointer;user-select:none">Data ↕</th><th></th></tr></thead>
         <tbody id="purchasesTable"><tr><td colspan="10"><div class="empty-state"><i class="ti ti-shopping-bag"></i>Nenhuma compra registrada</div></td></tr></tbody></table>
       </div>
     </div>
@@ -213,7 +213,7 @@ tr:hover td{background:var(--bg2)}
         <select id="filterInvStatus" onchange="renderInventory()"><option value="">Todos status</option><option>A venda</option><option>Reservado</option><option>Em estoque</option></select>
       </div>
       <div class="table-wrap">
-        <table><thead><tr><th>Foto</th><th>Nome</th><th>Tipo</th><th>Set</th><th>Idioma</th><th>Cond.</th><th>Disponivel</th><th>Total</th><th>Custo</th><th>Preco venda</th><th>Margem</th><th></th></tr></thead>
+        <table><thead><tr><th>Foto</th><th onclick="sortTable('inv','name')" style="cursor:pointer;user-select:none">Nome ↕</th><th onclick="sortTable('inv','product_type')" style="cursor:pointer;user-select:none">Tipo ↕</th><th onclick="sortTable('inv','set_name')" style="cursor:pointer;user-select:none">Set ↕</th><th onclick="sortTable('inv','language')" style="cursor:pointer;user-select:none">Idioma ↕</th><th onclick="sortTable('inv','condition')" style="cursor:pointer;user-select:none">Cond. ↕</th><th onclick="sortTable('inv','quantity_available')" style="cursor:pointer;user-select:none">Disponivel ↕</th><th onclick="sortTable('inv','quantity_total')" style="cursor:pointer;user-select:none">Total ↕</th><th onclick="sortTable('inv','cost_price')" style="cursor:pointer;user-select:none">Custo ↕</th><th onclick="sortTable('inv','sale_price')" style="cursor:pointer;user-select:none">Preco venda ↕</th><th>Margem</th><th onclick="sortTable('inv','status')" style="cursor:pointer;user-select:none">Status ↕</th><th></th></tr></thead>
         <tbody id="inventoryTable"><tr><td colspan="12"><div class="empty-state"><i class="ti ti-package"></i>Estoque vazio — registre compras para popular</div></td></tr></tbody></table>
       </div>
     </div>
