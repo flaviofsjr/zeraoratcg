@@ -1222,9 +1222,9 @@ function calcPrice(){
   if(!cost){document.getElementById('calcResult').style.display='none';return;}
   var minPrice=(cost+shipping)/(1-(fee+margin)/100);
   document.getElementById('calcResult').style.display='block';
-  document.getElementById('calcResultPrice').textContent='R$ '+minPrice.toFixed(2).replace('.',',');
-  document.getElementById('calcResultProfit').textContent='R$ '+(minPrice*(margin/100)).toFixed(2).replace('.',',');
-  document.getElementById('calcResultFee').textContent='R$ '+(minPrice*(fee/100)).toFixed(2).replace('.',',');
+  document.getElementById('calcResultPrice').textContent=fmt(minPrice);
+  document.getElementById('calcResultProfit').textContent=fmt(minPrice*(margin/100));
+  document.getElementById('calcResultFee').textContent=fmt(minPrice*(fee/100));
 }
 
 
