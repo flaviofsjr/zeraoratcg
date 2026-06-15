@@ -1249,134 +1249,143 @@ function loadBinder(){
 function exportBinderImage(){
   var forSale=inventory.filter(function(i){return (i.quantity_available||0)>0&&i.sale_price>0&&(i.status||'A venda')==='A venda';});
   if(!forSale.length){showToast('Nenhum item a venda para exportar','error');return;}
-  if(typeof html2canvas==='undefined'){showToast('Aguarde carregar...','error');return;}
 
   var COLS=5,ROWS=3,PER_PAGE=COLS*ROWS;
   var pages=Math.ceil(forSale.length/PER_PAGE);
-  showToast('Gerando '+(pages>1?pages+' imagens':'imagem')+'...');
+  showToast('Carregando imagens...');
 
-  var pageIdx=0;
+  // Pre-load all images as base64 via corsproxy
+  var imageCache={};
+  var itemsWithImg=forSale.filter(function(i){return i.image_url;});
+  var loaded=0;
+  var total=itemsWithImg.length;
 
-  function renderPage(){
-    var items=forSale.slice(pageIdx*PER_PAGE,(pageIdx+1)*PER_PAGE);
-
-    // Build temporary DOM element
-    var wrap=document.createElement('div');
-    wrap.style.cssText='position:fixed;left:-9999px;top:0;background:#111;padding:0;width:920px;font-family:Arial,sans-serif';
-
-    // Header
-    var hdr=document.createElement('div');
-    hdr.style.cssText='background:#E8B422;padding:12px 16px;display:flex;align-items:center;justify-content:space-between';
-    hdr.innerHTML='<div><div style="font-size:22px;font-weight:900;color:#2C1A00">ZeraoraTCG</div><div style="font-size:12px;color:#5a3a00;margin-top:2px">'+forSale.length+' itens disponíveis  •  Pág '+(pageIdx+1)+'/'+pages+'</div></div>';
-    wrap.appendChild(hdr);
-
-    // Grid
-    var grid=document.createElement('div');
-    grid.style.cssText='display:grid;grid-template-columns:repeat(5,1fr);gap:8px;padding:8px;background:#111';
-
-    items.forEach(function(item){
-      var card=document.createElement('div');
-      card.style.cssText='background:#222;border-radius:8px;overflow:hidden;display:flex;flex-direction:column';
-
-      // Price
-      var price=document.createElement('div');
-      price.style.cssText='background:#E8B422;color:#2C1A00;font-weight:800;font-size:14px;text-align:center;padding:6px 4px';
-      price.textContent=fmt(item.sale_price);
-      card.appendChild(price);
-
-      // Image
-      var imgWrap=document.createElement('div');
-      imgWrap.style.cssText='width:100%;aspect-ratio:2.5/3.5;background:#333;overflow:hidden';
-      if(item.image_url){
-        var img=document.createElement('img');
-        img.src=item.image_url;
-        img.style.cssText='width:100%;height:100%;object-fit:cover';
-        img.crossOrigin='anonymous';
-        imgWrap.appendChild(img);
-      } else {
-        imgWrap.style.cssText+='display:flex;align-items:center;justify-content:center';
-        imgWrap.innerHTML='<span style="color:#555;font-size:11px">Sem foto</span>';
-      }
-      card.appendChild(imgWrap);
-
-      // Info
-      var info=document.createElement('div');
-      info.style.cssText='padding:6px 6px 8px;background:#1e1e1e;flex:1';
-
-      var name=item.name.length>22?item.name.slice(0,22)+'…':item.name;
-      info.innerHTML='<div style="color:#f0f0f0;font-size:10px;font-weight:700;text-align:center;margin-bottom:4px">'+name+'</div>'
-        +'<div style="display:flex;gap:4px;align-items:center">'
-        +'<span style="background:'+(item.condition==='NM'||item.condition==='M'?'#27500A':item.condition==='LP'?'#1a56db':item.condition==='MP'?'#7A5200':'#791F1F')+';color:#fff;font-size:8px;font-weight:700;padding:2px 5px;border-radius:3px">'+(item.condition||'')+'</span>'
-        +'<span style="color:#888;font-size:8px">'+(item.language||'')+'</span>'
-        +'</div>'
-        +(item.set_name?'<div style="color:#555;font-size:8px;margin-top:3px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">'+(item.set_name.length>20?item.set_name.slice(0,20)+'…':item.set_name)+'</div>':'');
-      card.appendChild(info);
-      grid.appendChild(card);
-    });
-
-    // Fill empty slots
-    for(var i=items.length;i<PER_PAGE;i++){
-      var empty=document.createElement('div');
-      empty.style.cssText='background:#1a1a1a;border-radius:8px;opacity:0.3';
-      grid.appendChild(empty);
-    }
-
-    wrap.appendChild(grid);
-
-    // Footer
-    var ftr=document.createElement('div');
-    ftr.style.cssText='background:#1a1a1a;padding:8px;text-align:center;color:#666;font-size:10px';
-    ftr.textContent='Entre em contato via WhatsApp para comprar • zeraoratcgp.vercel.app';
-    wrap.appendChild(ftr);
-
-    document.body.appendChild(wrap);
-
-    // Wait for images to load then capture
-    var imgs=wrap.querySelectorAll('img');
-    var loaded=0;
-    var total=imgs.length;
-
-    function capture(){
-      html2canvas(wrap,{
-        useCORS:true,
-        allowTaint:false,
-        scale:1.5,
-        backgroundColor:'#111111',
-        logging:false
-      }).then(function(canvas){
-        document.body.removeChild(wrap);
-        var link=document.createElement('a');
-        var suffix=pages>1?'-pag'+(pageIdx+1):'';
-        link.download='ZeraoraTCG-binder'+suffix+'-'+new Date().toISOString().slice(0,10)+'.png';
-        link.href=canvas.toDataURL('image/png');
-        link.click();
-        pageIdx++;
-        if(pageIdx<pages){
-          setTimeout(renderPage,600);
-        } else {
-          showToast(pages>1?pages+' imagens exportadas!':'Imagem exportada!');
-        }
-      }).catch(function(err){
-        document.body.removeChild(wrap);
-        console.error(err);
-        showToast('Erro ao gerar imagem','error');
-      });
-    }
-
-    if(total===0){
-      capture();
-    } else {
-      imgs.forEach(function(img){
-        if(img.complete){loaded++;if(loaded===total)capture();}
-        else{
-          img.onload=function(){loaded++;if(loaded===total)capture();};
-          img.onerror=function(){loaded++;if(loaded===total)capture();};
-        }
-      });
-    }
+  function proceed(){
+    var pageIdx=0;
+    renderPage(pageIdx);
   }
 
-  renderPage();
+  function loadImg(item){
+    var proxy='https://corsproxy.io/?'+encodeURIComponent(item.image_url);
+    fetch(proxy)
+      .then(function(r){return r.blob();})
+      .then(function(blob){
+        var reader=new FileReader();
+        reader.onload=function(e){
+          imageCache[item.id]=e.target.result;
+          loaded++;
+          if(loaded===total) proceed();
+        };
+        reader.readAsDataURL(blob);
+      })
+      .catch(function(){
+        loaded++;
+        if(loaded===total) proceed();
+      });
+  }
+
+  if(total===0){
+    proceed();
+  } else {
+    itemsWithImg.forEach(loadImg);
+  }
+
+  function renderPage(pageIdx){
+    var items=forSale.slice(pageIdx*PER_PAGE,(pageIdx+1)*PER_PAGE);
+    showToast('Gerando pag '+(pageIdx+1)+'/'+pages+'...');
+
+    var CARD_W=180,CARD_H=300,PAD=8,HDR=56,FTR=32;
+    var W=COLS*(CARD_W+PAD)+PAD;
+    var H=ROWS*(CARD_H+PAD)+PAD+HDR+FTR;
+    var canvas=document.createElement('canvas');
+    canvas.width=W; canvas.height=H;
+    var ctx=canvas.getContext('2d');
+
+    // BG
+    ctx.fillStyle='#111'; ctx.fillRect(0,0,W,H);
+
+    // Header
+    ctx.fillStyle='#E8B422'; ctx.fillRect(0,0,W,HDR);
+    ctx.fillStyle='#2C1A00'; ctx.font='bold 22px Arial'; ctx.textAlign='left';
+    ctx.fillText('ZeraoraTCG',PAD+6,34);
+    ctx.font='11px Arial';
+    ctx.fillText(forSale.length+' itens disponíveis  •  Pág '+(pageIdx+1)+'/'+pages,PAD+6,50);
+
+    // Footer
+    ctx.fillStyle='#1a1a1a'; ctx.fillRect(0,H-FTR,W,FTR);
+    ctx.fillStyle='#666'; ctx.font='10px Arial'; ctx.textAlign='center';
+    ctx.fillText('Entre em contato via WhatsApp para comprar • zeraoratcgp.vercel.app',W/2,H-10);
+
+    // Draw cards
+    items.forEach(function(item,idx){
+      var col=idx%COLS, row=Math.floor(idx/COLS);
+      var x=PAD+col*(CARD_W+PAD), y=HDR+PAD+row*(CARD_H+PAD);
+      var PRICE_H=26, INFO_H=52, IMG_H=CARD_H-PRICE_H-INFO_H;
+
+      // Card bg
+      ctx.fillStyle='#222';
+      ctx.beginPath(); if(ctx.roundRect)ctx.roundRect(x,y,CARD_W,CARD_H,6); else ctx.rect(x,y,CARD_W,CARD_H);
+      ctx.fill();
+
+      // Price banner
+      ctx.fillStyle='#E8B422';
+      ctx.beginPath(); if(ctx.roundRect)ctx.roundRect(x,y,CARD_W,PRICE_H,{upperLeft:6,upperRight:6,lowerLeft:0,lowerRight:0}); else ctx.rect(x,y,CARD_W,PRICE_H);
+      ctx.fill();
+      ctx.fillStyle='#2C1A00'; ctx.font='bold 13px Arial'; ctx.textAlign='center';
+      ctx.fillText(fmt(item.sale_price),x+CARD_W/2,y+18);
+
+      // Image from cache
+      var imgY=y+PRICE_H;
+      if(imageCache[item.id]){
+        var img=new Image();
+        img.src=imageCache[item.id];
+        try{ctx.drawImage(img,x,imgY,CARD_W,IMG_H);}catch(e){
+          ctx.fillStyle='#333'; ctx.fillRect(x,imgY,CARD_W,IMG_H);
+        }
+      } else {
+        ctx.fillStyle='#333'; ctx.fillRect(x,imgY,CARD_W,IMG_H);
+        ctx.fillStyle='#555'; ctx.font='10px Arial'; ctx.textAlign='center';
+        ctx.fillText('Sem foto',x+CARD_W/2,imgY+IMG_H/2);
+      }
+
+      // Info bar
+      var infoY=y+PRICE_H+IMG_H;
+      ctx.fillStyle='#1e1e1e'; ctx.fillRect(x,infoY,CARD_W,INFO_H);
+      var name=item.name.length>22?item.name.slice(0,22)+'…':item.name;
+      ctx.fillStyle='#f0f0f0'; ctx.font='bold 9px Arial'; ctx.textAlign='center';
+      ctx.fillText(name,x+CARD_W/2,infoY+13);
+
+      // Condition badge
+      var condColors={M:'#27500A',NM:'#27500A',LP:'#1a56db',MP:'#7A5200',HP:'#791F1F',D:'#791F1F'};
+      ctx.fillStyle=condColors[item.condition]||'#444';
+      ctx.beginPath(); if(ctx.roundRect)ctx.roundRect(x+4,infoY+17,26,13,3); else ctx.rect(x+4,infoY+17,26,13);
+      ctx.fill();
+      ctx.fillStyle='#fff'; ctx.font='bold 8px Arial'; ctx.textAlign='center';
+      ctx.fillText(item.condition||'',x+17,infoY+27);
+
+      ctx.fillStyle='#777'; ctx.font='8px Arial'; ctx.textAlign='left';
+      ctx.fillText(item.language||'',x+34,infoY+27);
+
+      if(item.set_name){
+        ctx.fillStyle='#555'; ctx.font='8px Arial'; ctx.textAlign='center';
+        var set=item.set_name.length>22?item.set_name.slice(0,22)+'…':item.set_name;
+        ctx.fillText(set,x+CARD_W/2,infoY+INFO_H-5);
+      }
+    });
+
+    // Download
+    var link=document.createElement('a');
+    var suffix=pages>1?'-pag'+(pageIdx+1):'';
+    link.download='ZeraoraTCG-binder'+suffix+'-'+new Date().toISOString().slice(0,10)+'.png';
+    link.href=canvas.toDataURL('image/png');
+    link.click();
+
+    if(pageIdx+1<pages){
+      setTimeout(function(){renderPage(pageIdx+1);},500);
+    } else {
+      showToast(pages>1?pages+' imagens exportadas!':'Imagem exportada!');
+    }
+  }
 }
 
 function copyBinderText(){
