@@ -485,6 +485,18 @@ tr:hover td{background:var(--bg2)}
         <select id="ep-extras"><option value="">Nenhum</option><option>Foil</option><option>Reverse Foil</option><option>Full Art</option><option>Secret Rare</option><option>Holo</option><option>Shiny</option><option>Promo</option><option>Outro</option></select>
       </div>
       <div class="form-field full"><label>Link Liga Pokemon</label><input type="text" id="ep-liga" placeholder="https://www.ligapokemon.com.br/..."></div>
+      <div class="form-field full">
+        <label>Foto do produto</label>
+        <div class="img-upload-area" onclick="document.getElementById('ep-img-file').click()">
+          <i class="ti ti-photo-plus" style="font-size:20px;display:block;margin-bottom:4px"></i>
+          Clique para trocar a foto
+        </div>
+        <input type="file" id="ep-img-file" accept="image/*" style="display:none" onchange="previewImage(this,'ep-img-preview','ep-img-b64')">
+        <img id="ep-img-preview" class="img-preview">
+        <input type="hidden" id="ep-img-b64">
+        <div style="font-size:11px;color:var(--text2);margin-top:4px">Deixe em branco para manter a foto atual. Cole uma URL abaixo para usar imagem da web.</div>
+        <input type="text" id="ep-img-url" placeholder="https://... (URL da imagem)" style="margin-top:6px;width:100%;padding:7px 11px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text);font-size:13px">
+      </div>
       <div class="form-field full"><label>Observacoes</label><textarea id="ep-notes" rows="2"></textarea></div>
     </div>
     <div class="modal-actions">
@@ -1283,6 +1295,10 @@ function editPurchase(id){
   document.getElementById('ep-extras').value=p.extras||'';
   document.getElementById('ep-liga').value=p.liga_url||'';
   document.getElementById('ep-notes').value=p.notes||'';
+  document.getElementById('ep-img-b64').value='';
+  document.getElementById('ep-img-url').value=p.image_url&&p.image_url.startsWith('http')?p.image_url:'';
+  var prev=document.getElementById('ep-img-preview');
+  if(p.image_url){prev.src=p.image_url;prev.style.display='block';}else{prev.style.display='none';}
   openModal('editPurchaseModal');
 }
 
@@ -1305,7 +1321,8 @@ function saveEditPurchase(){
     sale_price:parseFloat(document.getElementById('ep-saleprice').value)||0,
     extras:document.getElementById('ep-extras').value||null,
     liga_url:document.getElementById('ep-liga').value||null,
-    notes:document.getElementById('ep-notes').value||null
+    notes:document.getElementById('ep-notes').value||null,
+    image_url:document.getElementById('ep-img-b64').value||document.getElementById('ep-img-url').value||null
   };
   sb.from('purchases').update(payload).eq('id',id).then(function(r){
     if(r.error){showToast('Erro ao salvar','error');return;}
