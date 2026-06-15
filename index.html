@@ -816,6 +816,7 @@ function renderSales(){
     var p=ts-tc;
     var mg=ts>0?((p/ts)*100).toFixed(0)+'%':'-';
     var invItem=inventory.filter(function(i){return i.id===s.inventory_id;})[0];
+    if(!invItem||!invItem.image_url){invItem=inventory.filter(function(i){return i.name&&s.card_name&&i.name.toLowerCase()===s.card_name.toLowerCase()&&i.image_url;})[0];}
     var imgUrl=invItem&&invItem.image_url?invItem.image_url:'';
     var imgHtml=imgUrl
       ?'<img src="'+imgUrl+'" class="inv-img" style="cursor:zoom-in" onclick="openLightbox(event,\''+imgUrl+'\')" onerror="this.style.display=\'none\'">'
