@@ -365,10 +365,24 @@ tr:hover td{background:var(--bg2)}
       <div class="form-field"><label>Margem estimada</label><input type="text" id="inv-edit-margin" readonly style="background:var(--bg2)"></div>
       <div class="form-field"><label>Extras</label><select id="inv-edit-extras"><option value="">Nenhum</option><option>Foil</option><option>Reverse Foil</option><option>Full Art</option><option>Secret Rare</option><option>Holo</option><option>Shiny</option><option>Promo</option><option>Outro</option></select></div>
       <div class="form-field full"><label>Link Liga Pokemon</label><input type="text" id="inv-edit-liga" placeholder="https://www.ligapokemon.com.br/..."></div>
+      <div class="form-field full">
+        <label>Foto (URL da imagem)</label>
+        <input type="text" id="inv-edit-img-url" placeholder="https://... cole o link da imagem">
+        <img id="inv-edit-img-preview" style="width:80px;margin-top:6px;border-radius:6px;display:none" onerror="this.style.display='none'">
+      </div>
+      <div class="form-field full">
+        <label>Ou faca upload da foto</label>
+        <div class="img-upload-area" onclick="document.getElementById('inv-edit-img-file').click()">
+          <i class="ti ti-photo-plus" style="font-size:18px;display:block;margin-bottom:4px"></i>
+          Clique para selecionar foto
+        </div>
+        <input type="file" id="inv-edit-img-file" accept="image/*" style="display:none" onchange="previewInvImg(this)">
+        <input type="hidden" id="inv-edit-img-b64">
+      </div>
     </div>
     <div class="modal-actions">
       <button class="btn-secondary" onclick="closeModal('invEditModal')">Cancelar</button>
-      <button class="btn-primary" style="width:auto" onclick="saveInvPrice()">Salvar preco</button>
+      <button class="btn-primary" style="width:auto" onclick="saveInvPrice()">Salvar</button>
     </div>
   </div>
 </div>
@@ -862,6 +876,11 @@ function openInvEdit(id){
   document.getElementById('inv-edit-price').value=inv.sale_price||'';
   document.getElementById('inv-edit-extras').value=inv.extras||'';
   document.getElementById('inv-edit-liga').value=inv.liga_url||'';
+  var imgUrl=inv.image_url||'';
+  document.getElementById('inv-edit-img-url').value=imgUrl.startsWith('http')?imgUrl:'';
+  document.getElementById('inv-edit-img-b64').value='';
+  var imgPrev=document.getElementById('inv-edit-img-preview');
+  if(imgUrl){imgPrev.src=imgUrl;imgPrev.style.display='block';}else{imgPrev.style.display='none';}
   updateInvMarginPreview();
   openModal('invEditModal');
 }
@@ -875,12 +894,37 @@ function updateInvMarginPreview(){
   document.getElementById('inv-edit-margin').value=mg;
 }
 
+function previewInvImg(input){
+  var file=input.files[0];
+  if(!file)return;
+  var reader=new FileReader();
+  reader.onload=function(e){
+    document.getElementById('inv-edit-img-b64').value=e.target.result;
+    document.getElementById('inv-edit-img-url').value='';
+    var prev=document.getElementById('inv-edit-img-preview');
+    prev.src=e.target.result;prev.style.display='block';
+  };
+  reader.readAsDataURL(file);
+}
+
+function invImgUrlChange(){
+  var url=document.getElementById('inv-edit-img-url').value;
+  var prev=document.getElementById('inv-edit-img-preview');
+  if(url){prev.src=url;prev.style.display='block';document.getElementById('inv-edit-img-b64').value='';}
+  else{prev.style.display='none';}
+}
+
 function saveInvPrice(){
   var id=document.getElementById('inv-edit-id').value;
   var price=parseFloat(document.getElementById('inv-edit-price').value)||0;
   var extras=document.getElementById('inv-edit-extras').value||null;
   var liga=document.getElementById('inv-edit-liga').value||null;
-  sb.from('inventory').update({sale_price:price,extras:extras,liga_url:liga}).eq('id',id).then(function(r){
+  var imgB64=document.getElementById('inv-edit-img-b64').value;
+  var imgUrl=document.getElementById('inv-edit-img-url').value;
+  var finalImg=imgB64||imgUrl||null;
+  var updatePayload={sale_price:price,extras:extras,liga_url:liga};
+  if(finalImg) updatePayload.image_url=finalImg;
+  sb.from('inventory').update(updatePayload).eq('id',id).then(function(r){
     if(r.error){showToast('Erro ao salvar','error');return;}
     showToast('Preco atualizado!');
     closeModal('invEditModal');
@@ -1339,11 +1383,20 @@ function saveEditPurchase(){
       extras:payload.extras,
       liga_url:payload.liga_url,
       notes:payload.notes,
-      image_url:payload.image_url
-    }).eq('purchase_id',id).then(function(){
-      showToast('Compra atualizada!');
-      closeModal('editPurchaseModal');
-      loadAll();
+      image_url:payload.image_url||undefined
+    }).eq('purchase_id',id).then(function(invR){
+      // If image changed, also update by name in case purchase_id link is missing
+      if(payload.image_url){
+        sb.from('inventory').update({image_url:payload.image_url}).eq('user_id',currentUser.id).eq('name',name).then(function(){
+          showToast('Compra atualizada!');
+          closeModal('editPurchaseModal');
+          loadAll();
+        });
+      } else {
+        showToast('Compra atualizada!');
+        closeModal('editPurchaseModal');
+        loadAll();
+      }
     });
   });
 }
