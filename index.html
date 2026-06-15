@@ -262,6 +262,7 @@ tr:hover td{background:var(--bg2)}
         <div style="display:flex;gap:8px;flex-wrap:wrap">
           <button class="btn-secondary" onclick="exportSales()"><i class="ti ti-download"></i> CSV</button>
           <button class="btn-secondary" style="width:auto;background:#E8B422;color:#2C1A00;border-color:#E8B422;font-weight:700" onclick="openVendaRapida()"><i class="ti ti-bolt"></i> Venda Rapida</button>
+          <button class="btn-secondary" style="width:auto" onclick="openModal('importSalesModal')"><i class="ti ti-table-import"></i> Importar Excel</button>
           <button class="btn-primary" style="width:auto" onclick="openSaleModal()"><i class="ti ti-plus"></i> Registrar venda</button>
         </div>
       </div>
@@ -369,7 +370,7 @@ tr:hover td{background:var(--bg2)}
       <div class="form-field"><label>Data</label><input type="date" id="p-date"></div>
       <div class="form-field"><label>Preco de venda sugerido (R$)</label><input type="number" id="p-saleprice" placeholder="0.00" step="0.01"></div>
       <div class="form-field"><label>Extras</label>
-        <select id="p-extras"><option value="">Nenhum</option><option>Foil</option><option>Reverse Foil</option><option>Full Art</option><option>Secret Rare</option><option>Holo</option><option>Shiny</option><option>Promo</option><option>Outro</option></select>
+        <select id="p-extras"><option value="">Nenhum</option><option>Foil</option><option>Reverse Foil</option><option>Pokeball Foil</option><option>Masterball Foil</option><option>Full Art</option><option>Secret Rare</option><option>Holo</option><option>Shiny</option><option>Promo</option><option>Outro</option></select>
       </div>
       <div class="form-field"><label>Link Liga Pokemon</label>
         <input type="text" id="p-liga" placeholder="https://www.ligapokemon.com.br/..."></div>
@@ -405,7 +406,7 @@ tr:hover td{background:var(--bg2)}
       <div class="form-field"><label>Preco de venda (R$)</label><input type="number" id="inv-edit-price" placeholder="0.00" step="0.01" oninput="updateInvMarginPreview()"></div>
       <div class="form-field"><label>Margem estimada</label><input type="text" id="inv-edit-margin" readonly style="background:var(--bg2)"></div>
       <div class="form-field"><label>Status</label><select id="inv-edit-status"><option value="A venda">A venda</option><option value="Reservado">Reservado</option><option value="Em estoque">Em estoque</option></select></div>
-      <div class="form-field"><label>Extras</label><select id="inv-edit-extras"><option value="">Nenhum</option><option>Foil</option><option>Reverse Foil</option><option>Full Art</option><option>Secret Rare</option><option>Holo</option><option>Shiny</option><option>Promo</option><option>Outro</option></select></div>
+      <div class="form-field"><label>Extras</label><select id="inv-edit-extras"><option value="">Nenhum</option><option>Foil</option><option>Reverse Foil</option><option>Pokeball Foil</option><option>Masterball Foil</option><option>Full Art</option><option>Secret Rare</option><option>Holo</option><option>Shiny</option><option>Promo</option><option>Outro</option></select></div>
       <div class="form-field full"><label>Link Liga Pokemon</label><input type="text" id="inv-edit-liga" placeholder="https://www.ligapokemon.com.br/..."></div>
       <div class="form-field full">
         <label>Foto (URL da imagem)</label>
@@ -538,7 +539,7 @@ tr:hover td{background:var(--bg2)}
       <div class="form-field"><label>Data</label><input type="date" id="ep-date"></div>
       <div class="form-field"><label>Preco de venda (R$)</label><input type="number" id="ep-saleprice" step="0.01"></div>
       <div class="form-field"><label>Extras</label>
-        <select id="ep-extras"><option value="">Nenhum</option><option>Foil</option><option>Reverse Foil</option><option>Full Art</option><option>Secret Rare</option><option>Holo</option><option>Shiny</option><option>Promo</option><option>Outro</option></select>
+        <select id="ep-extras"><option value="">Nenhum</option><option>Foil</option><option>Reverse Foil</option><option>Pokeball Foil</option><option>Masterball Foil</option><option>Full Art</option><option>Secret Rare</option><option>Holo</option><option>Shiny</option><option>Promo</option><option>Outro</option></select>
       </div>
       <div class="form-field full"><label>Link Liga Pokemon</label><input type="text" id="ep-liga" placeholder="https://www.ligapokemon.com.br/..."></div>
       <div class="form-field full">
@@ -679,6 +680,55 @@ tr:hover td{background:var(--bg2)}
   </div>
 </div>
 
+<!-- MODAL IMPORTAR VENDAS -->
+<div class="modal-bg" id="importSalesModal">
+  <div class="modal" style="max-width:700px">
+    <h3><i class="ti ti-table-import"></i> Importar Vendas via Excel</h3>
+    <div class="modal-grid" style="margin-bottom:12px">
+      <div class="form-field full">
+        <label>Selecione o arquivo Excel (.xlsx)</label>
+        <input type="file" id="salesImportFile" accept=".xlsx,.xls" onchange="loadSalesExcel(this)"
+          style="padding:8px;border:1px solid var(--border2);border-radius:var(--radius);width:100%;background:var(--bg);color:var(--text)">
+      </div>
+      <div class="form-field full">
+        <div style="background:var(--bg2);border-radius:var(--radius);padding:12px;font-size:12px;color:var(--text2)">
+          <strong>Formato esperado das colunas:</strong><br>
+          <span style="font-family:monospace;font-size:11px">Nome da Carta | Quantidade | Preco de Venda | Custo | Plataforma | Comprador | Data (AAAA-MM-DD) | Pago (sim/nao) | Entregue (sim/nao)</span><br><br>
+          As colunas <em>Custo, Plataforma, Comprador, Data, Pago e Entregue</em> são opcionais.
+          Se a data não for informada, usa hoje. O custo é buscado automaticamente do estoque.
+        </div>
+      </div>
+    </div>
+    <div id="salesImportPreview" style="display:none;margin-bottom:12px">
+      <div style="font-size:13px;font-weight:600;margin-bottom:8px" id="salesImportSummary"></div>
+      <div style="max-height:250px;overflow-y:auto;font-size:12px">
+        <table style="width:100%;border-collapse:collapse">
+          <thead><tr style="background:var(--bg2)">
+            <th style="padding:6px 8px;text-align:left;border-bottom:1px solid var(--border)">Carta</th>
+            <th style="padding:6px 8px;text-align:left;border-bottom:1px solid var(--border)">Qtd</th>
+            <th style="padding:6px 8px;text-align:left;border-bottom:1px solid var(--border)">Preco</th>
+            <th style="padding:6px 8px;text-align:left;border-bottom:1px solid var(--border)">Plataforma</th>
+            <th style="padding:6px 8px;text-align:left;border-bottom:1px solid var(--border)">Comprador</th>
+            <th style="padding:6px 8px;text-align:left;border-bottom:1px solid var(--border)">Data</th>
+            <th style="padding:6px 8px;text-align:left;border-bottom:1px solid var(--border)">Status</th>
+          </tr></thead>
+          <tbody id="salesImportTable"></tbody>
+        </table>
+      </div>
+    </div>
+    <div id="salesImportProgress" style="display:none;margin-bottom:12px">
+      <div style="background:var(--bg2);border-radius:20px;height:10px;overflow:hidden">
+        <div id="salesImportBar" style="background:var(--amber);height:10px;border-radius:20px;width:0%;transition:width .3s"></div>
+      </div>
+      <div id="salesImportText" style="font-size:13px;color:var(--text2);margin-top:6px"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeModal('importSalesModal')">Cancelar</button>
+      <button class="btn-primary" id="salesImportBtn" onclick="runSalesImport()" style="display:none">Importar vendas</button>
+    </div>
+  </div>
+</div>
+
 <!-- LIGHTBOX FOTO -->
 <div id="lightbox" onclick="closeLightbox()" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.85);z-index:500;align-items:center;justify-content:center;cursor:zoom-out">
   <img id="lightboxImg" src="" style="max-width:90vw;max-height:90vh;border-radius:12px;box-shadow:0 8px 40px rgba(0,0,0,0.5)">
@@ -687,6 +737,7 @@ tr:hover td{background:var(--bg2)}
 
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
@@ -794,10 +845,10 @@ function previewImgUrl(){
   var url=document.getElementById('p-img-url').value.trim();
   var prev=document.getElementById('p-img-preview');
   if(url){
+    prev.onerror=function(){prev.style.display="none";showToast("Link invalido ou imagem bloqueada","error");};
+    prev.onload=function(){prev.style.display="block";};
     prev.src=url;
-    prev.style.display='block';
     document.getElementById('p-img-b64').value='';
-  document.getElementById('p-img-url').value='';
   } else {
     prev.style.display='none';
   }
@@ -1815,6 +1866,176 @@ async function deletePricePoint(id){
   await sb.from('price_history').delete().eq('id',id);
   phHistory=phHistory.filter(function(h){return h.id!==id;});
   renderPriceChart();
+}
+
+
+var salesImportRows = [];
+
+function loadSalesExcel(input) {
+  var file = input.files[0];
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      var wb = XLSX.read(e.target.result, {type:'binary', cellDates:true});
+      var ws = wb.Sheets[wb.SheetNames[0]];
+      var data = XLSX.utils.sheet_to_json(ws, {header:1, defval:''});
+      
+      // Skip header row if first cell looks like a label
+      var startRow = 0;
+      if (data.length > 0) {
+        var firstCell = String(data[0][0]||'').toLowerCase();
+        if (firstCell.indexOf('nome') !== -1 || firstCell.indexOf('carta') !== -1 || firstCell.indexOf('item') !== -1) {
+          startRow = 1;
+        }
+      }
+
+      salesImportRows = [];
+      var today = new Date().toISOString().slice(0,10);
+      
+      for (var i = startRow; i < data.length; i++) {
+        var row = data[i];
+        var name = String(row[0]||'').trim();
+        if (!name) continue;
+        
+        var qty = parseInt(row[1]) || 1;
+        var price = parseFloat(String(row[2]||'').replace(',','.')) || 0;
+        var cost = parseFloat(String(row[3]||'').replace(',','.')) || null;
+        var platform = String(row[4]||'').trim() || 'Presencial';
+        var buyer = String(row[5]||'').trim() || '';
+        var rawDate = row[6];
+        var saleDate = today;
+        if (rawDate) {
+          if (rawDate instanceof Date) {
+            saleDate = rawDate.toISOString().slice(0,10);
+          } else {
+            var d = String(rawDate).trim();
+            if (d.match(/^\d{4}-\d{2}-\d{2}$/)) saleDate = d;
+            else if (d.match(/^\d{2}\/\d{2}\/\d{4}$/)) saleDate = d.slice(6)+'-'+d.slice(3,5)+'-'+d.slice(0,2);
+          }
+        }
+        var paid = String(row[7]||'').toLowerCase() === 'sim';
+        var delivered = String(row[8]||'').toLowerCase() === 'sim';
+
+        // Find inventory item by name
+        var invItem = inventory.filter(function(i) {
+          return i.name.toLowerCase() === name.toLowerCase() && i.quantity_available > 0;
+        })[0];
+
+        // If no exact match, try partial
+        if (!invItem) {
+          invItem = inventory.filter(function(i) {
+            return i.name.toLowerCase().indexOf(name.toLowerCase()) !== -1 && i.quantity_available > 0;
+          })[0];
+        }
+
+        salesImportRows.push({
+          name: name,
+          qty: qty,
+          price: price,
+          cost: cost !== null ? cost : (invItem ? parseFloat(invItem.cost_price||0) : 0),
+          platform: platform,
+          buyer: buyer,
+          saleDate: saleDate,
+          paid: paid,
+          delivered: delivered,
+          invItem: invItem || null,
+          matched: !!invItem
+        });
+      }
+
+      renderSalesImportPreview();
+    } catch(err) {
+      showToast('Erro ao ler Excel: ' + err.message, 'error');
+    }
+  };
+  reader.readAsBinaryString(file);
+}
+
+function renderSalesImportPreview() {
+  if (!salesImportRows.length) return;
+  
+  var matched = salesImportRows.filter(function(r){return r.matched;}).length;
+  var unmatched = salesImportRows.length - matched;
+  
+  document.getElementById('salesImportSummary').innerHTML = 
+    '<span style="color:var(--success)">' + matched + ' itens encontrados no estoque</span>' +
+    (unmatched > 0 ? ' · <span style="color:var(--danger)">' + unmatched + ' nao encontrados (serao importados sem desconto do estoque)</span>' : '');
+
+  var tbody = document.getElementById('salesImportTable');
+  tbody.innerHTML = salesImportRows.map(function(r) {
+    var statusHtml = r.matched
+      ? '<span style="color:var(--success);font-weight:600"><i class="ti ti-check"></i> ' + r.invItem.name.slice(0,20) + '</span>'
+      : '<span style="color:var(--danger)">Nao encontrado</span>';
+    return '<tr style="border-bottom:1px solid var(--border)">'
+      + '<td style="padding:5px 8px">' + r.name + '</td>'
+      + '<td style="padding:5px 8px">' + r.qty + '</td>'
+      + '<td style="padding:5px 8px;font-weight:600">' + fmt(r.price) + '</td>'
+      + '<td style="padding:5px 8px">' + r.platform + '</td>'
+      + '<td style="padding:5px 8px">' + (r.buyer||'-') + '</td>'
+      + '<td style="padding:5px 8px">' + r.saleDate + '</td>'
+      + '<td style="padding:5px 8px">' + statusHtml + '</td>'
+      + '</tr>';
+  }).join('');
+
+  document.getElementById('salesImportPreview').style.display = 'block';
+  document.getElementById('salesImportBtn').style.display = 'inline-block';
+}
+
+async function runSalesImport() {
+  if (!salesImportRows.length) return;
+  var btn = document.getElementById('salesImportBtn');
+  btn.disabled = true; btn.textContent = 'Importando...';
+  document.getElementById('salesImportProgress').style.display = 'block';
+  
+  var ok = 0, fail = 0;
+  
+  for (var i = 0; i < salesImportRows.length; i++) {
+    var r = salesImportRows[i];
+    var pct = Math.round((i+1)/salesImportRows.length*100);
+    document.getElementById('salesImportBar').style.width = pct + '%';
+    document.getElementById('salesImportText').textContent = (i+1) + ' de ' + salesImportRows.length + ' — ' + r.name;
+
+    var payload = {
+      user_id: currentUser.id,
+      inventory_id: r.invItem ? r.invItem.id : null,
+      card_name: r.matched ? r.invItem.name : r.name,
+      quantity: r.qty,
+      sale_price: r.price,
+      cost_price: r.cost,
+      platform: r.platform,
+      buyer: r.buyer || null,
+      sale_date: r.saleDate,
+      paid: r.paid,
+      delivered: r.delivered
+    };
+
+    var res = await sb.from('sales').insert(payload);
+    if (res.error) { fail++; continue; }
+
+    // Decrement inventory
+    if (r.invItem) {
+      var newQty = Math.max(0, (r.invItem.quantity_available || 0) - r.qty);
+      await sb.from('inventory').update({quantity_available: newQty}).eq('id', r.invItem.id);
+      r.invItem.quantity_available = newQty;
+    }
+    ok++;
+  }
+
+  document.getElementById('salesImportText').textContent = 'Concluido! ' + ok + ' vendas importadas, ' + fail + ' erro(s).';
+  btn.textContent = ok + ' vendas importadas!';
+  btn.style.background = '#27500A'; btn.style.color = '#fff';
+  showToast(ok + ' vendas importadas com sucesso!');
+  salesImportRows = [];
+  setTimeout(function(){
+    closeModal('importSalesModal');
+    document.getElementById('salesImportFile').value = '';
+    document.getElementById('salesImportPreview').style.display = 'none';
+    document.getElementById('salesImportProgress').style.display = 'none';
+    btn.disabled = false; btn.style.background = ''; btn.style.color = '';
+    btn.textContent = 'Importar vendas'; btn.style.display = 'none';
+    loadAll();
+  }, 2000);
 }
 
 var vrSelectedItem=null, vrSelectedPlat='Presencial';
