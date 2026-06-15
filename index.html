@@ -679,7 +679,7 @@ function showToast(msg,type){
   setTimeout(function(){t.classList.remove('show');},3000);
 }
 
-function fmt(v){return 'R$ '+(parseFloat(v)||0).toFixed(2).replace('.',',');}
+function fmt(v){var n=(parseFloat(v)||0).toFixed(2);var parts=n.split('.');return 'R$ '+parts[0].replace(/\B(?=(\d{3})+(?!\d))/g,'.')+','+parts[1];}
 
 function previewImage(input,previewId,b64Id){
   var file=input.files[0];
@@ -1555,7 +1555,7 @@ function updateInvSummary(){
   },0);}
   function sumQty(arr){return arr.reduce(function(a,i){return a+(i.quantity_available||0);},0);}
 
-  var fmtV=function(v){return 'R$ '+(v).toFixed(2).replace('.',',');};
+  var fmtV=function(v){var n=(parseFloat(v)||0).toFixed(2);var parts=n.split('.');return 'R$ '+parts[0].replace(/\B(?=(\d{3})+(?!\d))/g,'.')+','+parts[1];};
 
   document.getElementById('inv-sum-avenda-val').textContent=fmtV(sumVal(aVenda));
   document.getElementById('inv-sum-avenda-qty').textContent=sumQty(aVenda);
