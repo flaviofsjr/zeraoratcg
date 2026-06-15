@@ -126,7 +126,7 @@ function init(){
 }
 
 function loadItems(userId){
-  sb.from('inventory').select('*').eq('user_id',userId).gt('quantity_available',0).gt('sale_price',0).order('name').then(function(r){
+  sb.from('inventory').select('*').eq('user_id',userId).eq('status','A venda').gt('quantity_available',0).gt('sale_price',0).order('name').then(function(r){
     allItems=r.data||[];
     document.getElementById('loadingScreen').style.display='none';
     document.getElementById('mainContent').style.display='block';

@@ -210,6 +210,7 @@ tr:hover td{background:var(--bg2)}
         <select id="filterInvType" onchange="renderInventory()"><option value="">Todos tipos</option><option>Carta Avulsa</option><option>Lacrado</option><option>Acessorio</option><option>Lote</option></select>
         <select id="filterInvLang" onchange="renderInventory()"><option value="">Todos idiomas</option><option>PT-BR</option><option>EN</option><option>JP</option></select>
         <select id="filterInvCond" onchange="renderInventory()"><option value="">Todas condicoes</option><option>M</option><option>NM</option><option>LP</option><option>MP</option><option>HP</option><option>D</option></select>
+        <select id="filterInvStatus" onchange="renderInventory()"><option value="">Todos status</option><option>A venda</option><option>Reservado</option><option>Em estoque</option></select>
       </div>
       <div class="table-wrap">
         <table><thead><tr><th>Foto</th><th>Nome</th><th>Tipo</th><th>Set</th><th>Idioma</th><th>Cond.</th><th>Disponivel</th><th>Total</th><th>Custo</th><th>Preco venda</th><th>Margem</th><th></th></tr></thead>
@@ -363,6 +364,7 @@ tr:hover td{background:var(--bg2)}
       <div class="form-field"><label>Custo unitario</label><input type="text" id="inv-edit-cost" readonly style="background:var(--bg2)"></div>
       <div class="form-field"><label>Preco de venda (R$)</label><input type="number" id="inv-edit-price" placeholder="0.00" step="0.01" oninput="updateInvMarginPreview()"></div>
       <div class="form-field"><label>Margem estimada</label><input type="text" id="inv-edit-margin" readonly style="background:var(--bg2)"></div>
+      <div class="form-field"><label>Status</label><select id="inv-edit-status"><option value="A venda">A venda</option><option value="Reservado">Reservado</option><option value="Em estoque">Em estoque</option></select></div>
       <div class="form-field"><label>Extras</label><select id="inv-edit-extras"><option value="">Nenhum</option><option>Foil</option><option>Reverse Foil</option><option>Full Art</option><option>Secret Rare</option><option>Holo</option><option>Shiny</option><option>Promo</option><option>Outro</option></select></div>
       <div class="form-field full"><label>Link Liga Pokemon</label><input type="text" id="inv-edit-liga" placeholder="https://www.ligapokemon.com.br/..."></div>
       <div class="form-field full">
@@ -542,6 +544,11 @@ tr:hover td{background:var(--bg2)}
   </div>
 </div>
 
+
+<!-- LIGHTBOX FOTO -->
+<div id="lightbox" onclick="closeLightbox()" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.85);z-index:500;align-items:center;justify-content:center;cursor:zoom-out">
+  <img id="lightboxImg" src="" style="max-width:90vw;max-height:90vh;border-radius:12px;box-shadow:0 8px 40px rgba(0,0,0,0.5)">
+</div>
 <div class="toast" id="toast"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -705,16 +712,18 @@ function langBadge(l){
 }
 
 function imgCell(url){
-  if(url){return '<img src="'+url+'" class="inv-img" onerror="this.style.display=\'none\'">';}
+  if(url){return '<img src="'+url+'" class="inv-img" style="cursor:zoom-in" onclick="openLightbox(event,\''+url+'\')" onerror="this.style.display=\'none\'">';}
   return '<div class="inv-img-placeholder"><i class="ti ti-photo-off"></i></div>';
 }
 
 function renderPurchases(){
+  var purList=purchases.slice();
+  if(purSortField){purList.sort(function(a,b){var va=a[purSortField]||'';var vb=b[purSortField]||'';if(typeof va==='number'||typeof vb==='number'){va=parseFloat(va)||0;vb=parseFloat(vb)||0;}else{va=String(va).toLowerCase();vb=String(vb).toLowerCase();}return purSortAsc?(va>vb?1:-1):(va<vb?1:-1);});}
   var tb=document.getElementById('purchasesTable');
-  if(!purchases.length){tb.innerHTML='<tr><td colspan="10"><div class="empty-state"><i class="ti ti-shopping-bag"></i>Nenhuma compra registrada</div></td></tr>';return;}
-  tb.innerHTML=purchases.map(function(p){
+  if(!purList.length){tb.innerHTML='<tr><td colspan="10"><div class="empty-state"><i class="ti ti-shopping-bag"></i>Nenhuma compra registrada</div></td></tr>';return;}
+  tb.innerHTML=purList.map(function(p){
     var costUnit=p.quantity>0?(parseFloat(p.total_amount||0)/p.quantity):0;
-    var pExtrasBadge=p.extras?'<span style="font-size:10px;background:#F3E8FF;color:#6B21A8;padding:1px 6px;border-radius:10px;font-weight:600;margin-left:4px">'+p.extras+'</span>':''; return '<tr><td>'+imgCell(p.image_url)+'</td><td style="font-weight:600">'+p.description+pExtrasBadge+'</td><td>'+typeBadge(p.product_type)+'</td><td>'+langBadge(p.language)+'</td><td>'+condBadge(p.condition)+'</td><td style="text-align:center">'+p.quantity+'</td><td>'+(p.supplier||'-')+'</td><td style="font-weight:600;color:var(--amber-dark)">'+fmt(p.total_amount)+'</td><td>'+p.purchase_date+'</td><td><div class="actions-cell"><button class="btn-small" onclick="editPurchase(\''+p.id+'\')" title="Editar"><i class="ti ti-edit"></i></button><button class="btn-danger" onclick="deletePurchase(\''+p.id+'\')"><i class="ti ti-trash"></i></button></div></td></tr>';
+    var pExtrasBadge=p.extras?'<span style="font-size:10px;background:#F3E8FF;color:#6B21A8;padding:1px 6px;border-radius:10px;font-weight:600;margin-left:4px">'+p.extras+'</span>':''; var purImg=p.image_url?'<img src="'+p.image_url+'" class="inv-img" style="cursor:zoom-in" onclick="openLightbox(event,\''+p.image_url+'\')" onerror="this.style.display=\'none\'">':'<div class="inv-img-placeholder"><i class="ti ti-photo-off"></i></div>'; return '<tr><td>'+purImg+'</td><td style="font-weight:600">'+p.description+pExtrasBadge+'</td><td>'+typeBadge(p.product_type)+'</td><td>'+langBadge(p.language)+'</td><td>'+condBadge(p.condition)+'</td><td style="text-align:center">'+p.quantity+'</td><td>'+(p.supplier||'-')+'</td><td style="font-weight:600;color:var(--amber-dark)">'+fmt(p.total_amount)+'</td><td>'+p.purchase_date+'</td><td><div class="actions-cell"><button class="btn-small" onclick="editPurchase(\''+p.id+'\')" title="Editar"><i class="ti ti-edit"></i></button><button class="btn-danger" onclick="deletePurchase(\''+p.id+'\')"><i class="ti ti-trash"></i></button></div></td></tr>';
   }).join('');
 }
 
@@ -723,13 +732,16 @@ function renderInventory(){
   var typeF=document.getElementById('filterInvType').value;
   var langF=document.getElementById('filterInvLang').value;
   var condF=document.getElementById('filterInvCond').value;
+  var statusF=document.getElementById('filterInvStatus').value;
   var filtered=inventory.filter(function(i){
     if(nameF&&i.name.toLowerCase().indexOf(nameF)===-1)return false;
     if(typeF&&i.product_type!==typeF)return false;
     if(langF&&i.language!==langF)return false;
     if(condF&&i.condition!==condF)return false;
+    if(statusF&&(i.status||'A venda')!==statusF)return false;
     return true;
   });
+  if(invSortField){filtered.sort(function(a,b){var va=a[invSortField]||'';var vb=b[invSortField]||'';if(typeof va==='number'||typeof vb==='number'){va=parseFloat(va)||0;vb=parseFloat(vb)||0;}else{va=String(va).toLowerCase();vb=String(vb).toLowerCase();}return invSortAsc?(va>vb?1:-1):(va<vb?1:-1);});}
   var tb=document.getElementById('inventoryTable');
   if(!filtered.length){tb.innerHTML='<tr><td colspan="12"><div class="empty-state"><i class="ti ti-package"></i>Nenhum item encontrado</div></td></tr>';return;}
   tb.innerHTML=filtered.map(function(inv){
@@ -874,6 +886,7 @@ function openInvEdit(id){
   document.getElementById('inv-edit-name').value=inv.name;
   document.getElementById('inv-edit-cost').value=fmt(inv.cost_price);
   document.getElementById('inv-edit-price').value=inv.sale_price||'';
+  document.getElementById('inv-edit-status').value=inv.status||'A venda';
   document.getElementById('inv-edit-extras').value=inv.extras||'';
   document.getElementById('inv-edit-liga').value=inv.liga_url||'';
   var imgUrl=inv.image_url||'';
@@ -922,7 +935,8 @@ function saveInvPrice(){
   var imgB64=document.getElementById('inv-edit-img-b64').value;
   var imgUrl=document.getElementById('inv-edit-img-url').value;
   var finalImg=imgB64||imgUrl||null;
-  var updatePayload={sale_price:price,extras:extras,liga_url:liga};
+  var invStatus=document.getElementById('inv-edit-status').value;
+  var updatePayload={sale_price:price,extras:extras,liga_url:liga,status:invStatus};
   if(finalImg) updatePayload.image_url=finalImg;
   sb.from('inventory').update(updatePayload).eq('id',id).then(function(r){
     if(r.error){showToast('Erro ao salvar','error');return;}
@@ -1090,7 +1104,7 @@ function renderDRE(){
 }
 
 function loadBinder(){
-  var forSale=inventory.filter(function(i){return (i.quantity_available||0)>0&&i.sale_price>0;});
+  var forSale=inventory.filter(function(i){return (i.quantity_available||0)>0&&i.sale_price>0&&(i.status||'A venda')==='A venda';});
   var grid=document.getElementById('binderGrid');
   if(!forSale.length){grid.innerHTML='<div class="empty-state" style="grid-column:1/-1"><i class="ti ti-package"></i>Nenhum item disponivel com preco definido</div>';return;}
   grid.innerHTML=forSale.map(function(i){
@@ -1437,6 +1451,32 @@ function saveEditSale(){
     closeModal('editSaleModal');
     loadAll();
   });
+}
+
+
+var invSortField=null,invSortAsc=true,purSortField=null,purSortAsc=true;
+
+function sortTable(table,field){
+  if(table==='inv'){
+    if(invSortField===field)invSortAsc=!invSortAsc;
+    else{invSortField=field;invSortAsc=true;}
+    renderInventory();
+  } else {
+    if(purSortField===field)purSortAsc=!purSortAsc;
+    else{purSortField=field;purSortAsc=true;}
+    renderPurchases();
+  }
+}
+
+function openLightbox(e,url){
+  e.stopPropagation();
+  document.getElementById('lightboxImg').src=url;
+  var lb=document.getElementById('lightbox');
+  lb.style.display='flex';
+}
+
+function closeLightbox(){
+  document.getElementById('lightbox').style.display='none';
 }
 
 document.addEventListener('click',function(e){
