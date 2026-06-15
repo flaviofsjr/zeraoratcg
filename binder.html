@@ -177,15 +177,18 @@ function renderItems(items){
     var waMsg=encodeURIComponent('Ola! Tenho interesse em: '+i.name+(i.set_name?' ('+i.set_name+')':'')+' - '+fmt(i.sale_price));
     var waLink=waNumber?'https://wa.me/'+waNumber+'?text='+waMsg:'#';
     return '<div class="card">'
-      +'<div class="card-img">'+img+'</div>'
-      +'<div class="card-name">'+i.name+'</div>'
-      +(i.set_name?'<div class="card-set">'+i.set_name+(i.extras?' · <span style="color:#6B21A8;font-weight:600">'+i.extras+'</span>':'')+'</div>':i.extras?'<div class="card-set" style="color:#6B21A8;font-weight:600">'+i.extras+'</div>':'')
-      +'<div class="card-badges">'+typeBadge(i.product_type)+' '+condBadge(i.condition)+' '+langBadge(i.language)+'</div>'
+    var extrasBadge=i.extras?'<span style="background:#F3E8FF;color:#6B21A8;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600">'+i.extras+'</span>':'';
+    var cardImgContent=i.liga_url?'<a href="'+i.liga_url+'" target="_blank" style="display:block">'+img+'</a>':img;
+    return '<div class="card">'
+      +'<div class="card-img" style="cursor:'+(i.liga_url?'pointer':'default')+'">'+cardImgContent+'</div>'
+      +'<div class="card-name">'+(i.liga_url?'<a href="'+i.liga_url+'" target="_blank" style="color:inherit;text-decoration:none">'+i.name+'</a>':i.name)+'</div>'
+      +(i.set_name?'<div class="card-set">'+i.set_name+'</div>':'')
+      +(i.extras?'<div style="margin-top:3px">'+extrasBadge+'</div>':'')
       +'<div class="card-price">'+fmt(i.sale_price)+'</div>'
       +'<div class="card-qty">'+i.quantity_available+' disponivel(is)</div>'
       +(waNumber?'<a class="card-wa" href="'+waLink+'" target="_blank"><i class="ti ti-brand-whatsapp"></i> Tenho interesse</a>':'')
       +(i.liga_url?'<a href="'+i.liga_url+'" target="_blank" style="display:block;text-align:center;font-size:11px;color:var(--text2);margin-top:4px;text-decoration:underline"><i class="ti ti-external-link"></i> Ver na Liga Pokemon</a>':'')
-      +'</div>';
+      +(i.liga_url?'<a href="'+i.liga_url+'" target="_blank" style="display:block;text-align:center;font-size:11px;color:#1a56db;margin-top:6px"><i class="ti ti-external-link"></i> Ver na Liga Pokemon</a>':'')
   }).join('');
 }
 

@@ -209,7 +209,7 @@ tr:hover td{background:var(--bg2)}
         <input type="text" id="filterInvName" placeholder="Buscar..." oninput="renderInventory()" style="width:190px">
         <select id="filterInvType" onchange="renderInventory()"><option value="">Todos tipos</option><option>Carta Avulsa</option><option>Lacrado</option><option>Acessorio</option><option>Lote</option></select>
         <select id="filterInvLang" onchange="renderInventory()"><option value="">Todos idiomas</option><option>PT-BR</option><option>EN</option><option>JP</option></select>
-        <select id="filterInvCond" onchange="renderInventory()"><option value="">Todas condicoes</option><option>NM</option><option>LP</option><option>MP</option><option>HP</option></select>
+        <select id="filterInvCond" onchange="renderInventory()"><option value="">Todas condicoes</option><option>M</option><option>NM</option><option>LP</option><option>MP</option><option>HP</option><option>D</option></select>
       </div>
       <div class="table-wrap">
         <table><thead><tr><th>Foto</th><th>Nome</th><th>Tipo</th><th>Set</th><th>Idioma</th><th>Cond.</th><th>Disponivel</th><th>Total</th><th>Custo</th><th>Preco venda</th><th>Margem</th><th></th></tr></thead>
@@ -307,10 +307,11 @@ tr:hover td{background:var(--bg2)}
       </div>
       <div class="form-field"><label>Condicao</label>
         <select id="p-cond">
-          <option value="NM">NM - Near Mint</option>
+          <option value="M">M - Mint</option><option value="NM">NM - Near Mint</option>
           <option value="LP">LP - Lightly Played</option>
           <option value="MP">MP - Moderately Played</option>
           <option value="HP">HP - Heavily Played</option>
+          <option value="D">D - Damaged</option>
           <option value="N/A">N/A (Lacrado/Acessorio)</option>
         </select>
       </div>
@@ -469,7 +470,7 @@ tr:hover td{background:var(--bg2)}
         <select id="ep-type"><option value="Carta Avulsa">Carta Avulsa</option><option value="Lacrado">Lacrado</option><option value="Acessorio">Acessorio</option><option value="Lote">Lote / Bulk</option></select>
       </div>
       <div class="form-field"><label>Condicao</label>
-        <select id="ep-cond"><option value="NM">NM</option><option value="LP">LP</option><option value="MP">MP</option><option value="HP">HP</option><option value="N/A">N/A</option></select>
+        <select id="ep-cond"><option value="M">M - Mint</option><option value="NM">NM - Near Mint</option><option value="LP">LP - Lightly Played</option><option value="MP">MP - Moderately Played</option><option value="HP">HP - Heavily Played</option><option value="D">D - Damaged</option><option value="N/A">N/A</option></select>
       </div>
       <div class="form-field"><label>Idioma</label>
         <select id="ep-lang"><option value="PT-BR">PT-BR</option><option value="EN">Ingles</option><option value="JP">Japones</option><option value="N/A">N/A</option></select>
@@ -668,7 +669,7 @@ function typeBadge(t){
 }
 function condBadge(c){
   if(!c||c==='N/A')return '<span style="color:var(--text3)">N/A</span>';
-  var m={NM:'badge-nm',LP:'badge-lp',MP:'badge-mp',HP:'badge-hp'};
+  var m={M:'badge-nm',NM:'badge-nm',LP:'badge-lp',MP:'badge-mp',HP:'badge-hp',D:'badge-hp'};
   return '<span class="badge '+(m[c]||'badge-nm')+'">'+c+'</span>';
 }
 function langBadge(l){
