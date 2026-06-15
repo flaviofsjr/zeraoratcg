@@ -191,7 +191,7 @@ tr:hover td{background:var(--bg2)}
     <div class="page" id="page-compras">
       <div class="section-header">
         <h3>Compras / entradas</h3>
-        <button class="btn-primary" style="width:auto" onclick="openModal('purchaseModal')"><i class="ti ti-plus"></i> Registrar compra</button>
+        <div style="display:flex;gap:8px"><button class="btn-secondary" onclick="openModal('importModal')"><i class="ti ti-table-import"></i> Importar Excel</button><button class="btn-primary" style="width:auto" onclick="openModal('purchaseModal')"><i class="ti ti-plus"></i> Registrar compra</button></div>
       </div>
       <div class="table-wrap">
         <table><thead><tr><th>Foto</th><th>Descricao</th><th>Tipo</th><th>Idioma</th><th>Cond.</th><th>Qtd</th><th>Fornecedor</th><th>Total pago</th><th>Data</th><th></th></tr></thead>
@@ -325,9 +325,14 @@ tr:hover td{background:var(--bg2)}
       <div class="form-field"><label>Quantidade *</label><input type="number" id="p-qty" value="1" min="1"></div>
       <div class="form-field"><label>Set / Expansao</label><input type="text" id="p-set" placeholder="ex: Prismatic Evolutions"></div>
       <div class="form-field"><label>Fornecedor</label><input type="text" id="p-supplier" placeholder="ex: Meruru, eBay, Joao"></div>
-      <div class="form-field"><label>Total pago (R$) *</label><input type="number" id="p-amount" placeholder="0.00" step="0.01"></div>
+      <div class="form-field"><label>Total pago (R$) *</label><input type="number" id="p-amount" placeholder="0.00" step="0.01" min="0"></div>
       <div class="form-field"><label>Data</label><input type="date" id="p-date"></div>
       <div class="form-field"><label>Preco de venda sugerido (R$)</label><input type="number" id="p-saleprice" placeholder="0.00" step="0.01"></div>
+      <div class="form-field"><label>Extras</label>
+        <select id="p-extras"><option value="">Nenhum</option><option>Foil</option><option>Reverse Foil</option><option>Full Art</option><option>Secret Rare</option><option>Holo</option><option>Shiny</option><option>Promo</option><option>Outro</option></select>
+      </div>
+      <div class="form-field"><label>Link Liga Pokemon</label>
+        <input type="text" id="p-liga" placeholder="https://www.ligapokemon.com.br/..."></div>
       <div class="form-field full">
         <label>Foto do produto</label>
         <div class="img-upload-area" onclick="document.getElementById('p-img-file').click()">
@@ -357,6 +362,8 @@ tr:hover td{background:var(--bg2)}
       <div class="form-field"><label>Custo unitario</label><input type="text" id="inv-edit-cost" readonly style="background:var(--bg2)"></div>
       <div class="form-field"><label>Preco de venda (R$)</label><input type="number" id="inv-edit-price" placeholder="0.00" step="0.01" oninput="updateInvMarginPreview()"></div>
       <div class="form-field"><label>Margem estimada</label><input type="text" id="inv-edit-margin" readonly style="background:var(--bg2)"></div>
+      <div class="form-field"><label>Extras</label><select id="inv-edit-extras"><option value="">Nenhum</option><option>Foil</option><option>Reverse Foil</option><option>Full Art</option><option>Secret Rare</option><option>Holo</option><option>Shiny</option><option>Promo</option><option>Outro</option></select></div>
+      <div class="form-field full"><label>Link Liga Pokemon</label><input type="text" id="inv-edit-liga" placeholder="https://www.ligapokemon.com.br/..."></div>
     </div>
     <div class="modal-actions">
       <button class="btn-secondary" onclick="closeModal('invEditModal')">Cancelar</button>
@@ -426,8 +433,33 @@ tr:hover td{background:var(--bg2)}
     </div>
   </div>
 </div>
+
+<!-- MODAL IMPORTAR EXCEL -->
+<div class="modal-bg" id="importModal">
+  <div class="modal" style="max-width:600px">
+    <h3>Importar compras do Excel</h3>
+    <div style="background:var(--bg2);border-radius:var(--radius);padding:12px 14px;font-size:13px;color:var(--text2);margin-bottom:4px">
+      <strong style="color:var(--text)">Formato esperado das colunas:</strong><br>
+      Nome | Tipo | Condicao | Idioma | Quantidade | Set | Fornecedor | Total Pago | Data | Preco Venda | Extras | Liga URL | Observacoes
+    </div>
+    <div class="form-field">
+      <label>Selecione o arquivo .xlsx ou .csv</label>
+      <input type="file" id="import-file" accept=".xlsx,.xls,.csv" onchange="previewImport(this)">
+    </div>
+    <div id="import-preview" style="display:none">
+      <div style="font-size:13px;font-weight:500;margin-bottom:8px" id="import-count"></div>
+      <div style="max-height:220px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--radius);font-size:12px" id="import-table-wrap"></div>
+    </div>
+    <div id="import-progress" style="display:none;font-size:13px;color:var(--text2)"></div>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeModal('importModal');resetImport()">Cancelar</button>
+      <button class="btn-primary" style="width:auto" id="importBtn" onclick="runImport()" disabled>Importar tudo</button>
+    </div>
+  </div>
+</div>
 <div class="toast" id="toast"></div>
 
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script>
 var SUPA_URL='https://cpvmidouwpfvugelffza.supabase.co';
@@ -597,7 +629,7 @@ function renderPurchases(){
   if(!purchases.length){tb.innerHTML='<tr><td colspan="10"><div class="empty-state"><i class="ti ti-shopping-bag"></i>Nenhuma compra registrada</div></td></tr>';return;}
   tb.innerHTML=purchases.map(function(p){
     var costUnit=p.quantity>0?(parseFloat(p.total_amount||0)/p.quantity):0;
-    return '<tr><td>'+imgCell(p.image_url)+'</td><td style="font-weight:600">'+p.description+'</td><td>'+typeBadge(p.product_type)+'</td><td>'+langBadge(p.language)+'</td><td>'+condBadge(p.condition)+'</td><td style="text-align:center">'+p.quantity+'</td><td>'+(p.supplier||'-')+'</td><td style="font-weight:600;color:var(--amber-dark)">'+fmt(p.total_amount)+'</td><td>'+p.purchase_date+'</td><td><button class="btn-danger" onclick="deletePurchase(\''+p.id+'\')"><i class="ti ti-trash"></i></button></td></tr>';
+    var pExtrasBadge=p.extras?'<span style="font-size:10px;background:#F3E8FF;color:#6B21A8;padding:1px 6px;border-radius:10px;font-weight:600;margin-left:4px">'+p.extras+'</span>':''; return '<tr><td>'+imgCell(p.image_url)+'</td><td style="font-weight:600">'+p.description+pExtrasBadge+'</td><td>'+typeBadge(p.product_type)+'</td><td>'+langBadge(p.language)+'</td><td>'+condBadge(p.condition)+'</td><td style="text-align:center">'+p.quantity+'</td><td>'+(p.supplier||'-')+'</td><td style="font-weight:600;color:var(--amber-dark)">'+fmt(p.total_amount)+'</td><td>'+p.purchase_date+'</td><td><button class="btn-danger" onclick="deletePurchase(\''+p.id+'\')"><i class="ti ti-trash"></i></button></td></tr>';
   }).join('');
 }
 
@@ -620,7 +652,7 @@ function renderInventory(){
     var qtyClass=avail===0?'zero':avail<=2?'low':'';
     var mg=inv.sale_price>0?((inv.sale_price-inv.cost_price)/inv.sale_price*100).toFixed(0)+'%':'-';
     var mgColor=inv.sale_price>inv.cost_price?'var(--success)':'var(--danger)';
-    return '<tr><td>'+imgCell(inv.image_url)+'</td><td style="font-weight:600">'+inv.name+'</td><td>'+typeBadge(inv.product_type)+'</td><td style="color:var(--text2);font-size:12px">'+(inv.set_name||'-')+'</td><td>'+langBadge(inv.language)+'</td><td>'+condBadge(inv.condition)+'</td><td><span class="qty-badge '+qtyClass+'">'+avail+'</span></td><td style="color:var(--text2)">'+inv.quantity_total+'</td><td>'+fmt(inv.cost_price)+'</td><td style="font-weight:600">'+(inv.sale_price>0?fmt(inv.sale_price):'<span style="color:var(--text3)">Nao definido</span>')+'</td><td style="color:'+mgColor+'">'+mg+'</td><td><button class="btn-small" onclick="openInvEdit(\''+inv.id+'\')" title="Definir preco"><i class="ti ti-tag"></i></button></td></tr>';
+    var extrasBadge=inv.extras?'<span style="font-size:10px;background:#F3E8FF;color:#6B21A8;padding:1px 6px;border-radius:10px;font-weight:600;margin-left:4px">'+inv.extras+'</span>':''; var ligaLink=inv.liga_url?'<a href="'+inv.liga_url+'" target="_blank" style="font-size:11px;color:var(--blue);margin-left:4px" title="Ver na Liga Pokemon"><i class="ti ti-external-link"></i></a>':''; return '<tr><td>'+imgCell(inv.image_url)+'</td><td style="font-weight:600">'+inv.name+extrasBadge+ligaLink+'</td><td>'+typeBadge(inv.product_type)+'</td><td style="color:var(--text2);font-size:12px">'+(inv.set_name||'-')+'</td><td>'+langBadge(inv.language)+'</td><td>'+condBadge(inv.condition)+'</td><td><span class="qty-badge '+qtyClass+'">'+avail+'</span></td><td style="color:var(--text2)">'+inv.quantity_total+'</td><td>'+fmt(inv.cost_price)+'</td><td style="font-weight:600">'+(inv.sale_price>0?fmt(inv.sale_price):'<span style="color:var(--text3)">Nao definido</span>')+'</td><td style="color:'+mgColor+'">'+mg+'</td><td><button class="btn-small" onclick="openInvEdit(\''+inv.id+'\')" title="Definir preco"><i class="ti ti-tag"></i></button></td></tr>';
   }).join('');
 }
 
@@ -673,9 +705,12 @@ function loadDashboard(){
 
 function savePurchase(){
   var name=document.getElementById('p-name').value.trim();
-  var amt=parseFloat(document.getElementById('p-amount').value);
+  var amtRaw=document.getElementById('p-amount').value;
+  var amt=amtRaw===''?null:parseFloat(amtRaw);
   var qty=parseInt(document.getElementById('p-qty').value)||1;
-  if(!name||!amt){showToast('Preencha nome e total pago','error');return;}
+  if(!name){showToast('Preencha o nome do item','error');return;}
+  if(amt===null){showToast('Informe o valor pago (pode ser 0 para doacoes)','error');return;}
+  amt=amt||0;
   var btn=document.getElementById('purchaseSaveBtn');
   btn.textContent='Salvando...';btn.disabled=true;
   var imgB64=document.getElementById('p-img-b64').value||null;
@@ -700,7 +735,9 @@ function savePurchase(){
     total_amount:amt,
     purchase_date:pDate,
     notes:pNotes,
-    image_url:imgB64
+    image_url:imgB64,
+    extras:document.getElementById('p-extras').value||null,
+    liga_url:document.getElementById('p-liga').value||null
   };
 
   sb.from('purchases').insert(purchasePayload).then(function(r){
@@ -719,7 +756,9 @@ function savePurchase(){
       cost_price:parseFloat(costUnit.toFixed(2)),
       sale_price:salePrice,
       image_url:imgB64,
-      notes:pNotes
+      notes:pNotes,
+      extras:document.getElementById('p-extras').value||null,
+      liga_url:document.getElementById('p-liga').value||null
     };
 
     sb.from('inventory').insert(invPayload).then(function(r2){
@@ -734,7 +773,7 @@ function savePurchase(){
 }
 
 function resetPurchaseForm(){
-  ['p-name','p-set','p-supplier','p-amount','p-notes','p-saleprice','p-img-b64'].forEach(function(id){document.getElementById(id).value='';});
+  ['p-name','p-set','p-supplier','p-amount','p-notes','p-saleprice','p-img-b64','p-liga'].forEach(function(id){document.getElementById(id).value='';}); document.getElementById('p-extras').value='';
   document.getElementById('p-qty').value='1';
   document.getElementById('p-type').value='Carta Avulsa';
   document.getElementById('p-cond').value='NM';
@@ -750,6 +789,8 @@ function openInvEdit(id){
   document.getElementById('inv-edit-name').value=inv.name;
   document.getElementById('inv-edit-cost').value=fmt(inv.cost_price);
   document.getElementById('inv-edit-price').value=inv.sale_price||'';
+  document.getElementById('inv-edit-extras').value=inv.extras||'';
+  document.getElementById('inv-edit-liga').value=inv.liga_url||'';
   updateInvMarginPreview();
   openModal('invEditModal');
 }
@@ -766,7 +807,9 @@ function updateInvMarginPreview(){
 function saveInvPrice(){
   var id=document.getElementById('inv-edit-id').value;
   var price=parseFloat(document.getElementById('inv-edit-price').value)||0;
-  sb.from('inventory').update({sale_price:price}).eq('id',id).then(function(r){
+  var extras=document.getElementById('inv-edit-extras').value||null;
+  var liga=document.getElementById('inv-edit-liga').value||null;
+  sb.from('inventory').update({sale_price:price,extras:extras,liga_url:liga}).eq('id',id).then(function(r){
     if(r.error){showToast('Erro ao salvar','error');return;}
     showToast('Preco atualizado!');
     closeModal('invEditModal');
@@ -1047,6 +1090,120 @@ function saveProfile(){
     closeModal('profileModal');
     loadProfile();
   });
+}
+
+
+var importRows=[];
+
+function previewImport(input){
+  var file=input.files[0];
+  if(!file)return;
+  var reader=new FileReader();
+  reader.onload=function(e){
+    var data=new Uint8Array(e.target.result);
+    var wb=XLSX.read(data,{type:'array'});
+    var ws=wb.Sheets[wb.SheetNames[0]];
+    var rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+    if(rows.length<2){showToast('Arquivo vazio ou sem dados','error');return;}
+    // Skip header row
+    importRows=rows.slice(1).filter(function(r){return r[0]&&String(r[0]).trim();});
+    document.getElementById('import-count').textContent=importRows.length+' linha(s) encontrada(s) para importar';
+    // Build preview table
+    var headers=['Nome','Tipo','Cond.','Idioma','Qtd','Set','Fornecedor','Total Pago','Data','Preco Venda','Extras','Liga URL','Obs'];
+    var tableHtml='<table style="width:100%;border-collapse:collapse">';
+    tableHtml+='<thead><tr>'+headers.map(function(h){return '<th style="padding:6px 8px;background:var(--bg2);border-bottom:1px solid var(--border);font-size:11px;text-align:left">'+h+'</th>';}).join('')+'</tr></thead><tbody>';
+    importRows.slice(0,5).forEach(function(r){
+      tableHtml+='<tr>'+r.slice(0,13).map(function(c){return '<td style="padding:5px 8px;border-bottom:1px solid var(--border);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+c+'</td>';}).join('')+'</tr>';
+    });
+    if(importRows.length>5)tableHtml+='<tr><td colspan="13" style="padding:6px 8px;color:var(--text3);font-size:11px">...e mais '+(importRows.length-5)+' linha(s)</td></tr>';
+    tableHtml+='</tbody></table>';
+    document.getElementById('import-table-wrap').innerHTML=tableHtml;
+    document.getElementById('import-preview').style.display='block';
+    document.getElementById('importBtn').disabled=false;
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function resetImport(){
+  importRows=[];
+  document.getElementById('import-file').value='';
+  document.getElementById('import-preview').style.display='none';
+  document.getElementById('import-progress').style.display='none';
+  document.getElementById('importBtn').disabled=true;
+  document.getElementById('importBtn').textContent='Importar tudo';
+}
+
+function parseDate(val){
+  if(!val)return new Date().toISOString().split('T')[0];
+  if(typeof val==='number'){
+    var d=new Date((val-25569)*86400*1000);
+    return d.toISOString().split('T')[0];
+  }
+  var s=String(val).trim();
+  // Try dd/mm/yyyy
+  var parts=s.split('/');
+  if(parts.length===3)return parts[2]+'-'+parts[1].padStart(2,'0')+'-'+parts[0].padStart(2,'0');
+  return s||new Date().toISOString().split('T')[0];
+}
+
+async function runImport(){
+  if(!importRows.length)return;
+  var btn=document.getElementById('importBtn');
+  btn.disabled=true;btn.textContent='Importando...';
+  document.getElementById('import-progress').style.display='block';
+  var prog=document.getElementById('import-progress');
+  var ok=0,fail=0;
+  for(var i=0;i<importRows.length;i++){
+    var r=importRows[i];
+    prog.textContent='Importando '+(i+1)+' de '+importRows.length+'...';
+    var name=String(r[0]||'').trim();
+    if(!name)continue;
+    var qty=parseInt(r[4])||1;
+    var amt=parseFloat(String(r[7]).replace(',','.'))||0;
+    var costUnit=qty>0?amt/qty:0;
+    var salePrice=parseFloat(String(r[9]).replace(',','.'))||0;
+    var purchasePayload={
+      user_id:currentUser.id,
+      description:name,
+      product_type:String(r[1]||'Carta Avulsa').trim()||'Carta Avulsa',
+      condition:String(r[2]||'NM').trim()||'NM',
+      language:String(r[3]||'PT-BR').trim()||'PT-BR',
+      quantity:qty,
+      set_name:String(r[5]||'').trim()||null,
+      supplier:String(r[6]||'').trim()||null,
+      total_amount:amt,
+      purchase_date:parseDate(r[7+1]||r[8]),
+      sale_price:salePrice,
+      extras:String(r[10]||'').trim()||null,
+      liga_url:String(r[11]||'').trim()||null,
+      notes:String(r[12]||'').trim()||null,
+      image_url:null
+    };
+    var pr=await sb.from('purchases').insert(purchasePayload);
+    if(pr.error){fail++;continue;}
+    var invPayload={
+      user_id:currentUser.id,
+      name:name,
+      product_type:purchasePayload.product_type,
+      set_name:purchasePayload.set_name,
+      language:purchasePayload.language,
+      condition:purchasePayload.condition,
+      quantity_total:qty,
+      quantity_available:qty,
+      cost_price:parseFloat(costUnit.toFixed(2)),
+      sale_price:salePrice,
+      extras:purchasePayload.extras,
+      liga_url:purchasePayload.liga_url,
+      notes:purchasePayload.notes,
+      image_url:null
+    };
+    var ir=await sb.from('inventory').insert(invPayload);
+    if(ir.error)fail++;else ok++;
+  }
+  prog.textContent='Concluido! '+ok+' importado(s), '+fail+' erro(s).';
+  btn.textContent='Concluido!';
+  showToast(ok+' itens importados com sucesso!');
+  setTimeout(function(){closeModal('importModal');resetImport();loadAll();},2000);
 }
 
 document.addEventListener('click',function(e){

@@ -179,11 +179,12 @@ function renderItems(items){
     return '<div class="card">'
       +'<div class="card-img">'+img+'</div>'
       +'<div class="card-name">'+i.name+'</div>'
-      +(i.set_name?'<div class="card-set">'+i.set_name+'</div>':'')
+      +(i.set_name?'<div class="card-set">'+i.set_name+(i.extras?' · <span style="color:#6B21A8;font-weight:600">'+i.extras+'</span>':'')+'</div>':i.extras?'<div class="card-set" style="color:#6B21A8;font-weight:600">'+i.extras+'</div>':'')
       +'<div class="card-badges">'+typeBadge(i.product_type)+' '+condBadge(i.condition)+' '+langBadge(i.language)+'</div>'
       +'<div class="card-price">'+fmt(i.sale_price)+'</div>'
       +'<div class="card-qty">'+i.quantity_available+' disponivel(is)</div>'
       +(waNumber?'<a class="card-wa" href="'+waLink+'" target="_blank"><i class="ti ti-brand-whatsapp"></i> Tenho interesse</a>':'')
+      +(i.liga_url?'<a href="'+i.liga_url+'" target="_blank" style="display:block;text-align:center;font-size:11px;color:var(--text2);margin-top:4px;text-decoration:underline"><i class="ti ti-external-link"></i> Ver na Liga Pokemon</a>':'')
       +'</div>';
   }).join('');
 }
