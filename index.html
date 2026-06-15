@@ -457,6 +457,64 @@ tr:hover td{background:var(--bg2)}
     </div>
   </div>
 </div>
+
+<!-- MODAL EDITAR COMPRA -->
+<div class="modal-bg" id="editPurchaseModal">
+  <div class="modal">
+    <h3>Editar compra</h3>
+    <input type="hidden" id="ep-id">
+    <div class="modal-grid">
+      <div class="form-field full"><label>Nome / Descricao *</label><input type="text" id="ep-name" placeholder="ex: Charizard ex"></div>
+      <div class="form-field"><label>Tipo de produto</label>
+        <select id="ep-type"><option value="Carta Avulsa">Carta Avulsa</option><option value="Lacrado">Lacrado</option><option value="Acessorio">Acessorio</option><option value="Lote">Lote / Bulk</option></select>
+      </div>
+      <div class="form-field"><label>Condicao</label>
+        <select id="ep-cond"><option value="NM">NM</option><option value="LP">LP</option><option value="MP">MP</option><option value="HP">HP</option><option value="N/A">N/A</option></select>
+      </div>
+      <div class="form-field"><label>Idioma</label>
+        <select id="ep-lang"><option value="PT-BR">PT-BR</option><option value="EN">Ingles</option><option value="JP">Japones</option><option value="N/A">N/A</option></select>
+      </div>
+      <div class="form-field"><label>Quantidade</label><input type="number" id="ep-qty" min="1"></div>
+      <div class="form-field"><label>Set / Expansao</label><input type="text" id="ep-set"></div>
+      <div class="form-field"><label>Fornecedor</label><input type="text" id="ep-supplier"></div>
+      <div class="form-field"><label>Total pago (R$)</label><input type="number" id="ep-amount" step="0.01" min="0"></div>
+      <div class="form-field"><label>Data</label><input type="date" id="ep-date"></div>
+      <div class="form-field"><label>Preco de venda (R$)</label><input type="number" id="ep-saleprice" step="0.01"></div>
+      <div class="form-field"><label>Extras</label>
+        <select id="ep-extras"><option value="">Nenhum</option><option>Foil</option><option>Reverse Foil</option><option>Full Art</option><option>Secret Rare</option><option>Holo</option><option>Shiny</option><option>Promo</option><option>Outro</option></select>
+      </div>
+      <div class="form-field full"><label>Link Liga Pokemon</label><input type="text" id="ep-liga" placeholder="https://www.ligapokemon.com.br/..."></div>
+      <div class="form-field full"><label>Observacoes</label><textarea id="ep-notes" rows="2"></textarea></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeModal('editPurchaseModal')">Cancelar</button>
+      <button class="btn-primary" style="width:auto" onclick="saveEditPurchase()">Salvar alteracoes</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL EDITAR VENDA -->
+<div class="modal-bg" id="editSaleModal">
+  <div class="modal">
+    <h3>Editar venda</h3>
+    <input type="hidden" id="es-id">
+    <div class="modal-grid">
+      <div class="form-field full"><label>Nome da carta / item</label><input type="text" id="es-card"></div>
+      <div class="form-field"><label>Quantidade</label><input type="number" id="es-qty" min="1"></div>
+      <div class="form-field"><label>Plataforma</label><input type="text" id="es-platform"></div>
+      <div class="form-field"><label>Comprador</label><input type="text" id="es-buyer"></div>
+      <div class="form-field"><label>Preco de venda (R$)</label><input type="number" id="es-price" step="0.01"></div>
+      <div class="form-field"><label>Custo unitario (R$)</label><input type="number" id="es-cost" step="0.01"></div>
+      <div class="form-field"><label>Data</label><input type="date" id="es-date"></div>
+      <div class="form-field full"><label>Observacoes</label><textarea id="es-notes" rows="2"></textarea></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeModal('editSaleModal')">Cancelar</button>
+      <button class="btn-primary" style="width:auto" onclick="saveEditSale()">Salvar alteracoes</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -629,7 +687,7 @@ function renderPurchases(){
   if(!purchases.length){tb.innerHTML='<tr><td colspan="10"><div class="empty-state"><i class="ti ti-shopping-bag"></i>Nenhuma compra registrada</div></td></tr>';return;}
   tb.innerHTML=purchases.map(function(p){
     var costUnit=p.quantity>0?(parseFloat(p.total_amount||0)/p.quantity):0;
-    var pExtrasBadge=p.extras?'<span style="font-size:10px;background:#F3E8FF;color:#6B21A8;padding:1px 6px;border-radius:10px;font-weight:600;margin-left:4px">'+p.extras+'</span>':''; return '<tr><td>'+imgCell(p.image_url)+'</td><td style="font-weight:600">'+p.description+pExtrasBadge+'</td><td>'+typeBadge(p.product_type)+'</td><td>'+langBadge(p.language)+'</td><td>'+condBadge(p.condition)+'</td><td style="text-align:center">'+p.quantity+'</td><td>'+(p.supplier||'-')+'</td><td style="font-weight:600;color:var(--amber-dark)">'+fmt(p.total_amount)+'</td><td>'+p.purchase_date+'</td><td><button class="btn-danger" onclick="deletePurchase(\''+p.id+'\')"><i class="ti ti-trash"></i></button></td></tr>';
+    var pExtrasBadge=p.extras?'<span style="font-size:10px;background:#F3E8FF;color:#6B21A8;padding:1px 6px;border-radius:10px;font-weight:600;margin-left:4px">'+p.extras+'</span>':''; return '<tr><td>'+imgCell(p.image_url)+'</td><td style="font-weight:600">'+p.description+pExtrasBadge+'</td><td>'+typeBadge(p.product_type)+'</td><td>'+langBadge(p.language)+'</td><td>'+condBadge(p.condition)+'</td><td style="text-align:center">'+p.quantity+'</td><td>'+(p.supplier||'-')+'</td><td style="font-weight:600;color:var(--amber-dark)">'+fmt(p.total_amount)+'</td><td>'+p.purchase_date+'</td><td><div class="actions-cell"><button class="btn-small" onclick="editPurchase(\''+p.id+'\')" title="Editar"><i class="ti ti-edit"></i></button><button class="btn-danger" onclick="deletePurchase(\''+p.id+'\')"><i class="ti ti-trash"></i></button></div></td></tr>';
   }).join('');
 }
 
@@ -673,7 +731,7 @@ function renderSales(){
     var tc=parseFloat(s.cost_price||0)*s.quantity;
     var p=ts-tc;
     var mg=ts>0?((p/ts)*100).toFixed(0)+'%':'-';
-    return '<tr><td style="font-weight:600">'+s.card_name+'</td><td>'+s.quantity+'</td><td>'+(s.platform||'-')+'</td><td>'+(s.buyer||'-')+'</td><td style="font-weight:600">'+fmt(ts)+'</td><td>'+fmt(tc)+'</td><td class="'+(p>=0?'profit-pos':'profit-neg')+'" style="font-weight:600">'+fmt(p)+'</td><td style="color:'+(p>=0?'var(--success)':'var(--danger)')+'">'+mg+'</td><td>'+s.sale_date+'</td><td><button class="btn-danger" onclick="deleteSale(\''+s.id+'\')"><i class="ti ti-trash"></i></button></td></tr>';
+    return '<tr><td style="font-weight:600">'+s.card_name+'</td><td>'+s.quantity+'</td><td>'+(s.platform||'-')+'</td><td>'+(s.buyer||'-')+'</td><td style="font-weight:600">'+fmt(ts)+'</td><td>'+fmt(tc)+'</td><td class="'+(p>=0?'profit-pos':'profit-neg')+'" style="font-weight:600">'+fmt(p)+'</td><td style="color:'+(p>=0?'var(--success)':'var(--danger)')+'">'+mg+'</td><td>'+s.sale_date+'</td><td><div class="actions-cell"><button class="btn-small" onclick="editSale(\''+s.id+'\')" title="Editar"><i class="ti ti-edit"></i></button><button class="btn-danger" onclick="deleteSale(\''+s.id+'\')"><i class="ti ti-trash"></i></button></div></td></tr>';
   }).join('');
 }
 
@@ -1204,6 +1262,109 @@ async function runImport(){
   btn.textContent='Concluido!';
   showToast(ok+' itens importados com sucesso!');
   setTimeout(function(){closeModal('importModal');resetImport();loadAll();},2000);
+}
+
+
+function editPurchase(id){
+  var p=purchases.filter(function(x){return x.id===id;})[0];
+  if(!p)return;
+  document.getElementById('ep-id').value=id;
+  document.getElementById('ep-name').value=p.description||'';
+  document.getElementById('ep-type').value=p.product_type||'Carta Avulsa';
+  document.getElementById('ep-cond').value=p.condition||'NM';
+  document.getElementById('ep-lang').value=p.language||'PT-BR';
+  document.getElementById('ep-qty').value=p.quantity||1;
+  document.getElementById('ep-set').value=p.set_name||'';
+  document.getElementById('ep-supplier').value=p.supplier||'';
+  document.getElementById('ep-amount').value=p.total_amount||0;
+  document.getElementById('ep-date').value=p.purchase_date||'';
+  document.getElementById('ep-saleprice').value=p.sale_price||'';
+  document.getElementById('ep-extras').value=p.extras||'';
+  document.getElementById('ep-liga').value=p.liga_url||'';
+  document.getElementById('ep-notes').value=p.notes||'';
+  openModal('editPurchaseModal');
+}
+
+function saveEditPurchase(){
+  var id=document.getElementById('ep-id').value;
+  var name=document.getElementById('ep-name').value.trim();
+  if(!name){showToast('Nome obrigatorio','error');return;}
+  var qty=parseInt(document.getElementById('ep-qty').value)||1;
+  var amt=parseFloat(document.getElementById('ep-amount').value)||0;
+  var payload={
+    description:name,
+    product_type:document.getElementById('ep-type').value,
+    condition:document.getElementById('ep-cond').value,
+    language:document.getElementById('ep-lang').value,
+    quantity:qty,
+    set_name:document.getElementById('ep-set').value||null,
+    supplier:document.getElementById('ep-supplier').value||null,
+    total_amount:amt,
+    purchase_date:document.getElementById('ep-date').value,
+    sale_price:parseFloat(document.getElementById('ep-saleprice').value)||0,
+    extras:document.getElementById('ep-extras').value||null,
+    liga_url:document.getElementById('ep-liga').value||null,
+    notes:document.getElementById('ep-notes').value||null
+  };
+  sb.from('purchases').update(payload).eq('id',id).then(function(r){
+    if(r.error){showToast('Erro ao salvar','error');return;}
+    // Also update inventory if exists
+    var costUnit=qty>0?amt/qty:0;
+    sb.from('inventory').update({
+      name:name,
+      product_type:payload.product_type,
+      condition:payload.condition,
+      language:payload.language,
+      set_name:payload.set_name,
+      cost_price:parseFloat(costUnit.toFixed(2)),
+      sale_price:payload.sale_price,
+      extras:payload.extras,
+      liga_url:payload.liga_url,
+      notes:payload.notes
+    }).eq('purchase_id',id).then(function(){
+      showToast('Compra atualizada!');
+      closeModal('editPurchaseModal');
+      loadAll();
+    });
+  });
+}
+
+function editSale(id){
+  var s=sales.filter(function(x){return x.id===id;})[0];
+  if(!s)return;
+  document.getElementById('es-id').value=id;
+  document.getElementById('es-card').value=s.card_name||'';
+  document.getElementById('es-qty').value=s.quantity||1;
+  document.getElementById('es-platform').value=s.platform||'';
+  document.getElementById('es-buyer').value=s.buyer||'';
+  document.getElementById('es-price').value=s.sale_price||'';
+  document.getElementById('es-cost').value=s.cost_price||'';
+  document.getElementById('es-date').value=s.sale_date||'';
+  document.getElementById('es-notes').value=s.notes||'';
+  openModal('editSaleModal');
+}
+
+function saveEditSale(){
+  var id=document.getElementById('es-id').value;
+  var card=document.getElementById('es-card').value.trim();
+  var price=parseFloat(document.getElementById('es-price').value)||0;
+  if(!card){showToast('Nome obrigatorio','error');return;}
+  var payload={
+    card_name:card,
+    quantity:parseInt(document.getElementById('es-qty').value)||1,
+    sale_price:price,
+    cost_price:parseFloat(document.getElementById('es-cost').value)||0,
+    platform:document.getElementById('es-platform').value||null,
+    buyer:document.getElementById('es-buyer').value||null,
+    sale_date:document.getElementById('es-date').value,
+    notes:document.getElementById('es-notes').value||null
+  };
+  sb.from('sales').update(payload).eq('id',id).then(function(r){
+    if(r.error){showToast('Erro ao salvar','error');return;}
+    showToast('Venda atualizada!');
+    closeModal('editSaleModal');
+    loadAll();
+  });
 }
 
 document.addEventListener('click',function(e){
