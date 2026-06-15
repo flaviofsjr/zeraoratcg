@@ -194,6 +194,11 @@ tr:hover td{background:var(--bg2)}
         <div style="display:flex;gap:8px"><button class="btn-secondary" onclick="openModal('importModal')"><i class="ti ti-table-import"></i> Importar Excel</button><button class="btn-primary" style="width:auto" onclick="openModal('purchaseModal')"><i class="ti ti-plus"></i> Registrar compra</button></div>
       </div>
       <div class="table-wrap">
+      <div class="filters">
+        <input type="text" id="filterPurName" placeholder="Buscar compra..." oninput="renderPurchases()" style="width:190px">
+        <select id="filterPurType" onchange="renderPurchases()"><option value="">Todos tipos</option><option>Carta Avulsa</option><option>Lacrado</option><option>Acessorio</option><option>Lote</option></select>
+        <select id="filterPurSupplier" onchange="renderPurchases()"><option value="">Todos fornecedores</option></select>
+      </div>
         <table><thead><tr><th>Foto</th><th onclick="sortTable('pur','description')" style="cursor:pointer;user-select:none">Descricao ↕</th><th onclick="sortTable('pur','product_type')" style="cursor:pointer;user-select:none">Tipo ↕</th><th onclick="sortTable('pur','language')" style="cursor:pointer;user-select:none">Idioma ↕</th><th onclick="sortTable('pur','condition')" style="cursor:pointer;user-select:none">Cond. ↕</th><th onclick="sortTable('pur','quantity')" style="cursor:pointer;user-select:none">Qtd ↕</th><th onclick="sortTable('pur','supplier')" style="cursor:pointer;user-select:none">Fornecedor ↕</th><th onclick="sortTable('pur','total_amount')" style="cursor:pointer;user-select:none">Total pago ↕</th><th onclick="sortTable('pur','purchase_date')" style="cursor:pointer;user-select:none">Data ↕</th><th></th></tr></thead>
         <tbody id="purchasesTable"><tr><td colspan="10"><div class="empty-state"><i class="ti ti-shopping-bag"></i>Nenhuma compra registrada</div></td></tr></tbody></table>
       </div>
@@ -234,8 +239,8 @@ tr:hover td{background:var(--bg2)}
       </div>
       <div class="table-wrap">
         <table><thead><tr><th>Item</th><th>Qtd</th><th>Plataforma</th><th>Comprador</th><th>Venda total</th><th>Custo total</th><th>Lucro</th><th>Margem</th><th>Data</th><th></th></tr></thead>
-        <tbody id="salesTable"><tr><td colspan="10"><div class="empty-state"><i class="ti ti-receipt-off"></i>Nenhuma venda registrada</div></td></tr></tbody></table>
-      </div>
+        <table><thead><tr><th>Foto</th><th onclick="sortTable('sal','card_name')" style="cursor:pointer;user-select:none">Item ↕</th><th onclick="sortTable('sal','quantity')" style="cursor:pointer;user-select:none">Qtd ↕</th><th onclick="sortTable('sal','platform')" style="cursor:pointer;user-select:none">Plataforma ↕</th><th onclick="sortTable('sal','buyer')" style="cursor:pointer;user-select:none">Comprador ↕</th><th onclick="sortTable('sal','sale_price')" style="cursor:pointer;user-select:none">Venda ↕</th><th onclick="sortTable('sal','cost_price')" style="cursor:pointer;user-select:none">Custo ↕</th><th onclick="sortTable('sal','lucro')" style="cursor:pointer;user-select:none">Lucro ↕</th><th>Margem</th><th onclick="sortTable('sal','sale_date')" style="cursor:pointer;user-select:none">Data ↕</th><th>Pago</th><th>Entregue</th><th></th></tr></thead>
+        <tbody id="salesTable"><tr><td colspan="13"><div class="empty-state"><i class="ti ti-receipt-off"></i>Nenhuma venda registrada</div></td></tr></tbody></table>
     </div>
 
     <!-- DRE -->
@@ -671,7 +676,7 @@ function loadAll(){
 
 function loadPurchases(){
   return sb.from('purchases').select('*').eq('user_id',currentUser.id).order('purchase_date',{ascending:false}).then(function(r){
-    purchases=r.data||[];renderPurchases();
+    purchases=r.data||[];updateSupplierFilter();renderPurchases();
   });
 }
 
@@ -717,7 +722,15 @@ function imgCell(url){
 }
 
 function renderPurchases(){
-  var purList=purchases.slice();
+  var purNameF=(document.getElementById('filterPurName').value||'').toLowerCase();
+  var purTypeF=document.getElementById('filterPurType').value;
+  var purSupF=document.getElementById('filterPurSupplier').value;
+  var purList=purchases.filter(function(p){
+    if(purNameF&&p.description.toLowerCase().indexOf(purNameF)===-1)return false;
+    if(purTypeF&&p.product_type!==purTypeF)return false;
+    if(purSupF&&(p.supplier||'')!==purSupF)return false;
+    return true;
+  });
   if(purSortField){purList.sort(function(a,b){var va=a[purSortField]||'';var vb=b[purSortField]||'';if(typeof va==='number'||typeof vb==='number'){va=parseFloat(va)||0;vb=parseFloat(vb)||0;}else{va=String(va).toLowerCase();vb=String(vb).toLowerCase();}return purSortAsc?(va>vb?1:-1):(va<vb?1:-1);});}
   var tb=document.getElementById('purchasesTable');
   if(!purList.length){tb.innerHTML='<tr><td colspan="10"><div class="empty-state"><i class="ti ti-shopping-bag"></i>Nenhuma compra registrada</div></td></tr>';return;}
@@ -763,14 +776,28 @@ function renderSales(){
     if(platF&&s.platform!==platF)return false;
     return true;
   });
+  if(salSortField){filtered.sort(function(a,b){
+    var va=salSortField==='lucro'?(parseFloat(a.sale_price||0)-parseFloat(a.cost_price||0))*a.quantity:a[salSortField]||'';
+    var vb=salSortField==='lucro'?(parseFloat(b.sale_price||0)-parseFloat(b.cost_price||0))*b.quantity:b[salSortField]||'';
+    if(typeof va==='number'||typeof vb==='number'){va=parseFloat(va)||0;vb=parseFloat(vb)||0;}
+    else{va=String(va).toLowerCase();vb=String(vb).toLowerCase();}
+    return salSortAsc?(va>vb?1:-1):(va<vb?1:-1);
+  });}
   var tb=document.getElementById('salesTable');
-  if(!filtered.length){tb.innerHTML='<tr><td colspan="10"><div class="empty-state"><i class="ti ti-receipt-off"></i>Nenhuma venda encontrada</div></td></tr>';return;}
+  if(!filtered.length){tb.innerHTML='<tr><td colspan="13"><div class="empty-state"><i class="ti ti-receipt-off"></i>Nenhuma venda encontrada</div></td></tr>';return;}
   tb.innerHTML=filtered.map(function(s){
     var ts=parseFloat(s.sale_price||0)*s.quantity;
     var tc=parseFloat(s.cost_price||0)*s.quantity;
     var p=ts-tc;
     var mg=ts>0?((p/ts)*100).toFixed(0)+'%':'-';
-    return '<tr><td style="font-weight:600">'+s.card_name+'</td><td>'+s.quantity+'</td><td>'+(s.platform||'-')+'</td><td>'+(s.buyer||'-')+'</td><td style="font-weight:600">'+fmt(ts)+'</td><td>'+fmt(tc)+'</td><td class="'+(p>=0?'profit-pos':'profit-neg')+'" style="font-weight:600">'+fmt(p)+'</td><td style="color:'+(p>=0?'var(--success)':'var(--danger)')+'">'+mg+'</td><td>'+s.sale_date+'</td><td><div class="actions-cell"><button class="btn-small" onclick="editSale(\''+s.id+'\')" title="Editar"><i class="ti ti-edit"></i></button><button class="btn-danger" onclick="deleteSale(\''+s.id+'\')"><i class="ti ti-trash"></i></button></div></td></tr>';
+    var invItem=inventory.filter(function(i){return i.id===s.inventory_id;})[0];
+    var imgUrl=invItem&&invItem.image_url?invItem.image_url:'';
+    var imgHtml=imgUrl
+      ?'<img src="'+imgUrl+'" class="inv-img" style="cursor:zoom-in" onclick="openLightbox(event,\''+imgUrl+'\')" onerror="this.style.display=\'none\'">'
+      :'<div class="inv-img-placeholder"><i class="ti ti-photo-off"></i></div>';
+    var paidBtn='<button onclick="toggleSaleField(\''+s.id+'\',\'paid\',' +(s.paid?'false':'true')+')" style="font-size:18px;background:none;border:none;cursor:pointer" title="'+(s.paid?'Pago - clique para desmarcar':'Marcar como pago')+'">'+(s.paid?'✅':'⬜')+'</button>';
+    var delivBtn='<button onclick="toggleSaleField(\''+s.id+'\',\'delivered\',' +(s.delivered?'false':'true')+')" style="font-size:18px;background:none;border:none;cursor:pointer" title="'+(s.delivered?'Entregue - clique para desmarcar':'Marcar como entregue')+'">'+(s.delivered?'✅':'⬜')+'</button>';
+    return '<tr style="opacity:'+(s.delivered?'0.6':'1')+'"><td>'+imgHtml+'</td><td style="font-weight:600">'+s.card_name+'</td><td>'+s.quantity+'</td><td>'+(s.platform||'-')+'</td><td>'+(s.buyer||'-')+'</td><td style="font-weight:600">'+fmt(ts)+'</td><td>'+fmt(tc)+'</td><td class="'+(p>=0?'profit-pos':'profit-neg')+'" style="font-weight:600">'+fmt(p)+'</td><td style="color:'+(p>=0?'var(--success)':'var(--danger)')+'">'+mg+'</td><td>'+s.sale_date+'</td><td style="text-align:center">'+paidBtn+'</td><td style="text-align:center">'+delivBtn+'</td><td><div class="actions-cell"><button class="btn-small" onclick="editSale(\''+s.id+'\')" title="Editar"><i class="ti ti-edit"></i></button><button class="btn-danger" onclick="deleteSale(\''+s.id+'\')" title="Excluir"><i class="ti ti-trash"></i></button></div></td></tr>';
   }).join('');
 }
 
@@ -1465,11 +1492,45 @@ function saveEditSale(){
 
 var invSortField=null,invSortAsc=true,purSortField=null,purSortAsc=true;
 
+
+var salSortField=null,salSortAsc=true;
+
+function toggleSaleField(id,field,value){
+  var upd={};
+  upd[field]=value;
+  sb.from('sales').update(upd).eq('id',id).then(function(r){
+    if(r.error){showToast('Erro ao atualizar','error');return;}
+    var s=sales.filter(function(x){return x.id===id;})[0];
+    if(s) s[field]=value;
+    renderSales();
+    showToast(field==='paid'?(value?'Marcado como pago':'Desmarcado pagamento'):(value?'Marcado como entregue':'Desmarcado entrega'));
+  });
+}
+
+function updateSupplierFilter(){
+  var sel=document.getElementById('filterPurSupplier');
+  if(!sel)return;
+  var current=sel.value;
+  var suppliers=[];
+  purchases.forEach(function(p){if(p.supplier&&suppliers.indexOf(p.supplier)===-1)suppliers.push(p.supplier);});
+  suppliers.sort();
+  sel.innerHTML='<option value="">Todos fornecedores</option>'+suppliers.map(function(s){return '<option>'+s+'</option>';}).join('');
+  sel.value=current;
+}
+
 function sortTable(table,field){
   if(table==='inv'){
     if(invSortField===field)invSortAsc=!invSortAsc;
     else{invSortField=field;invSortAsc=true;}
     renderInventory();
+  } else if(table==='sal'){
+    if(salSortField===field)salSortAsc=!salSortAsc;
+    else{salSortField=field;salSortAsc=true;}
+    renderSales();
+  } else if(table==='sal'){
+    if(salSortField===field)salSortAsc=!salSortAsc;
+    else{salSortField=field;salSortAsc=true;}
+    renderSales();
   } else {
     if(purSortField===field)purSortAsc=!purSortAsc;
     else{purSortField=field;purSortAsc=true;}
