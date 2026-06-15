@@ -267,7 +267,7 @@ tr:hover td{background:var(--bg2)}
         </div>
       </div>
       <div class="filters">
-        <input type="text" id="filterSaleName" placeholder="Buscar..." oninput="renderSales()" style="width:190px">
+        <input type="text" id="filterSaleName" placeholder="Buscar por carta, comprador, plataforma..." oninput="renderSales()" style="width:190px">
         <input type="month" id="filterSaleMonth" onchange="renderSales()">
         <select id="filterPlatform" onchange="renderSales()"><option value="">Todas plataformas</option></select>
       </div>
@@ -1004,7 +1004,10 @@ function renderSales(){
   var monthF=document.getElementById('filterSaleMonth').value;
   var platF=document.getElementById('filterPlatform').value;
   var filtered=sales.filter(function(s){
-    if(nameF&&s.card_name.toLowerCase().indexOf(nameF)===-1)return false;
+    if(nameF){
+      var searchStr=(s.card_name+' '+(s.buyer||'')+' '+(s.platform||'')+' '+(s.sale_date||'')).toLowerCase();
+      if(searchStr.indexOf(nameF)===-1)return false;
+    }
     if(monthF&&s.sale_date.indexOf(monthF)!==0)return false;
     if(platF&&s.platform!==platF)return false;
     return true;
