@@ -207,6 +207,28 @@ tr:hover td{background:var(--bg2)}
     <!-- ESTOQUE -->
     <div class="page" id="page-estoque">
       <div class="section-header">
+      <div id="invSummary" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-bottom:1.25rem">
+        <div style="background:var(--bg);border:1px solid #a3c77d;border-radius:var(--radius-lg);padding:14px 16px">
+          <div style="font-size:12px;color:var(--success);font-weight:600;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.3px">A venda</div>
+          <div style="font-size:20px;font-weight:700;color:var(--success)" id="inv-sum-avenda-val">R$ 0,00</div>
+          <div style="font-size:12px;color:var(--text2);margin-top:4px"><span id="inv-sum-avenda-qty">0</span> item(s)</div>
+        </div>
+        <div style="background:var(--bg);border:1px solid #F0994A;border-radius:var(--radius-lg);padding:14px 16px">
+          <div style="font-size:12px;color:#7A5200;font-weight:600;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.3px">Reservado</div>
+          <div style="font-size:20px;font-weight:700;color:#7A5200" id="inv-sum-reservado-val">R$ 0,00</div>
+          <div style="font-size:12px;color:var(--text2);margin-top:4px"><span id="inv-sum-reservado-qty">0</span> item(s)</div>
+        </div>
+        <div style="background:var(--bg);border:1px solid var(--border2);border-radius:var(--radius-lg);padding:14px 16px">
+          <div style="font-size:12px;color:var(--text2);font-weight:600;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.3px">Em estoque</div>
+          <div style="font-size:20px;font-weight:700;color:var(--text)" id="inv-sum-estoque-val">R$ 0,00</div>
+          <div style="font-size:12px;color:var(--text2);margin-top:4px"><span id="inv-sum-estoque-qty">0</span> item(s)</div>
+        </div>
+        <div style="background:var(--bg);border:1px solid var(--amber);border-radius:var(--radius-lg);padding:14px 16px">
+          <div style="font-size:12px;color:var(--amber-dark);font-weight:600;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.3px">Total geral</div>
+          <div style="font-size:20px;font-weight:700;color:var(--amber-dark)" id="inv-sum-total-val">R$ 0,00</div>
+          <div style="font-size:12px;color:var(--text2);margin-top:4px"><span id="inv-sum-total-qty">0</span> item(s)</div>
+        </div>
+      </div>
         <h3>Estoque</h3>
         <button class="btn-secondary" onclick="exportInventory()"><i class="ti ti-download"></i> CSV</button>
       </div>
@@ -684,7 +706,7 @@ function loadPurchases(){
 
 function loadInventory(){
   return sb.from('inventory').select('*').eq('user_id',currentUser.id).order('created_at',{ascending:false}).then(function(r){
-    inventory=r.data||[];renderInventory();
+    inventory=r.data||[];renderInventory();updateInvSummary();
   });
 }
 
@@ -758,6 +780,7 @@ function renderInventory(){
   });
   if(invSortField){filtered.sort(function(a,b){var va=a[invSortField]||'';var vb=b[invSortField]||'';if(typeof va==='number'||typeof vb==='number'){va=parseFloat(va)||0;vb=parseFloat(vb)||0;}else{va=String(va).toLowerCase();vb=String(vb).toLowerCase();}return invSortAsc?(va>vb?1:-1):(va<vb?1:-1);});}
   var tb=document.getElementById('inventoryTable');
+  updateInvSummary();
   if(!filtered.length){tb.innerHTML='<tr><td colspan="12"><div class="empty-state"><i class="ti ti-package"></i>Nenhum item encontrado</div></td></tr>';return;}
   tb.innerHTML=filtered.map(function(inv){
     var avail=inv.quantity_available||0;
@@ -1518,6 +1541,32 @@ function updateSupplierFilter(){
   suppliers.sort();
   sel.innerHTML='<option value="">Todos fornecedores</option>'+suppliers.map(function(s){return '<option>'+s+'</option>';}).join('');
   sel.value=current;
+}
+
+
+function updateInvSummary(){
+  var aVenda=inventory.filter(function(i){return (i.status||'A venda')==='A venda';});
+  var reservado=inventory.filter(function(i){return i.status==='Reservado';});
+  var emEstoque=inventory.filter(function(i){return i.status==='Em estoque';});
+
+  function sumVal(arr){return arr.reduce(function(a,i){
+    var price=i.sale_price>0?i.sale_price:i.cost_price||0;
+    return a+price*(i.quantity_available||0);
+  },0);}
+  function sumQty(arr){return arr.reduce(function(a,i){return a+(i.quantity_available||0);},0);}
+
+  var fmtV=function(v){return 'R$ '+(v).toFixed(2).replace('.',',');};
+
+  document.getElementById('inv-sum-avenda-val').textContent=fmtV(sumVal(aVenda));
+  document.getElementById('inv-sum-avenda-qty').textContent=sumQty(aVenda);
+  document.getElementById('inv-sum-reservado-val').textContent=fmtV(sumVal(reservado));
+  document.getElementById('inv-sum-reservado-qty').textContent=sumQty(reservado);
+  document.getElementById('inv-sum-estoque-val').textContent=fmtV(sumVal(emEstoque));
+  document.getElementById('inv-sum-estoque-qty').textContent=sumQty(emEstoque);
+  var total=sumVal(aVenda)+sumVal(reservado)+sumVal(emEstoque);
+  var totalQty=sumQty(aVenda)+sumQty(reservado)+sumQty(emEstoque);
+  document.getElementById('inv-sum-total-val').textContent=fmtV(total);
+  document.getElementById('inv-sum-total-qty').textContent=totalQty;
 }
 
 function sortTable(table,field){
