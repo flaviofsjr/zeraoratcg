@@ -1313,22 +1313,36 @@ function exportBinderImage(){
       // Image
       var imgY=y+priceH;
       if(item.image_url){
-        var img=new Image();
-        img.crossOrigin='anonymous';
-        img.onload=function(){
-          ctx.drawImage(img,x,imgY,cardW,imgH);
-          drawCardInfo(item,x,y,imgH,priceH);
-          tryDownload();
-        };
-        img.onerror=function(){
-          ctx.fillStyle='#3a3a3a';
-          ctx.fillRect(x,imgY,cardW,imgH);
-          ctx.fillStyle='#555';ctx.font='11px Arial';ctx.textAlign='center';
-          ctx.fillText('Sem foto',x+cardW/2,imgY+imgH/2);
-          drawCardInfo(item,x,y,imgH,priceH);
-          tryDownload();
-        };
-        img.src=item.image_url;
+        // Use fetch+blob to bypass CORS restrictions on canvas
+        fetch(item.image_url)
+          .then(function(res){return res.blob();})
+          .then(function(blob){
+            var url=URL.createObjectURL(blob);
+            var img=new Image();
+            img.onload=function(){
+              ctx.drawImage(img,x,imgY,cardW,imgH);
+              drawCardInfo(item,x,y,imgH,priceH);
+              URL.revokeObjectURL(url);
+              tryDownload();
+            };
+            img.onerror=function(){
+              ctx.fillStyle='#3a3a3a';
+              ctx.fillRect(x,imgY,cardW,imgH);
+              ctx.fillStyle='#555';ctx.font='11px Arial';ctx.textAlign='center';
+              ctx.fillText('Sem foto',x+cardW/2,imgY+imgH/2);
+              drawCardInfo(item,x,y,imgH,priceH);
+              tryDownload();
+            };
+            img.src=url;
+          })
+          .catch(function(){
+            ctx.fillStyle='#3a3a3a';
+            ctx.fillRect(x,imgY,cardW,imgH);
+            ctx.fillStyle='#555';ctx.font='11px Arial';ctx.textAlign='center';
+            ctx.fillText('Sem foto',x+cardW/2,imgY+imgH/2);
+            drawCardInfo(item,x,y,imgH,priceH);
+            tryDownload();
+          });
       } else {
         ctx.fillStyle='#3a3a3a';
         ctx.fillRect(x,imgY,cardW,imgH);
