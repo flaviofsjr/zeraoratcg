@@ -247,6 +247,7 @@ tr:hover td{background:var(--bg2)}
         <select id="filterInvLang" onchange="renderInventory()"><option value="">Todos idiomas</option><option>PT-BR</option><option>EN</option><option>JP</option></select>
         <select id="filterInvCond" onchange="renderInventory()"><option value="">Todas condicoes</option><option>M</option><option>NM</option><option>LP</option><option>MP</option><option>HP</option><option>D</option></select>
         <select id="filterInvStatus" onchange="renderInventory()"><option value="">Todos status</option><option>A venda</option><option>Reservado</option><option>Em estoque</option></select>
+        <select id="filterInvSupplier" onchange="renderInventory()"><option value="">Todos fornecedores</option></select>
       </div>
       <div class="table-wrap">
         <table><thead><tr><th>Foto</th><th onclick="sortTable('inv','name')" style="cursor:pointer;user-select:none">Nome ↕</th><th onclick="sortTable('inv','product_type')" style="cursor:pointer;user-select:none">Tipo ↕</th><th onclick="sortTable('inv','set_name')" style="cursor:pointer;user-select:none">Set ↕</th><th onclick="sortTable('inv','language')" style="cursor:pointer;user-select:none">Idioma ↕</th><th onclick="sortTable('inv','condition')" style="cursor:pointer;user-select:none">Cond. ↕</th><th onclick="sortTable('inv','quantity_available')" style="cursor:pointer;user-select:none">Disponivel ↕</th><th onclick="sortTable('inv','quantity_total')" style="cursor:pointer;user-select:none">Total ↕</th><th onclick="sortTable('inv','cost_price')" style="cursor:pointer;user-select:none">Custo ↕</th><th onclick="sortTable('inv','sale_price')" style="cursor:pointer;user-select:none">Preco venda ↕</th><th>Margem</th><th onclick="sortTable('inv','status')" style="cursor:pointer;user-select:none">Status ↕</th><th></th></tr></thead>
@@ -291,7 +292,6 @@ tr:hover td{background:var(--bg2)}
       <div class="section-header">
         <h3>Binder publico</h3>
         <button class="btn-primary" style="width:auto" onclick="copyBinderText()"><i class="ti ti-copy"></i> Copiar lista</button>
-        <button class="btn-secondary" style="width:auto" onclick="exportBinderImage()"><i class="ti ti-camera"></i> Exportar imagem</button>
       </div>
 
     <!-- BINDER CONFIG -->
@@ -379,9 +379,11 @@ tr:hover td{background:var(--bg2)}
           <i class="ti ti-photo-plus" style="font-size:24px;display:block;margin-bottom:6px"></i>
           Clique para selecionar uma foto
         </div>
-        <input type="file" id="p-img-file" accept="image/*" style="display:none" onchange="previewImage(this,'p-img-preview','p-img-b64')">
+        <input type="file" id="p-img-file" accept="image/*" style="display:none" onchange="previewImage(this,'p-img-preview','p-img-b64');document.getElementById('p-img-url').value='';">
         <img id="p-img-preview" class="img-preview">
         <input type="hidden" id="p-img-b64">
+        <div style="margin-top:6px;font-size:11px;color:var(--text2);text-align:center">— ou cole uma URL —</div>
+        <input type="text" id="p-img-url" placeholder="https://... link da imagem" oninput="previewImgUrl()" style="width:100%;margin-top:6px;padding:7px 10px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text);font-size:12px">
       </div>
       <div class="form-field full"><label>Observacoes</label><textarea id="p-notes" rows="2" placeholder="anotacoes..."></textarea></div>
     </div>
@@ -634,6 +636,49 @@ tr:hover td{background:var(--bg2)}
   </div>
 </div>
 
+<!-- MODAL HISTORICO DE PRECO -->
+<div class="modal-overlay" id="priceHistoryModal">
+  <div class="modal" style="max-width:600px">
+    <div class="modal-header">
+      <h3><i class="ti ti-chart-line"></i> Histórico de Preço</h3>
+      <button class="modal-close" onclick="closeModal('priceHistoryModal')"><i class="ti ti-x"></i></button>
+    </div>
+    <div style="padding:1.25rem">
+      <div id="phCardName" style="font-size:15px;font-weight:700;margin-bottom:4px"></div>
+      <div id="phCardInfo" style="font-size:12px;color:var(--text2);margin-bottom:1rem"></div>
+      
+      <!-- Register new price -->
+      <div style="display:flex;gap:8px;align-items:flex-end;margin-bottom:1.25rem;background:var(--bg2);padding:12px;border-radius:var(--radius)">
+        <div style="flex:1">
+          <label style="font-size:11px;color:var(--text2);font-weight:600;text-transform:uppercase;display:block;margin-bottom:4px">Registrar preco atual (R$)</label>
+          <input type="number" id="ph-price" step="0.01" min="0" placeholder="0,00"
+            style="width:100%;padding:9px 12px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text);font-size:15px;font-weight:700">
+        </div>
+        <div>
+          <label style="font-size:11px;color:var(--text2);font-weight:600;text-transform:uppercase;display:block;margin-bottom:4px">Data</label>
+          <input type="date" id="ph-date"
+            style="padding:9px 12px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text);font-size:13px">
+        </div>
+        <button onclick="savePricePoint()" style="background:var(--amber);color:#2C1A00;border:none;border-radius:var(--radius);padding:10px 16px;font-weight:700;cursor:pointer;white-space:nowrap">
+          <i class="ti ti-plus"></i> Adicionar
+        </button>
+      </div>
+
+      <!-- Chart -->
+      <div style="position:relative;height:240px;margin-bottom:1rem">
+        <canvas id="priceChart"></canvas>
+        <div id="phEmpty" style="display:none;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;color:var(--text3)">
+          <i class="ti ti-chart-line" style="font-size:32px;display:block;margin-bottom:8px;opacity:0.3"></i>
+          Nenhum registro ainda.<br>Adicione o primeiro preço acima.
+        </div>
+      </div>
+
+      <!-- History table -->
+      <div id="phTable" style="max-height:160px;overflow-y:auto;font-size:12px"></div>
+    </div>
+  </div>
+</div>
+
 <!-- LIGHTBOX FOTO -->
 <div id="lightbox" onclick="closeLightbox()" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.85);z-index:500;align-items:center;justify-content:center;cursor:zoom-out">
   <img id="lightboxImg" src="" style="max-width:90vw;max-height:90vh;border-radius:12px;box-shadow:0 8px 40px rgba(0,0,0,0.5)">
@@ -643,6 +688,7 @@ tr:hover td{background:var(--bg2)}
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
 var SUPA_URL='https://cpvmidouwpfvugelffza.supabase.co';
 var SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNwdm1pZG91d3BmdnVnZWxmZnphIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0OTkxNDIsImV4cCI6MjA5NzA3NTE0Mn0.haj8uqCjzMxqlhajkcaDMpbrzyMjUogoX4A6k4QgTNg';
@@ -744,6 +790,19 @@ function showToast(msg,type){
 
 function fmt(v){var n=(parseFloat(v)||0).toFixed(2);var parts=n.split('.');return 'R$ '+parts[0].replace(/\B(?=(\d{3})+(?!\d))/g,'.')+','+parts[1];}
 
+function previewImgUrl(){
+  var url=document.getElementById('p-img-url').value.trim();
+  var prev=document.getElementById('p-img-preview');
+  if(url){
+    prev.src=url;
+    prev.style.display='block';
+    document.getElementById('p-img-b64').value='';
+  document.getElementById('p-img-url').value='';
+  } else {
+    prev.style.display='none';
+  }
+}
+
 function previewImage(input,previewId,b64Id){
   var file=input.files[0];
   if(!file)return;
@@ -769,7 +828,18 @@ function loadPurchases(){
 
 function loadInventory(){
   return sb.from('inventory').select('*').eq('user_id',currentUser.id).order('created_at',{ascending:false}).then(function(r){
-    inventory=r.data||[];renderInventory();updateInvSummary();
+    inventory=r.data||[];
+    // Populate supplier filter from purchases
+    var sel=document.getElementById('filterInvSupplier');
+    if(sel){
+      var current=sel.value;
+      var suppliers=[];
+      purchases.forEach(function(p){if(p.supplier&&suppliers.indexOf(p.supplier)===-1)suppliers.push(p.supplier);});
+      suppliers.sort();
+      sel.innerHTML='<option value="">Todos fornecedores</option>'+suppliers.map(function(s){return '<option>'+s+'</option>';}).join('');
+      sel.value=current;
+    }
+    renderInventory();updateInvSummary();
   });
 }
 
@@ -833,12 +903,17 @@ function renderInventory(){
   var langF=document.getElementById('filterInvLang').value;
   var condF=document.getElementById('filterInvCond').value;
   var statusF=document.getElementById('filterInvStatus').value;
+  var supplierF=document.getElementById('filterInvSupplier').value;
   var filtered=inventory.filter(function(i){
     if(nameF&&i.name.toLowerCase().indexOf(nameF)===-1)return false;
     if(typeF&&i.product_type!==typeF)return false;
     if(langF&&i.language!==langF)return false;
     if(condF&&i.condition!==condF)return false;
     if(statusF&&(i.status||'A venda')!==statusF)return false;
+    if(supplierF){
+      var pur=purchases.filter(function(p){return p.id===i.purchase_id;})[0];
+      if(!pur||(pur.supplier||'')!==supplierF)return false;
+    }
     return true;
   });
   if(invSortField){filtered.sort(function(a,b){var va=a[invSortField]||'';var vb=b[invSortField]||'';if(typeof va==='number'||typeof vb==='number'){va=parseFloat(va)||0;vb=parseFloat(vb)||0;}else{va=String(va).toLowerCase();vb=String(vb).toLowerCase();}return invSortAsc?(va>vb?1:-1):(va<vb?1:-1);});}
@@ -850,7 +925,7 @@ function renderInventory(){
     var qtyClass=avail===0?'zero':avail<=2?'low':'';
     var mg=inv.sale_price>0?((inv.sale_price-inv.cost_price)/inv.sale_price*100).toFixed(0)+'%':'-';
     var mgColor=inv.sale_price>inv.cost_price?'var(--success)':'var(--danger)';
-    var extrasBadge=inv.extras?'<span style="font-size:10px;background:#F3E8FF;color:#6B21A8;padding:1px 6px;border-radius:10px;font-weight:600;margin-left:4px">'+inv.extras+'</span>':''; var ligaLink=inv.liga_url?'<a href="'+inv.liga_url+'" target="_blank" style="font-size:11px;color:var(--blue);margin-left:4px" title="Ver na Liga Pokemon"><i class="ti ti-external-link"></i></a>':''; return '<tr><td>'+imgCell(inv.image_url)+'</td><td style="font-weight:600">'+inv.name+extrasBadge+ligaLink+'</td><td>'+typeBadge(inv.product_type)+'</td><td style="color:var(--text2);font-size:12px">'+(inv.set_name||'-')+'</td><td>'+langBadge(inv.language)+'</td><td>'+condBadge(inv.condition)+'</td><td><span class="qty-badge '+qtyClass+'">'+avail+'</span></td><td style="color:var(--text2)">'+inv.quantity_total+'</td><td>'+fmt(inv.cost_price)+'</td><td style="font-weight:600">'+(inv.sale_price>0?fmt(inv.sale_price):'<span style="color:var(--text3)">Nao definido</span>')+'</td><td style="color:'+mgColor+'">'+mg+'</td><td><button class="btn-small" onclick="openInvEdit(\''+inv.id+'\')" title="Definir preco"><i class="ti ti-tag"></i></button></td></tr>';
+    var extrasBadge=inv.extras?'<span style="font-size:10px;background:#F3E8FF;color:#6B21A8;padding:1px 6px;border-radius:10px;font-weight:600;margin-left:4px">'+inv.extras+'</span>':''; var ligaLink=inv.liga_url?'<a href="'+inv.liga_url+'" target="_blank" style="font-size:11px;color:var(--blue);margin-left:4px" title="Ver na Liga Pokemon"><i class="ti ti-external-link"></i></a>':''; return '<tr><td>'+imgCell(inv.image_url)+'</td><td style="font-weight:600">'+inv.name+extrasBadge+ligaLink+'</td><td>'+typeBadge(inv.product_type)+'</td><td style="color:var(--text2);font-size:12px">'+(inv.set_name||'-')+'</td><td>'+langBadge(inv.language)+'</td><td>'+condBadge(inv.condition)+'</td><td><span class="qty-badge '+qtyClass+'">'+avail+'</span></td><td style="color:var(--text2)">'+inv.quantity_total+'</td><td>'+fmt(inv.cost_price)+'</td><td style="font-weight:600">'+(inv.sale_price>0?fmt(inv.sale_price):'<span style="color:var(--text3)">Nao definido</span>')+'</td><td style="color:'+mgColor+'">'+mg+'</td><td><div class="actions-cell"><button class="btn-small" onclick="openInvEdit(\''+inv.id+'\')" title="Definir preco"><i class="ti ti-tag"></i></button></td></tr>';
   }).join('');
 }
 
@@ -926,7 +1001,7 @@ function savePurchase(){
   amt=amt||0;
   var btn=document.getElementById('purchaseSaveBtn');
   btn.textContent='Salvando...';btn.disabled=true;
-  var imgB64=document.getElementById('p-img-b64').value||null;
+  var imgB64=document.getElementById('p-img-b64').value||document.getElementById('p-img-url').value||null;
   var costUnit=amt/qty;
   var salePrice=parseFloat(document.getElementById('p-saleprice').value)||0;
   var pType=document.getElementById('p-type').value;
@@ -1246,147 +1321,6 @@ function loadBinder(){
 }
 
 
-function exportBinderImage(){
-  var forSale=inventory.filter(function(i){return (i.quantity_available||0)>0&&i.sale_price>0&&(i.status||'A venda')==='A venda';});
-  if(!forSale.length){showToast('Nenhum item a venda para exportar','error');return;}
-
-  var COLS=5,ROWS=3,PER_PAGE=COLS*ROWS;
-  var pages=Math.ceil(forSale.length/PER_PAGE);
-  showToast('Carregando imagens...');
-
-  // Pre-load all images as base64 via corsproxy
-  var imageCache={};
-  var itemsWithImg=forSale.filter(function(i){return i.image_url;});
-  var loaded=0;
-  var total=itemsWithImg.length;
-
-  function proceed(){
-    var pageIdx=0;
-    renderPage(pageIdx);
-  }
-
-  function loadImg(item){
-    var proxy='https://corsproxy.io/?'+encodeURIComponent(item.image_url);
-    fetch(proxy)
-      .then(function(r){return r.blob();})
-      .then(function(blob){
-        var reader=new FileReader();
-        reader.onload=function(e){
-          imageCache[item.id]=e.target.result;
-          loaded++;
-          if(loaded===total) proceed();
-        };
-        reader.readAsDataURL(blob);
-      })
-      .catch(function(){
-        loaded++;
-        if(loaded===total) proceed();
-      });
-  }
-
-  if(total===0){
-    proceed();
-  } else {
-    itemsWithImg.forEach(loadImg);
-  }
-
-  function renderPage(pageIdx){
-    var items=forSale.slice(pageIdx*PER_PAGE,(pageIdx+1)*PER_PAGE);
-    showToast('Gerando pag '+(pageIdx+1)+'/'+pages+'...');
-
-    var CARD_W=180,CARD_H=300,PAD=8,HDR=56,FTR=32;
-    var W=COLS*(CARD_W+PAD)+PAD;
-    var H=ROWS*(CARD_H+PAD)+PAD+HDR+FTR;
-    var canvas=document.createElement('canvas');
-    canvas.width=W; canvas.height=H;
-    var ctx=canvas.getContext('2d');
-
-    // BG
-    ctx.fillStyle='#111'; ctx.fillRect(0,0,W,H);
-
-    // Header
-    ctx.fillStyle='#E8B422'; ctx.fillRect(0,0,W,HDR);
-    ctx.fillStyle='#2C1A00'; ctx.font='bold 22px Arial'; ctx.textAlign='left';
-    ctx.fillText('ZeraoraTCG',PAD+6,34);
-    ctx.font='11px Arial';
-    ctx.fillText(forSale.length+' itens disponíveis  •  Pág '+(pageIdx+1)+'/'+pages,PAD+6,50);
-
-    // Footer
-    ctx.fillStyle='#1a1a1a'; ctx.fillRect(0,H-FTR,W,FTR);
-    ctx.fillStyle='#666'; ctx.font='10px Arial'; ctx.textAlign='center';
-    ctx.fillText('Entre em contato via WhatsApp para comprar • zeraoratcgp.vercel.app',W/2,H-10);
-
-    // Draw cards
-    items.forEach(function(item,idx){
-      var col=idx%COLS, row=Math.floor(idx/COLS);
-      var x=PAD+col*(CARD_W+PAD), y=HDR+PAD+row*(CARD_H+PAD);
-      var PRICE_H=26, INFO_H=52, IMG_H=CARD_H-PRICE_H-INFO_H;
-
-      // Card bg
-      ctx.fillStyle='#222';
-      ctx.beginPath(); if(ctx.roundRect)ctx.roundRect(x,y,CARD_W,CARD_H,6); else ctx.rect(x,y,CARD_W,CARD_H);
-      ctx.fill();
-
-      // Price banner
-      ctx.fillStyle='#E8B422';
-      ctx.beginPath(); if(ctx.roundRect)ctx.roundRect(x,y,CARD_W,PRICE_H,{upperLeft:6,upperRight:6,lowerLeft:0,lowerRight:0}); else ctx.rect(x,y,CARD_W,PRICE_H);
-      ctx.fill();
-      ctx.fillStyle='#2C1A00'; ctx.font='bold 13px Arial'; ctx.textAlign='center';
-      ctx.fillText(fmt(item.sale_price),x+CARD_W/2,y+18);
-
-      // Image from cache
-      var imgY=y+PRICE_H;
-      if(imageCache[item.id]){
-        var img=new Image();
-        img.src=imageCache[item.id];
-        try{ctx.drawImage(img,x,imgY,CARD_W,IMG_H);}catch(e){
-          ctx.fillStyle='#333'; ctx.fillRect(x,imgY,CARD_W,IMG_H);
-        }
-      } else {
-        ctx.fillStyle='#333'; ctx.fillRect(x,imgY,CARD_W,IMG_H);
-        ctx.fillStyle='#555'; ctx.font='10px Arial'; ctx.textAlign='center';
-        ctx.fillText('Sem foto',x+CARD_W/2,imgY+IMG_H/2);
-      }
-
-      // Info bar
-      var infoY=y+PRICE_H+IMG_H;
-      ctx.fillStyle='#1e1e1e'; ctx.fillRect(x,infoY,CARD_W,INFO_H);
-      var name=item.name.length>22?item.name.slice(0,22)+'…':item.name;
-      ctx.fillStyle='#f0f0f0'; ctx.font='bold 9px Arial'; ctx.textAlign='center';
-      ctx.fillText(name,x+CARD_W/2,infoY+13);
-
-      // Condition badge
-      var condColors={M:'#27500A',NM:'#27500A',LP:'#1a56db',MP:'#7A5200',HP:'#791F1F',D:'#791F1F'};
-      ctx.fillStyle=condColors[item.condition]||'#444';
-      ctx.beginPath(); if(ctx.roundRect)ctx.roundRect(x+4,infoY+17,26,13,3); else ctx.rect(x+4,infoY+17,26,13);
-      ctx.fill();
-      ctx.fillStyle='#fff'; ctx.font='bold 8px Arial'; ctx.textAlign='center';
-      ctx.fillText(item.condition||'',x+17,infoY+27);
-
-      ctx.fillStyle='#777'; ctx.font='8px Arial'; ctx.textAlign='left';
-      ctx.fillText(item.language||'',x+34,infoY+27);
-
-      if(item.set_name){
-        ctx.fillStyle='#555'; ctx.font='8px Arial'; ctx.textAlign='center';
-        var set=item.set_name.length>22?item.set_name.slice(0,22)+'…':item.set_name;
-        ctx.fillText(set,x+CARD_W/2,infoY+INFO_H-5);
-      }
-    });
-
-    // Download
-    var link=document.createElement('a');
-    var suffix=pages>1?'-pag'+(pageIdx+1):'';
-    link.download='ZeraoraTCG-binder'+suffix+'-'+new Date().toISOString().slice(0,10)+'.png';
-    link.href=canvas.toDataURL('image/png');
-    link.click();
-
-    if(pageIdx+1<pages){
-      setTimeout(function(){renderPage(pageIdx+1);},500);
-    } else {
-      showToast(pages>1?pages+' imagens exportadas!':'Imagem exportada!');
-    }
-  }
-}
 
 function copyBinderText(){
   var forSale=inventory.filter(function(i){return (i.quantity_available||0)>0&&i.sale_price>0;});
@@ -1654,31 +1588,34 @@ function saveEditPurchase(){
     if(r.error){showToast('Erro ao salvar','error');return;}
     // Also update inventory if exists
     var costUnit=qty>0?amt/qty:0;
-    sb.from('inventory').update({
-      name:name,
-      product_type:payload.product_type,
-      condition:payload.condition,
-      language:payload.language,
-      set_name:payload.set_name,
-      cost_price:parseFloat(costUnit.toFixed(2)),
-      sale_price:payload.sale_price,
-      extras:payload.extras,
-      liga_url:payload.liga_url,
-      notes:payload.notes,
-      image_url:payload.image_url||undefined
-    }).eq('purchase_id',id).then(function(invR){
-      // If image changed, also update by name in case purchase_id link is missing
+    sb.from('inventory').select('sale_price').eq('purchase_id',id).then(function(curInv){
+      var existingPrice=curInv.data&&curInv.data[0]&&parseFloat(curInv.data[0].sale_price||0)>0?parseFloat(curInv.data[0].sale_price):null;
+      var finalSalePrice=existingPrice!==null?existingPrice:(payload.sale_price||0);
+      sb.from('inventory').update({
+        name:name,
+        product_type:payload.product_type,
+        condition:payload.condition,
+        language:payload.language,
+        set_name:payload.set_name,
+        cost_price:parseFloat(costUnit.toFixed(2)),
+        sale_price:finalSalePrice,
+        extras:payload.extras,
+        liga_url:payload.liga_url,
+        notes:payload.notes,
+        image_url:payload.image_url||undefined
+      }).eq('purchase_id',id).then(function(invR){
       if(payload.image_url){
-        sb.from('inventory').update({image_url:payload.image_url}).eq('user_id',currentUser.id).eq('name',name).then(function(){
+          sb.from('inventory').update({image_url:payload.image_url}).eq('user_id',currentUser.id).eq('name',name).then(function(){
+            showToast('Compra atualizada!');
+            closeModal('editPurchaseModal');
+            loadAll();
+          });
+        } else {
           showToast('Compra atualizada!');
           closeModal('editPurchaseModal');
           loadAll();
-        });
-      } else {
-        showToast('Compra atualizada!');
-        closeModal('editPurchaseModal');
-        loadAll();
-      }
+        }
+      });
     });
   });
 }
@@ -1722,6 +1659,144 @@ function saveEditSale(){
 }
 
 
+
+
+var phCurrentItem=null, phChart=null, phHistory=[];
+
+async function openPriceHistory(invId){
+  var item=inventory.filter(function(i){return i.id===invId;})[0];
+  if(!item)return;
+  phCurrentItem=item;
+
+  document.getElementById('phCardName').textContent=item.name;
+  document.getElementById('phCardInfo').textContent=
+    (item.condition||'')+(item.language?' • '+item.language:'')+(item.set_name?' • '+item.set_name:'');
+  document.getElementById('ph-price').value=item.sale_price>0?item.sale_price:'';
+  document.getElementById('ph-date').value=new Date().toISOString().slice(0,10);
+
+  // Load history
+  var r=await sb.from('price_history').select('*')
+    .eq('user_id',currentUser.id)
+    .eq('inventory_id',invId)
+    .order('recorded_at',{ascending:true});
+  phHistory=r.data||[];
+
+  renderPriceChart();
+  openModal('priceHistoryModal');
+}
+
+function renderPriceChart(){
+  var canvas=document.getElementById('priceChart');
+  var empty=document.getElementById('phEmpty');
+  var table=document.getElementById('phTable');
+
+  if(phChart){phChart.destroy();phChart=null;}
+
+  if(!phHistory.length){
+    canvas.style.display='none';
+    empty.style.display='block';
+    table.innerHTML='';
+    return;
+  }
+
+  canvas.style.display='block';
+  empty.style.display='none';
+
+  var labels=phHistory.map(function(h){return h.recorded_at;});
+  var data=phHistory.map(function(h){return parseFloat(h.price);});
+
+  // Add current sale_price as reference line if set
+  var currentPrice=phCurrentItem&&phCurrentItem.sale_price>0?parseFloat(phCurrentItem.sale_price):null;
+
+  phChart=new Chart(canvas,{
+    type:'line',
+    data:{
+      labels:labels,
+      datasets:[{
+        label:'Preco registrado',
+        data:data,
+        borderColor:'#E8B422',
+        backgroundColor:'rgba(232,180,34,0.1)',
+        borderWidth:2,
+        pointBackgroundColor:'#E8B422',
+        pointRadius:5,
+        tension:0.3,
+        fill:true
+      }]
+    },
+    options:{
+      responsive:true,
+      maintainAspectRatio:false,
+      plugins:{
+        legend:{display:false},
+        tooltip:{
+          callbacks:{
+            label:function(ctx){return 'R$ '+ctx.parsed.y.toFixed(2).replace('.',',');}
+          }
+        }
+      },
+      scales:{
+        x:{
+          grid:{color:'rgba(255,255,255,0.05)'},
+          ticks:{color:'#888',font:{size:11}}
+        },
+        y:{
+          grid:{color:'rgba(255,255,255,0.05)'},
+          ticks:{
+            color:'#888',
+            font:{size:11},
+            callback:function(v){return 'R$ '+v.toFixed(0);}
+          }
+        }
+      }
+    }
+  });
+
+  // Table
+  var rows=phHistory.slice().reverse().map(function(h){
+    return '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)">'
+      +'<span style="color:var(--text2)">'+h.recorded_at+'</span>'
+      +'<span style="font-weight:700">'+fmt(h.price)+'</span>'
+      +'<button onclick="deletePricePoint(\''+h.id+'\')" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:12px"><i class="ti ti-trash"></i></button>'
+      +'</div>';
+  }).join('');
+  table.innerHTML=rows||'<div style="color:var(--text3);text-align:center;padding:8px">Nenhum registro</div>';
+}
+
+async function savePricePoint(){
+  if(!phCurrentItem)return;
+  var price=parseFloat(document.getElementById('ph-price').value)||0;
+  var date=document.getElementById('ph-date').value;
+  if(!price||!date){showToast('Preencha preco e data','error');return;}
+
+  var r=await sb.from('price_history').insert({
+    user_id:currentUser.id,
+    inventory_id:phCurrentItem.id,
+    card_name:phCurrentItem.name,
+    price:price,
+    recorded_at:date
+  });
+  if(r.error){showToast('Erro ao salvar','error');return;}
+
+  // Also update sale_price in inventory
+  await sb.from('inventory').update({sale_price:price}).eq('id',phCurrentItem.id);
+  phCurrentItem.sale_price=price;
+  // Update local inventory
+  var inv=inventory.filter(function(i){return i.id===phCurrentItem.id;})[0];
+  if(inv)inv.sale_price=price;
+
+  phHistory.push({id:r.data&&r.data[0]?r.data[0].id:'tmp',price:price,recorded_at:date});
+  phHistory.sort(function(a,b){return a.recorded_at.localeCompare(b.recorded_at);});
+  renderPriceChart();
+  showToast('Preco registrado!');
+}
+
+async function deletePricePoint(id){
+  if(!confirm('Remover este registro?'))return;
+  await sb.from('price_history').delete().eq('id',id);
+  phHistory=phHistory.filter(function(h){return h.id!==id;});
+  renderPriceChart();
+}
 
 var vrSelectedItem=null, vrSelectedPlat='Presencial';
 
