@@ -281,6 +281,7 @@ tr:hover td{background:var(--bg2)}
       <div class="section-header">
         <h3>Binder publico</h3>
         <button class="btn-primary" style="width:auto" onclick="copyBinderText()"><i class="ti ti-copy"></i> Copiar lista</button>
+        <button class="btn-secondary" style="width:auto" onclick="exportBinderImage()"><i class="ti ti-camera"></i> Exportar imagem</button>
       </div>
 
     <!-- BINDER CONFIG -->
@@ -1180,6 +1181,167 @@ function loadBinder(){
       +'<div style="font-size:11px;color:var(--text3)">'+i.quantity_available+' disponivel(is)</div>'
       +'</div>';
   }).join('');
+}
+
+
+function exportBinderImage(){
+  var forSale=inventory.filter(function(i){return (i.quantity_available||0)>0&&i.sale_price>0&&(i.status||'A venda')==='A venda';});
+  if(!forSale.length){showToast('Nenhum item a venda para exportar','error');return;}
+
+  // Show loading toast
+  showToast('Gerando imagem...');
+
+  // Create offscreen canvas
+  var cols=Math.min(5,forSale.length);
+  var rows=Math.ceil(forSale.length/cols);
+  var cardW=200,cardH=310,pad=12,headerH=70,footerH=40;
+  var canvasW=cols*(cardW+pad)+pad;
+  var canvasH=rows*(cardH+pad)+pad+headerH+footerH;
+
+  var canvas=document.createElement('canvas');
+  canvas.width=canvasW;
+  canvas.height=canvasH;
+  var ctx=canvas.getContext('2d');
+
+  // Background
+  ctx.fillStyle='#1a1a1a';
+  ctx.fillRect(0,0,canvasW,canvasH);
+
+  // Header
+  ctx.fillStyle='#E8B422';
+  ctx.fillRect(0,0,canvasW,headerH);
+  ctx.fillStyle='#2C1A00';
+  ctx.font='bold 28px -apple-system, sans-serif';
+  ctx.textAlign='left';
+  ctx.fillText('ZeraoraTCG', pad+8, 38);
+  ctx.font='13px -apple-system, sans-serif';
+  ctx.fillText(forSale.length+' itens disponíveis para venda', pad+8, 58);
+
+  // Footer
+  ctx.fillStyle='#2a2a2a';
+  ctx.fillRect(0,canvasH-footerH,canvasW,footerH);
+  ctx.fillStyle='#888';
+  ctx.font='11px -apple-system, sans-serif';
+  ctx.textAlign='center';
+  ctx.fillText('Para comprar, entre em contato via WhatsApp • zeraoratcgp.vercel.app', canvasW/2, canvasH-14);
+
+  var loaded=0;
+  var total=forSale.length;
+
+  function drawCard(item,col,row){
+    var x=pad+col*(cardW+pad);
+    var y=headerH+pad+row*(cardH+pad);
+
+    // Card background
+    ctx.fillStyle='#2a2a2a';
+    ctx.beginPath();
+    ctx.roundRect(x,y,cardW,cardH,8);
+    ctx.fill();
+
+    // Price banner at top
+    var priceH=28;
+    ctx.fillStyle='#E8B422';
+    ctx.beginPath();
+    ctx.roundRect(x,y,cardW,priceH,{upperLeft:8,upperRight:8,lowerLeft:0,lowerRight:0});
+    ctx.fill();
+    ctx.fillStyle='#2C1A00';
+    ctx.font='bold 14px -apple-system, sans-serif';
+    ctx.textAlign='center';
+    ctx.fillText(fmt(item.sale_price),x+cardW/2,y+19);
+
+    // Card image
+    var imgY=y+priceH;
+    var imgH=cardH-priceH-52;
+    if(item.image_url){
+      var img=new Image();
+      img.crossOrigin='anonymous';
+      img.onload=function(){
+        ctx.drawImage(img,x,imgY,cardW,imgH);
+        drawCardInfo(item,x,y,cardW,cardH,imgH,priceH);
+        loaded++;
+        if(loaded===total) downloadCanvas(canvas);
+      };
+      img.onerror=function(){
+        ctx.fillStyle='#3a3a3a';
+        ctx.fillRect(x,imgY,cardW,imgH);
+        ctx.fillStyle='#555';
+        ctx.font='12px sans-serif';
+        ctx.textAlign='center';
+        ctx.fillText('Sem foto',x+cardW/2,imgY+imgH/2);
+        drawCardInfo(item,x,y,cardW,cardH,imgH,priceH);
+        loaded++;
+        if(loaded===total) downloadCanvas(canvas);
+      };
+      img.src=item.image_url;
+    } else {
+      ctx.fillStyle='#3a3a3a';
+      ctx.fillRect(x,imgY,cardW,imgH);
+      drawCardInfo(item,x,y,cardW,cardH,imgH,priceH);
+      loaded++;
+      if(loaded===total) downloadCanvas(canvas);
+    }
+  }
+
+  function drawCardInfo(item,x,y,cardW,cardH,imgH,priceH){
+    var infoY=y+priceH+imgH;
+    var infoH=cardH-priceH-imgH;
+
+    ctx.fillStyle='#2a2a2a';
+    ctx.fillRect(x,infoY,cardW,infoH);
+
+    // Name
+    ctx.fillStyle='#f0f0f0';
+    ctx.font='bold 11px -apple-system, sans-serif';
+    ctx.textAlign='center';
+    var name=item.name.length>22?item.name.slice(0,22)+'...':item.name;
+    ctx.fillText(name,x+cardW/2,infoY+14);
+
+    // Condition + language badges
+    var cond=item.condition||'';
+    var lang=item.language||'';
+    var condColors={M:'#27500A',NM:'#27500A',LP:'#1a56db',MP:'#7A5200',HP:'#791F1F',D:'#791F1F'};
+    ctx.fillStyle=condColors[cond]||'#555';
+    ctx.beginPath();ctx.roundRect(x+6,infoY+20,32,16,4);ctx.fill();
+    ctx.fillStyle='#fff';ctx.font='bold 9px sans-serif';ctx.textAlign='center';
+    ctx.fillText(cond,x+22,infoY+31);
+
+    ctx.fillStyle='#333';
+    ctx.beginPath();ctx.roundRect(x+42,infoY+20,38,16,4);ctx.fill();
+    ctx.fillStyle='#aaa';ctx.font='9px sans-serif';ctx.textAlign='center';
+    ctx.fillText(lang,x+61,infoY+31);
+
+    // Set name
+    if(item.set_name){
+      ctx.fillStyle='#888';
+      ctx.font='9px -apple-system, sans-serif';
+      ctx.textAlign='center';
+      var set=item.set_name.length>24?item.set_name.slice(0,24)+'...':item.set_name;
+      ctx.fillText(set,x+cardW/2,infoY+infoH-6);
+    }
+  }
+
+  function downloadCanvas(canvas){
+    var link=document.createElement('a');
+    link.download='ZeraoraTCG-binder-'+new Date().toISOString().slice(0,10)+'.png';
+    link.href=canvas.toDataURL('image/png');
+    link.click();
+    showToast('Imagem exportada!');
+  }
+
+  // If no images at all, download immediately
+  if(forSale.every(function(i){return !i.image_url;})){
+    forSale.forEach(function(item,idx){
+      var col=idx%cols;
+      var row=Math.floor(idx/cols);
+      drawCard(item,col,row);
+    });
+  } else {
+    forSale.forEach(function(item,idx){
+      var col=idx%cols;
+      var row=Math.floor(idx/cols);
+      drawCard(item,col,row);
+    });
+  }
 }
 
 function copyBinderText(){
