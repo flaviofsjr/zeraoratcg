@@ -586,13 +586,10 @@ tr:hover td{background:var(--bg2)}
 
 
 <!-- MODAL VENDA RAPIDA -->
-<div class="modal-overlay" id="vendaRapidaModal">
+<div class="modal-bg" id="vendaRapidaModal">
   <div class="modal" style="max-width:420px">
-    <div class="modal-header">
-      <h3><i class="ti ti-bolt"></i> Venda Rapida</h3>
-      <button class="modal-close" onclick="closeModal('vendaRapidaModal')"><i class="ti ti-x"></i></button>
-    </div>
-    <div style="padding:1rem">
+    <h3><i class="ti ti-bolt"></i> Venda Rapida</h3>
+    <div class="modal-grid">
       <div style="font-size:13px;color:var(--text2);margin-bottom:12px">Digite parte do nome da carta para buscar no estoque:</div>
       <input type="text" id="vr-search" placeholder="Ex: Charizard, Pikachu..." 
         oninput="vrSearch()" autocomplete="off"
@@ -633,17 +630,17 @@ tr:hover td{background:var(--bg2)}
         </button>
       </div>
     </div>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeModal('vendaRapidaModal')">Cancelar</button>
+    </div>
   </div>
 </div>
 
 <!-- MODAL HISTORICO DE PRECO -->
-<div class="modal-overlay" id="priceHistoryModal">
+<div class="modal-bg" id="priceHistoryModal">
   <div class="modal" style="max-width:600px">
-    <div class="modal-header">
-      <h3><i class="ti ti-chart-line"></i> Histórico de Preço</h3>
-      <button class="modal-close" onclick="closeModal('priceHistoryModal')"><i class="ti ti-x"></i></button>
-    </div>
-    <div style="padding:1.25rem">
+    <h3><i class="ti ti-chart-line"></i> Histórico de Preço</h3>
+    <div style="padding:0">
       <div id="phCardName" style="font-size:15px;font-weight:700;margin-bottom:4px"></div>
       <div id="phCardInfo" style="font-size:12px;color:var(--text2);margin-bottom:1rem"></div>
       
@@ -675,6 +672,9 @@ tr:hover td{background:var(--bg2)}
 
       <!-- History table -->
       <div id="phTable" style="max-height:160px;overflow-y:auto;font-size:12px"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeModal('priceHistoryModal')">Fechar</button>
     </div>
   </div>
 </div>
@@ -925,10 +925,29 @@ function renderInventory(){
     var qtyClass=avail===0?'zero':avail<=2?'low':'';
     var mg=inv.sale_price>0?((inv.sale_price-inv.cost_price)/inv.sale_price*100).toFixed(0)+'%':'-';
     var mgColor=inv.sale_price>inv.cost_price?'var(--success)':'var(--danger)';
-    var extrasBadge=inv.extras?'<span style="font-size:10px;background:#F3E8FF;color:#6B21A8;padding:1px 6px;border-radius:10px;font-weight:600;margin-left:4px">'+inv.extras+'</span>':''; var ligaLink=inv.liga_url?'<a href="'+inv.liga_url+'" target="_blank" style="font-size:11px;color:var(--blue);margin-left:4px" title="Ver na Liga Pokemon"><i class="ti ti-external-link"></i></a>':''; return '<tr><td>'+imgCell(inv.image_url)+'</td><td style="font-weight:600">'+inv.name+extrasBadge+ligaLink+'</td><td>'+typeBadge(inv.product_type)+'</td><td style="color:var(--text2);font-size:12px">'+(inv.set_name||'-')+'</td><td>'+langBadge(inv.language)+'</td><td>'+condBadge(inv.condition)+'</td><td><span class="qty-badge '+qtyClass+'">'+avail+'</span></td><td style="color:var(--text2)">'+inv.quantity_total+'</td><td>'+fmt(inv.cost_price)+'</td><td style="font-weight:600">'+(inv.sale_price>0?fmt(inv.sale_price):'<span style="color:var(--text3)">Nao definido</span>')+'</td><td style="color:'+mgColor+'">'+mg+'</td><td><div class="actions-cell"><button class="btn-small" onclick="openInvEdit(\''+inv.id+'\')" title="Definir preco"><i class="ti ti-tag"></i></button></td></tr>';
+    var extrasBadge=inv.extras?'<span style="font-size:10px;background:#F3E8FF;color:#6B21A8;padding:1px 6px;border-radius:10px;font-weight:600;margin-left:4px">'+inv.extras+'</span>':''; var ligaLink=inv.liga_url?'<a href="'+inv.liga_url+'" target="_blank" style="font-size:11px;color:var(--blue);margin-left:4px" title="Ver na Liga Pokemon"><i class="ti ti-external-link"></i></a>':''; var statusClass=inv.status==='Reservado'?'badge-mp':inv.status==='Em estoque'?'badge-nosale':'badge-nm';
+    var statusLabel=inv.status||'A venda';
+    return '<tr>'
+      +'<td>'+imgCell(inv.image_url)+'</td>'
+      +'<td style="font-weight:600">'+inv.name+extrasBadge+ligaLink+'</td>'
+      +'<td>'+typeBadge(inv.product_type)+'</td>'
+      +'<td style="color:var(--text2);font-size:12px">'+(inv.set_name||'-')+'</td>'
+      +'<td>'+langBadge(inv.language)+'</td>'
+      +'<td>'+condBadge(inv.condition)+'</td>'
+      +'<td><span class="qty-badge '+qtyClass+'">'+avail+'</span></td>'
+      +'<td style="color:var(--text2)">'+inv.quantity_total+'</td>'
+      +'<td>'+fmt(inv.cost_price)+'</td>'
+      +'<td style="font-weight:600">'+(inv.sale_price>0?fmt(inv.sale_price):'<span style="color:var(--text3)">Nao definido</span>')+'</td>'
+      +'<td style="color:'+mgColor+'">'+mg+'</td>'
+      +'<td><span class="badge '+statusClass+'">'+statusLabel+'</span></td>'
+      +'<td><div class="actions-cell">'
+      +'<button class="btn-small" onclick="openInvEdit(\''+inv.id+'\')" title="Editar"><i class="ti ti-tag"></i></button>'
+      +'<button class="btn-small" onclick="openPriceHistory(\''+inv.id+'\')" title="Historico"><i class="ti ti-chart-line"></i></button>'
+      +'</div></td>'
+      +'</tr>';
+      +'</tr>';
   }).join('');
 }
-
 function renderSales(){
   var nameF=(document.getElementById('filterSaleName').value||'').toLowerCase();
   var monthF=document.getElementById('filterSaleMonth').value;
