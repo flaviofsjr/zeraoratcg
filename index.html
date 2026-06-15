@@ -238,9 +238,9 @@ tr:hover td{background:var(--bg2)}
         <select id="filterPlatform" onchange="renderSales()"><option value="">Todas plataformas</option></select>
       </div>
       <div class="table-wrap">
-        <table><thead><tr><th>Item</th><th>Qtd</th><th>Plataforma</th><th>Comprador</th><th>Venda total</th><th>Custo total</th><th>Lucro</th><th>Margem</th><th>Data</th><th></th></tr></thead>
         <table><thead><tr><th>Foto</th><th onclick="sortTable('sal','card_name')" style="cursor:pointer;user-select:none">Item ↕</th><th onclick="sortTable('sal','quantity')" style="cursor:pointer;user-select:none">Qtd ↕</th><th onclick="sortTable('sal','platform')" style="cursor:pointer;user-select:none">Plataforma ↕</th><th onclick="sortTable('sal','buyer')" style="cursor:pointer;user-select:none">Comprador ↕</th><th onclick="sortTable('sal','sale_price')" style="cursor:pointer;user-select:none">Venda ↕</th><th onclick="sortTable('sal','cost_price')" style="cursor:pointer;user-select:none">Custo ↕</th><th onclick="sortTable('sal','lucro')" style="cursor:pointer;user-select:none">Lucro ↕</th><th>Margem</th><th onclick="sortTable('sal','sale_date')" style="cursor:pointer;user-select:none">Data ↕</th><th>Pago</th><th>Entregue</th><th></th></tr></thead>
         <tbody id="salesTable"><tr><td colspan="13"><div class="empty-state"><i class="ti ti-receipt-off"></i>Nenhuma venda registrada</div></td></tr></tbody></table>
+      </div>
     </div>
 
     <!-- DRE -->
@@ -641,8 +641,10 @@ function showPage(p,el){
   document.querySelectorAll('.nav-tab').forEach(function(e){e.classList.remove('active');});
   document.getElementById('page-'+p).classList.add('active');
   if(el)el.classList.add('active');
-  if(p==='binder'){loadBinder();updateProfileUI();}
-  if(p==='dre')renderDRE();
+  try{
+    if(p==='binder'){loadBinder();updateProfileUI();}
+    if(p==='dre')renderDRE();
+  }catch(err){console.error('showPage error:',err);}
 }
 
 function openModal(id){document.getElementById(id).classList.add('open');}
@@ -1215,7 +1217,7 @@ function loadProfile(){
 }
 
 function updateProfileUI(){
-  if(!userProfile)return;
+  if(!userProfile||!document.getElementById('binderPublicUrl'))return;
   var url=window.location.origin+'/binder/'+userProfile.slug;
   document.getElementById('binderPublicUrl').textContent=url;
   document.getElementById('copyLinkBtn').style.display='inline-flex';
