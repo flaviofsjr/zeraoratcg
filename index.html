@@ -73,7 +73,7 @@ tr:hover td{background:var(--bg2)}
 .badge{display:inline-block;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:600}
 .badge-nm{background:#EAF3DE;color:#27500A}.badge-lp{background:#E6F1FB;color:#0C447C}
 .badge-mp{background:#FAEEDA;color:#633806}.badge-hp{background:#FCEBEB;color:#791F1F}
-.badge-ptbr{background:#EEEDFE;color:#3C3489}.badge-en{background:#E1F5EE;color:#085041}.badge-jp{background:#FAECE7;color:#712B13}
+.badge-ptbr{background:#EEEDFE;color:#3C3489}.badge-en{background:#E1F5EE;color:#085041}.badge-jp{background:#FAECE7;color:#712B13}.badge-fr{background:#E8F4FD;color:#1565C0}.badge-ch{background:#FFF3E0;color:#E65100}
 .badge-sale{background:#EAF3DE;color:#27500A}.badge-nosale{background:#F1EFE8;color:#5F5E5A}
 .badge-carta{background:#EBF5FF;color:#1a56db}.badge-lacrado{background:#EEEDFE;color:#3C3489}
 .badge-acessorio{background:#FAEEDA;color:#633806}.badge-lote{background:#F1EFE8;color:#444}
@@ -244,7 +244,7 @@ tr:hover td{background:var(--bg2)}
       <div class="filters">
         <input type="text" id="filterInvName" placeholder="Buscar..." oninput="renderInventory()" style="width:190px">
         <select id="filterInvType" onchange="renderInventory()"><option value="">Todos tipos</option><option>Carta Avulsa</option><option>Lacrado</option><option>Acessorio</option><option>Lote</option></select>
-        <select id="filterInvLang" onchange="renderInventory()"><option value="">Todos idiomas</option><option>PT-BR</option><option>EN</option><option>JP</option></select>
+        <select id="filterInvLang" onchange="renderInventory()"><option value="">Todos idiomas</option><option>PT-BR</option><option>EN</option><option>JP</option><option>FR</option><option>CH</option></select>
         <select id="filterInvCond" onchange="renderInventory()"><option value="">Todas condicoes</option><option>M</option><option>NM</option><option>LP</option><option>MP</option><option>HP</option><option>D</option></select>
         <select id="filterInvStatus" onchange="renderInventory()"><option value="">Todos status</option><option>A venda</option><option>Reservado</option><option>Em estoque</option></select>
         <select id="filterInvSupplier" onchange="renderInventory()"><option value="">Todos fornecedores</option></select>
@@ -920,7 +920,7 @@ function condBadge(c){
 }
 function langBadge(l){
   if(!l||l==='N/A')return '<span style="color:var(--text3)">N/A</span>';
-  var m={'PT-BR':'badge-ptbr','EN':'badge-en','JP':'badge-jp'};
+  var m={'PT-BR':'badge-ptbr','EN':'badge-en','JP':'badge-jp','FR':'badge-fr','CH':'badge-ch'};
   return '<span class="badge '+(m[l]||'badge-ptbr')+'">'+l+'</span>';
 }
 
