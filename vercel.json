@@ -1,0 +1,6 @@
+{
+  "rewrites": [
+    { "source": "/binder/:slug", "destination": "/binder.html" },
+    { "source": "/", "destination": "/index.html" }
+  ]
+}

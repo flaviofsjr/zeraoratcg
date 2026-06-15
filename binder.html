@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Binder - Zeraora TCG</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.31.0/dist/tabler-icons.min.css">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#fff;--bg2:#f7f7f5;--bg3:#f0efe9;--text:#1a1a1a;--text2:#6b6b6b;--text3:#9a9a9a;--border:#e0dfd8;--border2:#cccbc4;--amber:#E8B422;--amber-dark:#7A5200;--radius:8px;--radius-lg:12px;}
+@media(prefers-color-scheme:dark){:root{--bg:#1e1e1c;--bg2:#252523;--bg3:#2c2c2a;--text:#f0ede6;--text2:#a0a09a;--text3:#6a6a66;--border:#3a3a36;--border2:#4a4a46;}}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg3);color:var(--text);min-height:100vh}
+.header{background:#0a0a0a;padding:1.25rem 1.5rem;display:flex;align-items:center;gap:14px}
+.header-logo{width:52px;height:52px;border-radius:50%;object-fit:cover;border:2px solid var(--amber)}
+.header-info{flex:1}
+.header-name{font-size:20px;font-weight:700;color:#fff}
+.header-sub{font-size:13px;color:#aaa;margin-top:2px}
+.header-wa{background:var(--amber);color:#2C1A00;border:none;border-radius:var(--radius);padding:9px 16px;font-size:13px;font-weight:700;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:6px}
+.header-wa:hover{background:#D4A01E}
+.content{padding:1.5rem;max-width:1100px;margin:0 auto}
+.filters{display:flex;gap:8px;margin-bottom:1.25rem;flex-wrap:wrap}
+.filters input,.filters select{padding:8px 12px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text);font-size:13px;outline:none}
+.filters input:focus,.filters select:focus{border-color:var(--amber)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:14px}
+.card{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);padding:12px;display:flex;flex-direction:column;gap:8px;transition:transform .2s,box-shadow .2s}
+.card:hover{transform:translateY(-2px);box-shadow:0 4px 16px rgba(0,0,0,0.1)}
+.card-img{width:100%;aspect-ratio:2.5/3.5;background:var(--bg2);border-radius:6px;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.card-img img{width:100%;height:100%;object-fit:cover;border-radius:6px}
+.card-name{font-size:13px;font-weight:600;line-height:1.35}
+.card-set{font-size:11px;color:var(--text2)}
+.card-badges{display:flex;gap:4px;flex-wrap:wrap}
+.badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600}
+.badge-nm{background:#EAF3DE;color:#27500A}.badge-lp{background:#E6F1FB;color:#0C447C}
+.badge-mp{background:#FAEEDA;color:#633806}.badge-hp{background:#FCEBEB;color:#791F1F}
+.badge-ptbr{background:#EEEDFE;color:#3C3489}.badge-en{background:#E1F5EE;color:#085041}.badge-jp{background:#FAECE7;color:#712B13}
+.badge-carta{background:#EBF5FF;color:#1a56db}.badge-lacrado{background:#EEEDFE;color:#3C3489}
+.badge-acessorio{background:#FAEEDA;color:#633806}.badge-lote{background:#F1EFE8;color:#444}
+.card-price{font-size:17px;font-weight:700;color:var(--amber-dark)}
+.card-qty{font-size:11px;color:var(--text3)}
+.card-wa{background:var(--amber);color:#2C1A00;border:none;border-radius:var(--radius);padding:7px;font-size:12px;font-weight:600;cursor:pointer;width:100%;text-align:center;text-decoration:none;display:block}
+.card-wa:hover{background:#D4A01E}
+.empty{text-align:center;padding:4rem;color:var(--text3)}
+.empty i{font-size:48px;display:block;margin-bottom:12px;opacity:0.3}
+.loading{text-align:center;padding:4rem;color:var(--text3);font-size:15px}
+.stats{display:flex;gap:16px;margin-bottom:1.25rem;flex-wrap:wrap}
+.stat{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:10px 16px;font-size:13px}
+.stat strong{display:block;font-size:18px;font-weight:700;color:var(--amber-dark)}
+.not-found{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:80vh;text-align:center;color:var(--text2)}
+.not-found i{font-size:64px;opacity:0.3;margin-bottom:16px}
+</style>
+</head>
+<body>
+
+<div id="loadingScreen" class="loading">Carregando binder...</div>
+<div id="notFound" class="not-found" style="display:none">
+  <i class="ti ti-mood-sad"></i>
+  <h2 style="font-size:20px;margin-bottom:8px">Binder nao encontrado</h2>
+  <p>O link pode estar incorreto ou o binder foi removido.</p>
+</div>
+
+<div id="mainContent" style="display:none">
+  <div class="header">
+    <img id="headerLogo" src="https://i.ibb.co/Vc194DR8/dba84186-71fe-471a-87d3-5e2c89832ab3.png" class="header-logo" alt="Logo" onerror="this.style.display='none'">
+    <div class="header-info">
+      <div class="header-name" id="headerName">Binder</div>
+      <div class="header-sub" id="headerSub">Cartas e produtos disponiveis para venda</div>
+    </div>
+    <a id="headerWa" class="header-wa" href="#" target="_blank" style="display:none">
+      <i class="ti ti-brand-whatsapp"></i> Contato
+    </a>
+  </div>
+
+  <div class="content">
+    <div class="stats">
+      <div class="stat"><strong id="statItems">0</strong>Itens disponiveis</div>
+      <div class="stat"><strong id="statTypes">0</strong>Tipos diferentes</div>
+    </div>
+    <div class="filters">
+      <input type="text" id="filterName" placeholder="Buscar item..." oninput="filterItems()" style="width:200px">
+      <select id="filterType" onchange="filterItems()"><option value="">Todos tipos</option><option>Carta Avulsa</option><option>Lacrado</option><option>Acessorio</option><option>Lote</option></select>
+      <select id="filterLang" onchange="filterItems()"><option value="">Todos idiomas</option><option>PT-BR</option><option>EN</option><option>JP</option></select>
+      <select id="filterCond" onchange="filterItems()"><option value="">Todas condicoes</option><option>NM</option><option>LP</option><option>MP</option><option>HP</option></select>
+      <select id="filterSort" onchange="filterItems()">
+        <option value="name">Nome A-Z</option>
+        <option value="price_asc">Menor preco</option>
+        <option value="price_desc">Maior preco</option>
+      </select>
+    </div>
+    <div class="grid" id="itemsGrid"></div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+var SUPA_URL='https://cpvmidouwpfvugelffza.supabase.co';
+var SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNwdm1pZG91d3BmdnVnZWxmZnphIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0OTkxNDIsImV4cCI6MjA5NzA3NTE0Mn0.haj8uqCjzMxqlhajkcaDMpbrzyMjUogoX4A6k4QgTNg';
+var sb=supabase.createClient(SUPA_URL,SUPA_KEY);
+var allItems=[],profile=null,waNumber='';
+
+function getSlug(){
+  var path=window.location.pathname;
+  var parts=path.split('/');
+  return parts[parts.length-1]||parts[parts.length-2]||'';
+}
+
+function init(){
+  var slug=getSlug();
+  if(!slug){showNotFound();return;}
+  sb.from('public_profiles').select('*').eq('slug',slug).then(function(r){
+    if(!r.data||r.data.length===0){showNotFound();return;}
+    profile=r.data[0];
+    document.title=(profile.display_name||'Binder')+' - Zeraora TCG';
+    document.getElementById('headerName').textContent=profile.display_name||'Binder';
+    document.getElementById('headerSub').textContent='Confira os itens disponiveis para venda';
+    if(profile.whatsapp){
+      waNumber=profile.whatsapp;
+      document.getElementById('headerWa').style.display='inline-flex';
+      document.getElementById('headerWa').href='https://wa.me/'+profile.whatsapp;
+    }
+    loadItems(profile.user_id);
+  }).catch(function(){showNotFound();});
+}
+
+function loadItems(userId){
+  sb.from('inventory').select('*').eq('user_id',userId).gt('quantity_available',0).gt('sale_price',0).order('name').then(function(r){
+    allItems=r.data||[];
+    document.getElementById('loadingScreen').style.display='none';
+    document.getElementById('mainContent').style.display='block';
+    updateStats();
+    filterItems();
+  }).catch(function(){showNotFound();});
+}
+
+function updateStats(){
+  document.getElementById('statItems').textContent=allItems.reduce(function(a,i){return a+(i.quantity_available||0);},0);
+  var types=[];
+  allItems.forEach(function(i){if(i.product_type&&types.indexOf(i.product_type)===-1)types.push(i.product_type);});
+  document.getElementById('statTypes').textContent=types.length;
+}
+
+function condBadge(c){if(!c||c==='N/A')return '';var m={NM:'badge-nm',LP:'badge-lp',MP:'badge-mp',HP:'badge-hp'};return '<span class="badge '+(m[c]||'badge-nm')+'">'+c+'</span>';}
+function langBadge(l){if(!l||l==='N/A')return '';var m={'PT-BR':'badge-ptbr','EN':'badge-en','JP':'badge-jp'};return '<span class="badge '+(m[l]||'badge-ptbr')+'">'+l+'</span>';}
+function typeBadge(t){var m={'Carta Avulsa':'badge-carta','Lacrado':'badge-lacrado','Acessorio':'badge-acessorio','Lote':'badge-lote'};return '<span class="badge '+(m[t]||'badge-carta')+'">'+(t||'Carta')+'</span>';}
+function fmt(v){return 'R$ '+(parseFloat(v)||0).toFixed(2).replace('.',',');}
+
+function filterItems(){
+  var nameF=(document.getElementById('filterName').value||'').toLowerCase();
+  var typeF=document.getElementById('filterType').value;
+  var langF=document.getElementById('filterLang').value;
+  var condF=document.getElementById('filterCond').value;
+  var sortF=document.getElementById('filterSort').value;
+  var filtered=allItems.filter(function(i){
+    if(nameF&&i.name.toLowerCase().indexOf(nameF)===-1)return false;
+    if(typeF&&i.product_type!==typeF)return false;
+    if(langF&&i.language!==langF)return false;
+    if(condF&&i.condition!==condF)return false;
+    return true;
+  });
+  filtered.sort(function(a,b){
+    if(sortF==='price_asc')return (a.sale_price||0)-(b.sale_price||0);
+    if(sortF==='price_desc')return (b.sale_price||0)-(a.sale_price||0);
+    return (a.name||'').localeCompare(b.name||'');
+  });
+  renderItems(filtered);
+}
+
+function renderItems(items){
+  var grid=document.getElementById('itemsGrid');
+  if(!items.length){
+    grid.innerHTML='<div class="empty" style="grid-column:1/-1"><i class="ti ti-mood-empty"></i>Nenhum item encontrado</div>';
+    return;
+  }
+  grid.innerHTML=items.map(function(i){
+    var img=i.image_url
+      ?'<img src="'+i.image_url+'" alt="'+i.name+'" onerror="this.parentElement.innerHTML=\'<i class=\\\'ti ti-photo-off\\\' style=\\\'font-size:32px;opacity:0.3\\\'></i>\'">'
+      :'<i class="ti ti-photo-off" style="font-size:32px;opacity:0.3"></i>';
+    var waMsg=encodeURIComponent('Ola! Tenho interesse em: '+i.name+(i.set_name?' ('+i.set_name+')':'')+' - '+fmt(i.sale_price));
+    var waLink=waNumber?'https://wa.me/'+waNumber+'?text='+waMsg:'#';
+    return '<div class="card">'
+      +'<div class="card-img">'+img+'</div>'
+      +'<div class="card-name">'+i.name+'</div>'
+      +(i.set_name?'<div class="card-set">'+i.set_name+'</div>':'')
+      +'<div class="card-badges">'+typeBadge(i.product_type)+' '+condBadge(i.condition)+' '+langBadge(i.language)+'</div>'
+      +'<div class="card-price">'+fmt(i.sale_price)+'</div>'
+      +'<div class="card-qty">'+i.quantity_available+' disponivel(is)</div>'
+      +(waNumber?'<a class="card-wa" href="'+waLink+'" target="_blank"><i class="ti ti-brand-whatsapp"></i> Tenho interesse</a>':'')
+      +'</div>';
+  }).join('');
+}
+
+function showNotFound(){
+  document.getElementById('loadingScreen').style.display='none';
+  document.getElementById('notFound').style.display='flex';
+}
+
+init();
+</script>
+</body>
+</html>
