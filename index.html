@@ -1037,9 +1037,18 @@ function deletePurchase(id){
   if(!confirm('Excluir esta compra? O item correspondente sai do estoque.'))return;
   var p=purchases.filter(function(x){return x.id===id;})[0];
   sb.from('purchases').delete().eq('id',id).then(function(){
+    // Delete by purchase_id link first
     sb.from('inventory').delete().eq('purchase_id',id).then(function(){
-      showToast('Compra e item do estoque removidos');
-      loadAll();
+      // Also delete by name match in case purchase_id link is missing
+      if(p&&p.description){
+        sb.from('inventory').delete().eq('user_id',currentUser.id).eq('name',p.description).then(function(){
+          showToast('Compra e item do estoque removidos');
+          loadAll();
+        });
+      } else {
+        showToast('Compra e item do estoque removidos');
+        loadAll();
+      }
     });
   });
 }
