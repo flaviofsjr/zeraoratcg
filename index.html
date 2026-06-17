@@ -368,7 +368,10 @@ tr:hover td{background:var(--bg2)}
       <div id="cad-products" style="display:none">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
           <input type="text" id="filterProductName" placeholder="Buscar produto..." oninput="renderProducts()" style="padding:8px 12px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text);font-size:13px;width:220px">
-          <button class="btn-primary" style="width:auto" onclick="openModal('productModal')"><i class="ti ti-plus"></i> Novo produto</button>
+          <div style="display:flex;gap:8px">
+            <button class="btn-secondary" style="width:auto" onclick="migrateProducts()" id="migrateProductsBtn"><i class="ti ti-download"></i> Importar do estoque</button>
+            <button class="btn-primary" style="width:auto" onclick="openModal('productModal')"><i class="ti ti-plus"></i> Novo produto</button>
+          </div>
         </div>
         <div class="table-wrap">
           <table><thead><tr><th>Foto</th><th>Nome</th><th>Set</th><th>Número</th><th>Tipo</th><th>Idioma</th><th></th></tr></thead>
@@ -2650,6 +2653,43 @@ async function deleteProduct(id){
 }
 
 // ---- AUTO-MIGRATE: extract unique suppliers and customers ----
+
+async function migrateProducts(){
+  var btn=document.getElementById('migrateProductsBtn');
+  btn.disabled=true;btn.textContent='Importando...';
+  var existing=new Set(products.map(function(p){return p.name.toLowerCase();}));
+  var toInsert=[];
+  inventory.forEach(function(inv){
+    if(!inv.name||existing.has(inv.name.toLowerCase()))return;
+    existing.add(inv.name.toLowerCase()); // avoid duplicates within batch
+    toInsert.push({
+      user_id:currentUser.id,
+      name:inv.name,
+      set_name:inv.set_name||null,
+      product_type:inv.product_type||'Carta Avulsa',
+      language:inv.language||'PT-BR',
+      image_url:inv.image_url||null,
+      liga_url:inv.liga_url||null
+    });
+  });
+  if(!toInsert.length){
+    showToast('Nenhum produto novo para importar');
+    btn.disabled=false;btn.innerHTML='<i class="ti ti-download"></i> Importar do estoque';
+    return;
+  }
+  // Insert in batches of 50
+  var ok=0;
+  for(var i=0;i<toInsert.length;i+=50){
+    var batch=toInsert.slice(i,i+50);
+    var r=await sb.from('products').insert(batch);
+    if(!r.error) ok+=batch.length;
+  }
+  showToast(ok+' produtos importados do estoque!');
+  btn.innerHTML='<i class="ti ti-check"></i> Importado!';
+  btn.style.background='var(--success)';btn.style.color='#fff';
+  await loadProducts();
+}
+
 async function migrateSuppliers(){
   var existing=new Set(suppliers.map(function(s){return s.name.toLowerCase();}));
   var unique={};
