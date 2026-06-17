@@ -2472,16 +2472,16 @@ function showCadTab(tab){
     btn.style.borderBottomColor=t===tab?'var(--amber)':'transparent';
     btn.style.color=t===tab?'var(--amber)':'var(--text2)';
   });
-  if(tab==='suppliers')renderSuppliers();
-  if(tab==='customers')renderCustomers();
-  if(tab==='products')renderProducts();
+  if(activeCadTab==='suppliers') renderSuppliers();
+  if(activeCadTab==='customers') renderCustomers();
+  if(activeCadTab==='products') renderProducts();
 }
 
 // ---- SUPPLIERS ----
 async function loadSuppliers(){
   var r=await sb.from('suppliers').select('*').eq('user_id',currentUser.id).order('name');
   suppliers=r.data||[];
-  renderSuppliers();
+  if(activeCadTab==='suppliers') renderSuppliers();
   populateSupplierSelects();
 }
 
@@ -2575,7 +2575,7 @@ async function deleteSupplier(id){
 async function loadCustomers(){
   var r=await sb.from('customers').select('*').eq('user_id',currentUser.id).order('name');
   customers=r.data||[];
-  renderCustomers();
+  if(activeCadTab==='customers') renderCustomers();
   populateCustomerSelects();
 }
 
@@ -2632,7 +2632,7 @@ async function deleteCustomer(id){
 async function loadProducts(){
   var r=await sb.from('products').select('*').eq('user_id',currentUser.id).order('name');
   products=r.data||[];
-  renderProducts();
+  if(activeCadTab==='products') renderProducts();
 }
 
 function renderProducts(){
