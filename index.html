@@ -346,7 +346,7 @@ tr:hover td{background:var(--bg2)}
       <div id="cad-suppliers">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
           <input type="text" id="filterSupplierName" placeholder="Buscar fornecedor..." oninput="renderSuppliers()" style="padding:8px 12px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text);font-size:13px;width:220px">
-          <button class="btn-primary" style="width:auto" onclick="openModal('supplierModal')"><i class="ti ti-plus"></i> Novo fornecedor</button>
+          <button class="btn-primary" style="width:auto" onclick="openNewSupplier()"><i class="ti ti-plus"></i> Novo fornecedor</button>
         </div>
         <div class="table-wrap">
           <table><thead><tr><th>Nome</th><th>WhatsApp</th><th>Email</th><th>Obs</th><th>Compras</th><th></th></tr></thead>
@@ -357,7 +357,7 @@ tr:hover td{background:var(--bg2)}
       <div id="cad-customers" style="display:none">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
           <input type="text" id="filterCustomerName" placeholder="Buscar cliente..." oninput="renderCustomers()" style="padding:8px 12px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text);font-size:13px;width:220px">
-          <button class="btn-primary" style="width:auto" onclick="openModal('customerModal')"><i class="ti ti-plus"></i> Novo cliente</button>
+          <button class="btn-primary" style="width:auto" onclick="openNewCustomer()"><i class="ti ti-plus"></i> Novo cliente</button>
         </div>
         <div class="table-wrap">
           <table><thead><tr><th>Nome</th><th>WhatsApp</th><th>Cidade</th><th>Vendas</th><th></th></tr></thead>
@@ -370,7 +370,7 @@ tr:hover td{background:var(--bg2)}
           <input type="text" id="filterProductName" placeholder="Buscar produto..." oninput="renderProducts()" style="padding:8px 12px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text);font-size:13px;width:220px">
           <div style="display:flex;gap:8px">
             <button class="btn-secondary" style="width:auto" onclick="migrateProducts()" id="migrateProductsBtn"><i class="ti ti-download"></i> Importar do estoque</button>
-            <button class="btn-primary" style="width:auto" onclick="openModal('productModal')"><i class="ti ti-plus"></i> Novo produto</button>
+            <button class="btn-primary" style="width:auto" onclick="openNewProduct()"><i class="ti ti-plus"></i> Novo produto</button>
           </div>
         </div>
         <div class="table-wrap">
@@ -428,7 +428,7 @@ tr:hover td{background:var(--bg2)}
         </select>
       </div>
       <div class="form-field"><label>Quantidade *</label><input type="number" id="p-qty" value="1" min="1"></div>
-      <div class="form-field"><label>Set / Expansao</label><input type="text" id="p-set" placeholder="ex: Prismatic Evolutions"></div>
+      <div class="form-field"><label>Set / Expansão</label><input type="text" id="p-set" placeholder="ex: Prismatic Evolutions"></div>
       <div class="form-field"><label>Fornecedor *</label>
         <select id="p-supplier" required style="width:100%;padding:9px 12px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text);font-size:13px">
           <option value="">Selecionar fornecedor...</option>
@@ -2503,6 +2503,31 @@ function renderSuppliers(){
       +'<button class="btn-danger" onclick="deleteSupplier(\''+s.id+'\')" title="Excluir"><i class="ti ti-trash"></i></button>'
       +'</div></td></tr>';
   }).join('');
+}
+
+
+function openNewCustomer(){
+  document.getElementById('customerModalTitle').textContent='Novo Cliente';
+  document.getElementById('cus-id').value='';
+  document.getElementById('cus-name').value='';
+  document.getElementById('cus-whatsapp').value='';
+  document.getElementById('cus-city').value='';
+  openModal('customerModal');
+}
+
+function openNewProduct(){
+  document.getElementById('productModalTitle').textContent='Novo Produto';
+  document.getElementById('prod-id').value='';
+  document.getElementById('prod-name').value='';
+  document.getElementById('prod-set').value='';
+  document.getElementById('prod-type').value='Carta Avulsa';
+  document.getElementById('prod-lang').value='PT-BR';
+  document.getElementById('prod-liga').value='';
+  document.getElementById('prod-notes').value='';
+  document.getElementById('prod-img-url').value='';
+  var prev=document.getElementById('prod-img-preview');
+  if(prev){prev.src='';prev.style.display='none';}
+  openModal('productModal');
 }
 
 function openNewSupplier(){
