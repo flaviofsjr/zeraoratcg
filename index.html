@@ -360,7 +360,9 @@ tr:hover td{background:var(--bg2)}
           <option value="PT-BR">PT-BR</option>
           <option value="EN">Ingles</option>
           <option value="JP">Japones</option>
-          <option value="N/A">N/A</option>
+          <option value="JP">Japones</option>
+          <option value="FR">Frances</option>
+          <option value="CH">Chines</option>
         </select>
       </div>
       <div class="form-field"><label>Quantidade *</label><input type="number" id="p-qty" value="1" min="1"></div>
@@ -530,7 +532,7 @@ tr:hover td{background:var(--bg2)}
         <select id="ep-cond"><option value="M">M - Mint</option><option value="NM">NM - Near Mint</option><option value="LP">LP - Lightly Played</option><option value="MP">MP - Moderately Played</option><option value="HP">HP - Heavily Played</option><option value="D">D - Damaged</option><option value="N/A">N/A</option></select>
       </div>
       <div class="form-field"><label>Idioma</label>
-        <select id="ep-lang"><option value="PT-BR">PT-BR</option><option value="EN">Ingles</option><option value="JP">Japones</option><option value="N/A">N/A</option></select>
+        <select id="ep-lang"><option value="PT-BR">PT-BR</option><option value="EN">Ingles</option><option value="JP">Japones</option><option value="FR">Frances</option><option value="CH">Chines</option><option value="N/A">N/A</option></select>
       </div>
       <div class="form-field"><label>Quantidade</label><input type="number" id="ep-qty" min="1"></div>
       <div class="form-field"><label>Set / Expansao</label><input type="text" id="ep-set"></div>
@@ -1704,6 +1706,20 @@ function saveEditPurchase(){
         notes:payload.notes,
         image_url:payload.image_url||undefined
       }).eq('purchase_id',id).then(function(invR){
+        // Also update by name in case purchase_id link is missing
+        sb.from('inventory').update({
+          name:name,
+          product_type:payload.product_type,
+          condition:payload.condition,
+          language:payload.language,
+          set_name:payload.set_name,
+          cost_price:parseFloat(costUnit.toFixed(2)),
+          sale_price:finalSalePrice,
+          extras:payload.extras,
+          liga_url:payload.liga_url,
+          notes:payload.notes,
+          image_url:payload.image_url||undefined
+        }).eq('user_id',currentUser.id).eq('name',name).is('purchase_id',null).then(function(){
       if(payload.image_url){
           sb.from('inventory').update({image_url:payload.image_url}).eq('user_id',currentUser.id).eq('name',name).then(function(){
             showToast('Compra atualizada!');
@@ -1715,6 +1731,7 @@ function saveEditPurchase(){
           closeModal('editPurchaseModal');
           loadAll();
         }
+        });
       });
     });
   });
