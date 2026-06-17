@@ -2554,7 +2554,7 @@ function editSupplier(id){
 
 async function saveSupplier(){
   var name=document.getElementById('sup-name').value.trim();
-  if(!name){showToast('Nome obrigatório','error');return;}
+  if(!name){showToast('Nome obrigatorio','error');return;}
   var id=document.getElementById('sup-id').value;
   var payload={user_id:currentUser.id,name:name,whatsapp:document.getElementById('sup-whatsapp').value||null,email:document.getElementById('sup-email').value||null,notes:document.getElementById('sup-notes').value||null};
   var r=id?await sb.from('suppliers').update(payload).eq('id',id):await sb.from('suppliers').insert(payload);
@@ -2611,7 +2611,7 @@ function editCustomer(id){
 
 async function saveCustomer(){
   var name=document.getElementById('cus-name').value.trim();
-  if(!name){showToast('Nome obrigatório','error');return;}
+  if(!name){showToast('Nome obrigatorio','error');return;}
   var id=document.getElementById('cus-id').value;
   var payload={user_id:currentUser.id,name:name,whatsapp:document.getElementById('cus-whatsapp').value||null,city:document.getElementById('cus-city').value||null};
   var r=id?await sb.from('customers').update(payload).eq('id',id):await sb.from('customers').insert(payload);
@@ -2681,7 +2681,7 @@ function editProduct(id){
 
 async function saveProduct(){
   var name=document.getElementById('prod-name').value.trim();
-  if(!name){showToast('Nome obrigatório','error');return;}
+  if(!name){showToast('Nome obrigatorio','error');return;}
   var id=document.getElementById('prod-id').value;
   var payload={
     user_id:currentUser.id,
