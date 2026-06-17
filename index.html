@@ -389,7 +389,16 @@ tr:hover td{background:var(--bg2)}
   <div class="modal">
     <h3>Registrar compra</h3>
     <div class="modal-grid">
-      <div class="form-field full"><label>Nome / Descricao *</label><input type="text" id="p-name" placeholder="ex: Charizard ex, Booster Box Prismatic..."></div>
+      <div class="form-field full">
+        <label>Produto *</label>
+        <div style="position:relative">
+          <input type="text" id="p-name" placeholder="Digite para buscar produto..." oninput="productAutocomplete(this,'p-autocomplete','p-product-id','p-name')" autocomplete="off"
+            style="width:100%">
+          <div id="p-autocomplete" style="display:none;position:absolute;z-index:100;background:var(--bg);border:1px solid var(--border2);border-radius:var(--radius);width:100%;max-height:200px;overflow-y:auto;box-shadow:0 4px 12px rgba(0,0,0,0.1)"></div>
+        </div>
+        <input type="hidden" id="p-product-id">
+        <div style="font-size:11px;color:var(--text2);margin-top:4px">Selecione do cadastro ou digite livremente. <a href="#" onclick="showCadTabAndOpen()" style="color:var(--amber)">+ Cadastrar novo produto</a></div>
+      </div>
       <div class="form-field"><label>Tipo de produto</label>
         <select id="p-type">
           <option value="Carta Avulsa">Carta Avulsa</option>
@@ -420,7 +429,11 @@ tr:hover td{background:var(--bg2)}
       </div>
       <div class="form-field"><label>Quantidade *</label><input type="number" id="p-qty" value="1" min="1"></div>
       <div class="form-field"><label>Set / Expansao</label><input type="text" id="p-set" placeholder="ex: Prismatic Evolutions"></div>
-      <div class="form-field"><label>Fornecedor</label><input type="text" id="p-supplier" placeholder="ex: Meruru, eBay, Joao"></div>
+      <div class="form-field"><label>Fornecedor *</label>
+        <select id="p-supplier" required style="width:100%;padding:9px 12px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text);font-size:13px">
+          <option value="">Selecionar fornecedor...</option>
+        </select>
+      </div>
       <div class="form-field"><label>Total pago (R$) *</label><input type="number" id="p-amount" placeholder="0.00" step="0.01" min="0"></div>
       <div class="form-field"><label>Data</label><input type="date" id="p-date"></div>
       <div class="form-field"><label>Preco de venda sugerido (R$)</label><input type="number" id="p-saleprice" placeholder="0.00" step="0.01"></div>
@@ -589,7 +602,11 @@ tr:hover td{background:var(--bg2)}
       </div>
       <div class="form-field"><label>Quantidade</label><input type="number" id="ep-qty" min="1"></div>
       <div class="form-field"><label>Set / Expansao</label><input type="text" id="ep-set"></div>
-      <div class="form-field"><label>Fornecedor</label><input type="text" id="ep-supplier"></div>
+      <div class="form-field"><label>Fornecedor *</label>
+        <select id="ep-supplier" style="width:100%;padding:9px 12px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text);font-size:13px">
+          <option value="">Selecionar fornecedor...</option>
+        </select>
+      </div>
       <div class="form-field"><label>Total pago (R$)</label><input type="number" id="ep-amount" step="0.01" min="0"></div>
       <div class="form-field"><label>Data</label><input type="date" id="ep-date"></div>
       <div class="form-field"><label>Preco de venda (R$)</label><input type="number" id="ep-saleprice" step="0.01"></div>
@@ -627,7 +644,11 @@ tr:hover td{background:var(--bg2)}
       <div class="form-field full"><label>Nome da carta / item</label><input type="text" id="es-card"></div>
       <div class="form-field"><label>Quantidade</label><input type="number" id="es-qty" min="1"></div>
       <div class="form-field"><label>Plataforma</label><input type="text" id="es-platform"></div>
-      <div class="form-field"><label>Comprador</label><input type="text" id="es-buyer"></div>
+      <div class="form-field"><label>Comprador *</label>
+        <select id="es-buyer" style="width:100%;padding:9px 12px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text);font-size:13px">
+          <option value="">Selecionar cliente...</option>
+        </select>
+      </div>
       <div class="form-field"><label>Preco de venda (R$)</label><input type="number" id="es-price" step="0.01"></div>
       <div class="form-field"><label>Custo unitario (R$)</label><input type="number" id="es-cost" step="0.01"></div>
       <div class="form-field"><label>Data</label><input type="date" id="es-date"></div>
@@ -667,10 +688,10 @@ tr:hover td{background:var(--bg2)}
               style="width:100%;padding:10px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text);font-size:16px;font-weight:700">
           </div>
           <div>
-            <label style="font-size:11px;color:var(--text2);font-weight:600;text-transform:uppercase;display:block;margin-bottom:4px">Comprador</label>
-            <input type="text" id="vr-buyer" placeholder="Opcional"
-              style="width:100%;padding:10px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text);font-size:14px">
-          </div>
+            <label style="font-size:11px;color:var(--text2);font-weight:600;text-transform:uppercase;display:block;margin-bottom:6px">Comprador *</label>
+            <select id="vr-buyer" style="width:100%;padding:10px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text);font-size:14px">
+              <option value="">Selecionar cliente...</option>
+            </select>
         </div>
         <div style="margin-bottom:10px">
           <label style="font-size:11px;color:var(--text2);font-weight:600;text-transform:uppercase;display:block;margin-bottom:4px">Plataforma</label>
@@ -1016,6 +1037,7 @@ function loadAll(){
 function loadPurchases(){
   return sb.from('purchases').select('*').eq('user_id',currentUser.id).order('purchase_date',{ascending:false}).then(function(r){
     purchases=r.data||[];updateSupplierFilter();renderPurchases();
+  populateSupplierSelects();
   });
 }
 
@@ -1039,6 +1061,7 @@ function loadInventory(){
 function loadSales(){
   return sb.from('sales').select('*').eq('user_id',currentUser.id).order('sale_date',{ascending:false}).then(function(r){
     sales=r.data||[];updatePlatformFilter();renderSales();
+  populateCustomerSelects();
   });
 }
 
@@ -1214,6 +1237,8 @@ function savePurchase(){
   var amt=amtRaw===''?null:parseFloat(amtRaw);
   var qty=parseInt(document.getElementById('p-qty').value)||1;
   if(!name){showToast('Preencha o nome do item','error');return;}
+  var pSupplierName=document.getElementById('p-supplier').value;
+  if(!pSupplierName){showToast('Selecione um fornecedor','error');return;}
   if(amt===null){showToast('Informe o valor pago (pode ser 0 para doacoes)','error');return;}
   amt=amt||0;
   var btn=document.getElementById('purchaseSaveBtn');
@@ -1237,6 +1262,8 @@ function savePurchase(){
     language:pLang,
     quantity:qty,
     supplier:pSupplier,
+    supplier_id:(suppliers.filter(function(s){return s.name===pSupplier;})[0]||{}).id||null,
+    product_id:(document.getElementById('p-product-id').value)||null,
     total_amount:amt,
     purchase_date:pDate,
     notes:pNotes,
@@ -1412,6 +1439,8 @@ function saveSale(){
   var qty=parseInt(document.getElementById('s-qty').value)||1;
   var price=parseFloat(document.getElementById('s-price').value);
   if(!invId){showToast('Selecione um item do estoque','error');return;}
+  var buyerName=document.getElementById('s-buyer').value;
+  if(!buyerName){showToast('Selecione um comprador','error');return;}
   if(!price){showToast('Informe o preco de venda','error');return;}
   var inv=inventory.filter(function(i){return i.id===invId;})[0];
   if(!inv){showToast('Item nao encontrado','error');return;}
@@ -1426,6 +1455,7 @@ function saveSale(){
     cost_price:parseFloat(inv.cost_price||0),
     platform:document.getElementById('s-platform').value,
     buyer:document.getElementById('s-buyer').value,
+    customer_id:(customers.filter(function(c){return c.name===document.getElementById('s-buyer').value;})[0]||{}).id||null,
     sale_date:document.getElementById('s-date').value,
     notes:document.getElementById('s-notes').value
   };
@@ -2396,7 +2426,8 @@ async function vrConfirm(){
   if(!vrSelectedItem){showToast('Selecione uma carta','error');return;}
   var price=parseFloat(document.getElementById('vr-price').value)||0;
   if(price<=0){showToast('Informe o preco de venda','error');return;}
-  var buyer=document.getElementById('vr-buyer').value.trim()||'—';
+  var buyer=document.getElementById('vr-buyer').value;
+  if(!buyer){showToast('Selecione um comprador','error');return;}
   var today=new Date().toISOString().slice(0,10);
   var inv=vrSelectedItem;
 
@@ -2409,6 +2440,7 @@ async function vrConfirm(){
     cost_price:inv.cost_price||0,
     platform:vrSelectedPlat,
     buyer:buyer,
+    customer_id:(customers.filter(function(c){return c.name===buyer;})[0]||{}).id||null,
     sale_date:today,
     paid:false,
     delivered:false
@@ -2725,28 +2757,96 @@ async function runMigration(){
   else showToast('Nada novo para importar');
 }
 
+
+// ============================================================
+// INTEGRATION - Autocomplete + Select population
+// ============================================================
+
+function productAutocomplete(input, dropdownId, hiddenId, nameId){
+  var q = input.value.toLowerCase().trim();
+  var dd = document.getElementById(dropdownId);
+  if(!q){ dd.style.display='none'; return; }
+  var matches = products.filter(function(p){
+    return p.name.toLowerCase().indexOf(q) !== -1;
+  }).slice(0, 10);
+  if(!matches.length){ dd.style.display='none'; return; }
+  dd.style.display = 'block';
+  dd.innerHTML = matches.map(function(p){
+    var img = p.image_url ? '<img src="'+p.image_url+'" style="width:28px;height:38px;object-fit:cover;border-radius:3px;margin-right:8px;vertical-align:middle">' : '';
+    return '<div onclick="selectProduct(\''+p.id+'\')" style="padding:8px 12px;cursor:pointer;display:flex;align-items:center;border-bottom:1px solid var(--border);font-size:13px" onmouseover="this.style.background=\'var(--bg2)\'" onmouseout="this.style.background=\'\'">'
+      + img + '<div><div style="font-weight:600">'+p.name+'</div>'
+      + (p.set_name?'<div style="font-size:11px;color:var(--text2)">'+p.set_name+'</div>':'')
+      + '</div></div>';
+  }).join('');
+}
+
+function selectProduct(id){
+  var p = products.filter(function(x){ return x.id===id; })[0];
+  if(!p) return;
+  var nameEl = document.getElementById('p-name');
+  var hiddenEl = document.getElementById('p-product-id');
+  var ddEl = document.getElementById('p-autocomplete');
+  if(nameEl) nameEl.value = p.name;
+  if(hiddenEl) hiddenEl.value = p.id;
+  if(ddEl) ddEl.style.display = 'none';
+  // Auto-fill related fields
+  if(p.set_name){ var setEl=document.getElementById('p-set'); if(setEl) setEl.value=p.set_name; }
+  if(p.product_type){ var typeEl=document.getElementById('p-type'); if(typeEl) typeEl.value=p.product_type; }
+  if(p.language){ var langEl=document.getElementById('p-lang'); if(langEl) langEl.value=p.language; }
+  if(p.liga_url){ var ligaEl=document.getElementById('p-liga'); if(ligaEl) ligaEl.value=p.liga_url; }
+  if(p.image_url){
+    var urlEl=document.getElementById('p-img-url');
+    var prevEl=document.getElementById('p-img-preview');
+    if(urlEl) urlEl.value=p.image_url;
+    if(prevEl){ prevEl.src=p.image_url; prevEl.style.display='block'; }
+  }
+}
+
+function showCadTabAndOpen(){
+  showPage('cadastros', document.querySelector('[onclick*="cadastros"]'));
+  setTimeout(function(){
+    showCadTab('products');
+    openModal('productModal');
+  }, 300);
+}
+
 function populateSupplierSelects(){
-  // Update supplier dropdowns in purchase form
-  var selects=['p-supplier-select','ep-supplier-select'];
+  var selects = ['p-supplier', 'ep-supplier'];
   selects.forEach(function(id){
-    var el=document.getElementById(id);
-    if(!el)return;
-    var cur=el.value;
-    el.innerHTML='<option value="">Selecionar fornecedor...</option>'+suppliers.map(function(s){return '<option value="'+s.name+'">'+s.name+'</option>';}).join('');
-    el.value=cur;
+    var el = document.getElementById(id);
+    if(!el) return;
+    var cur = el.value;
+    el.innerHTML = '<option value="">Selecionar fornecedor...</option>'
+      + suppliers.map(function(s){
+          return '<option value="'+s.name+'">'+s.name+'</option>';
+        }).join('');
+    if(cur) el.value = cur;
   });
 }
 
 function populateCustomerSelects(){
-  var selects=['sale-buyer-select','es-buyer-select'];
+  var selects = ['s-buyer', 'es-buyer', 'vr-buyer'];
   selects.forEach(function(id){
-    var el=document.getElementById(id);
-    if(!el)return;
-    var cur=el.value;
-    el.innerHTML='<option value="">Selecionar cliente...</option>'+customers.map(function(c){return '<option value="'+c.name+'">'+c.name+'</option>';}).join('');
-    el.value=cur;
+    var el = document.getElementById(id);
+    if(!el) return;
+    var cur = el.value;
+    el.innerHTML = '<option value="">Selecionar cliente...</option>'
+      + customers.map(function(c){
+          return '<option value="'+c.name+'">'+c.name+'</option>';
+        }).join('');
+    if(cur) el.value = cur;
   });
 }
+
+// Close autocomplete when clicking outside
+document.addEventListener('click', function(e){
+  var dd = document.getElementById('p-autocomplete');
+  var inp = document.getElementById('p-name');
+  if(dd && inp && !dd.contains(e.target) && e.target !== inp){
+    dd.style.display = 'none';
+  }
+});
+
 
 var invSortField=null,invSortAsc=true,purSortField=null,purSortAsc=true;
 
