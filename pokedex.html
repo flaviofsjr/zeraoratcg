@@ -164,12 +164,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script>
-const SUPA_URL='https://cpvmidouwpfvugelffza.supabase.co';
-const SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNwdm1pZG91d3BmdnVnZWxmZnphIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0OTkxNDIsImV4cCI6MjA5NzA3NTE0Mn0.haj8uqCjzMxqlhajkcaDMpbrzyMjUogoX4A6k4QgTNg';
-const sb = supabase.createClient(SUPA_URL, SUPA_KEY);
+var SUPA_URL='https://cpvmidouwpfvugelffza.supabase.co';
+var SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNwdm1pZG91d3BmdnVnZWxmZnphIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0OTkxNDIsImV4cCI6MjA5NzA3NTE0Mn0.haj8uqCjzMxqlhajkcaDMpbrzyMjUogoX4A6k4QgTNg';
+var sb = supabase.createClient(SUPA_URL, SUPA_KEY);
 
 // Generation ranges
-const GENS = [
+var GENS = [
   {n:1, name:'Gen I',   region:'Kanto',   start:1,   end:151},
   {n:2, name:'Gen II',  region:'Johto',   start:152,  end:251},
   {n:3, name:'Gen III', region:'Hoenn',   start:252,  end:386},
@@ -382,8 +382,7 @@ function exportMissing() {
     lines.push('');
   });
 
-  var text = lines.join('
-');
+  var text = lines.join('\n');
   var blob = new Blob([text], {type:'text/plain;charset=utf-8'});
   var a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
