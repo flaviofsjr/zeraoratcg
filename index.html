@@ -374,8 +374,8 @@ tr:hover td{background:var(--bg2)}
           </div>
         </div>
         <div class="table-wrap">
-          <table><thead><tr><th>Foto</th><th>Nome</th><th>Set</th><th>Número</th><th>Tipo</th><th>Idioma</th><th></th></tr></thead>
-          <tbody id="productsTable"><tr><td colspan="7"><div class="empty-state"><i class="ti ti-cards"></i>Nenhum produto</div></td></tr></tbody></table>
+          <table><thead><tr><th>Foto</th><th>Nome</th><th>Set</th><th>Tipo</th><th>Idioma</th><th></th></tr></thead>
+          <tbody id="productsTable"><tr><td colspan="6"><div class="empty-state"><i class="ti ti-cards"></i>Nenhum produto</div></td></tr></tbody></table>
         </div>
       </div>
     </div>
@@ -848,7 +848,7 @@ tr:hover td{background:var(--bg2)}
     <div class="modal-grid">
       <div class="form-field full"><label>Nome *</label><input type="text" id="prod-name" placeholder="Ex: Charizard (25/185)"></div>
       <div class="form-field"><label>Set / Expansão</label><input type="text" id="prod-set" placeholder="Ex: Tempestade de Plasma"></div>
-      <div class="form-field"><label>Número</label><input type="text" id="prod-number" placeholder="Ex: 25/185"></div>
+
       <div class="form-field"><label>Tipo</label>
         <select id="prod-type"><option>Carta Avulsa</option><option>Lacrado</option><option>Acessorio</option><option>Lote</option></select>
       </div>
@@ -2589,7 +2589,7 @@ function renderProducts(){
       +'<td>'+img+'</td>'
       +'<td style="font-weight:600">'+(p.liga_url?'<a href="'+p.liga_url+'" target="_blank" style="color:inherit">'+p.name+'</a>':p.name)+'</td>'
       +'<td style="color:var(--text2);font-size:12px">'+(p.set_name||'-')+'</td>'
-      +'<td style="font-size:12px">'+(p.card_number||'-')+'</td>'
+      
       +'<td>'+typeBadge(p.product_type)+'</td>'
       +'<td>'+langBadge(p.language)+'</td>'
       +'<td><div class="actions-cell">'
@@ -2612,7 +2612,6 @@ function editProduct(id){
   document.getElementById('prod-id').value=p.id;
   document.getElementById('prod-name').value=p.name||'';
   document.getElementById('prod-set').value=p.set_name||'';
-  document.getElementById('prod-number').value=p.card_number||'';
   document.getElementById('prod-type').value=p.product_type||'Carta Avulsa';
   document.getElementById('prod-lang').value=p.language||'PT-BR';
   document.getElementById('prod-liga').value=p.liga_url||'';
@@ -2631,7 +2630,6 @@ async function saveProduct(){
     user_id:currentUser.id,
     name:name,
     set_name:document.getElementById('prod-set').value||null,
-    card_number:document.getElementById('prod-number').value||null,
     product_type:document.getElementById('prod-type').value,
     language:document.getElementById('prod-lang').value,
     liga_url:document.getElementById('prod-liga').value||null,
