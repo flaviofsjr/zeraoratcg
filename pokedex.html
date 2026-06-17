@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pokédex — ZeraoraTCG</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+<style>
+:root {
+  --bg:#f5f5f0;--bg2:#fff;--bg3:#f0efe9;
+  --text:#1a1a1a;--text2:#6b6b6b;--text3:#9a9a9a;
+  --border:#e0dfd8;--border2:#cccbc4;
+  --amber:#E8B422;--amber-dark:#7A5200;
+  --success:#27500A;--danger:#791F1F;
+  --radius:8px;--radius-lg:12px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+
+/* NAV */
+.nav{background:#0a0a0a;padding:.85rem 1.5rem;display:flex;align-items:center;gap:14px;position:sticky;top:0;z-index:50}
+.nav-logo{width:44px;height:44px;border-radius:50%;object-fit:cover;border:2px solid var(--amber)}
+.nav-title{color:#fff;font-size:20px;font-weight:700}
+.nav-title span{color:var(--amber)}
+.nav-sub{color:var(--text2);font-size:13px;margin-left:auto}
+
+/* AUTH */
+.auth-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;background:#0a0a0a}
+.auth-box{background:#1a1a1a;border:1px solid #333;border-radius:16px;padding:2.5rem;width:360px;text-align:center}
+.auth-box img{width:100px;height:100px;border-radius:50%;object-fit:cover;border:3px solid var(--amber);margin-bottom:12px}
+.auth-box h2{color:#fff;font-size:22px;margin-bottom:4px}
+.auth-box h2 span{color:var(--amber)}
+.auth-box p{color:var(--text2);font-size:13px;margin-bottom:1.5rem}
+.auth-input{width:100%;padding:11px 14px;background:#111;border:1px solid #333;border-radius:var(--radius);color:#fff;font-size:14px;margin-bottom:10px}
+.auth-input:focus{outline:none;border-color:var(--amber)}
+.auth-btn{width:100%;padding:12px;background:var(--amber);color:#000;font-weight:700;border:none;border-radius:var(--radius);font-size:15px;cursor:pointer}
+.auth-btn:hover{background:#d4a000}
+.auth-link{color:var(--text2);font-size:13px;margin-top:10px;cursor:pointer}
+.auth-link:hover{color:var(--amber)}
+
+/* DASHBOARD */
+.dashboard{padding:1.5rem;max-width:1400px;margin:0 auto}
+.progress-section{margin-bottom:1.5rem}
+.progress-title{font-size:22px;font-weight:700;margin-bottom:1rem}
+.gen-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;margin-bottom:1.5rem}
+.gen-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px;text-align:center}
+.gen-card.total{border-color:var(--amber);background:linear-gradient(135deg,#fffbe6,#fff9d6)}
+.gen-name{font-size:12px;color:var(--text2);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
+.gen-count{font-size:24px;font-weight:800;color:var(--text)}
+.gen-count span{font-size:13px;font-weight:400;color:var(--text2)}
+.gen-bar-wrap{background:var(--bg3);border-radius:20px;height:6px;margin-top:8px;overflow:hidden}
+.gen-bar{height:6px;border-radius:20px;background:var(--amber);transition:width .5s}
+.gen-pct{font-size:11px;color:var(--text2);margin-top:4px}
+
+/* FILTERS */
+.filters{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:1.25rem;align-items:center}
+.filter-btn{padding:7px 16px;border:1px solid var(--border2);border-radius:20px;background:var(--bg2);font-size:13px;cursor:pointer;transition:.15s;font-weight:500}
+.filter-btn:hover{border-color:var(--amber)}
+.filter-btn.active{background:var(--amber);border-color:var(--amber);color:#000;font-weight:700}
+.search-input{padding:8px 14px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--bg2);font-size:13px;color:var(--text);width:220px}
+.filter-toggle{display:flex;gap:8px;margin-left:auto}
+.toggle-btn{padding:7px 14px;border:1px solid var(--border2);border-radius:20px;background:var(--bg2);font-size:12px;cursor:pointer;font-weight:600}
+.toggle-btn.active{background:var(--success);border-color:var(--success);color:#fff}
+
+/* POKEMON GRID */
+.poke-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:8px}
+.poke-card{background:var(--bg2);border:2px solid var(--border);border-radius:var(--radius-lg);padding:10px 6px 8px;text-align:center;cursor:pointer;transition:all .15s;position:relative;user-select:none}
+.poke-card:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,0,0,0.1)}
+.poke-card.collected{background:#EAF3DE;border-color:#a3c77d}
+.poke-card.collected .poke-num{color:var(--success)}
+.poke-card img{width:68px;height:68px;object-fit:contain;display:block;margin:0 auto}
+.poke-num{font-size:10px;color:var(--text3);font-weight:600;margin-bottom:2px}
+.poke-name{font-size:11px;font-weight:600;color:var(--text);text-transform:capitalize;line-height:1.2}
+.poke-check{position:absolute;top:4px;right:4px;width:18px;height:18px;background:var(--success);border-radius:50%;display:none;align-items:center;justify-content:center}
+.poke-card.collected .poke-check{display:flex}
+.poke-check i{font-size:10px;color:#fff}
+.poke-card.loading img{opacity:.3}
+.poke-card.missing{opacity:.5}
+
+/* LOADING */
+.loading-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:4rem;gap:1rem}
+.loading-bar-wrap{width:300px;background:var(--border);border-radius:20px;height:10px;overflow:hidden}
+.loading-bar{height:10px;background:var(--amber);border-radius:20px;transition:width .3s}
+.loading-txt{font-size:13px;color:var(--text2)}
+
+.toast{position:fixed;bottom:1.5rem;right:1.5rem;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--radius);padding:10px 18px;font-size:13px;box-shadow:0 4px 12px rgba(0,0,0,.1);display:none;z-index:999}
+.toast.show{display:block}
+.toast.success{border-left:4px solid var(--success)}
+.toast.remove{border-left:4px solid var(--danger)}
+</style>
+</head>
+<body>
+
+<!-- AUTH -->
+<div id="authScreen" class="auth-screen">
+  <div class="auth-box">
+    <img src="https://i.ibb.co/Vc194DR8/dba84186-71fe-471a-87d3-5e2c89832ab3.png" alt="Logo">
+    <h2>Zeraora<span>TCG</span></h2>
+    <p>Faça login para acessar sua Pokédex</p>
+    <input class="auth-input" type="email" id="authEmail" placeholder="seu@email.com">
+    <input class="auth-input" type="password" id="authPass" placeholder="mínimo 6 caracteres">
+    <button class="auth-btn" onclick="doLogin()">Entrar</button>
+    <p class="auth-link" onclick="window.location.href='/'">← Voltar ao ZeraoraTCG</p>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="mainApp" style="display:none">
+  <nav class="nav">
+    <img class="nav-logo" src="https://i.ibb.co/Vc194DR8/dba84186-71fe-471a-87d3-5e2c89832ab3.png" alt="Logo">
+    <span class="nav-title">Zeraora<span>TCG</span></span>
+    <span style="color:#fff;font-size:14px;font-weight:600;margin-left:4px">/ Pokédex</span>
+    <span class="nav-sub">
+      <a href="/" style="color:var(--amber);text-decoration:none;font-size:13px">← ZeraoraTCG</a>
+      &nbsp;|&nbsp;
+      <span id="navUser" style="color:#fff;font-size:13px"></span>
+    </span>
+  </nav>
+
+  <div class="dashboard">
+    <!-- PROGRESS DASHBOARD -->
+    <div class="progress-section">
+      <div class="progress-title">Minha Pokédex TCG</div>
+      <div class="gen-grid" id="genGrid">
+        <!-- filled by JS -->
+      </div>
+    </div>
+
+    <!-- FILTERS -->
+    <div class="filters">
+      <input class="search-input" type="text" id="searchInput" placeholder="Buscar Pokémon..." oninput="filterPokemon()">
+      <button class="filter-btn active" onclick="filterGen(0,this)">Todos</button>
+      <button class="filter-btn" onclick="filterGen(1,this)">Gen I</button>
+      <button class="filter-btn" onclick="filterGen(2,this)">Gen II</button>
+      <button class="filter-btn" onclick="filterGen(3,this)">Gen III</button>
+      <button class="filter-btn" onclick="filterGen(4,this)">Gen IV</button>
+      <button class="filter-btn" onclick="filterGen(5,this)">Gen V</button>
+      <button class="filter-btn" onclick="filterGen(6,this)">Gen VI</button>
+      <button class="filter-btn" onclick="filterGen(7,this)">Gen VII</button>
+      <button class="filter-btn" onclick="filterGen(8,this)">Gen VIII</button>
+      <button class="filter-btn" onclick="filterGen(9,this)">Gen IX</button>
+      <div class="filter-toggle">
+        <button class="toggle-btn" id="toggleMissing" onclick="toggleShow('missing')">Faltando</button>
+        <button class="toggle-btn" id="toggleCollected" onclick="toggleShow('collected')">Coletados</button>
+      </div>
+    </div>
+
+    <!-- LOADING -->
+    <div class="loading-screen" id="loadingScreen">
+      <div style="font-size:15px;font-weight:600">Carregando Pokédex...</div>
+      <div class="loading-bar-wrap"><div class="loading-bar" id="loadingBar" style="width:0%"></div></div>
+      <div class="loading-txt" id="loadingTxt">Buscando dados...</div>
+    </div>
+
+    <!-- GRID -->
+    <div class="poke-grid" id="pokeGrid" style="display:none"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+const SUPA_URL='https://cpvmidouwpfvugelffza.supabase.co';
+const SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNwdm1pZG91d3BmdnVnZWxmZnphIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0OTkxNDIsImV4cCI6MjA5NzA3NTE0Mn0.haj8uqCjzMxqlhajkcaDMpbrzyMjUogoX4A6k4QgTNg';
+const sb = supabase.createClient(SUPA_URL, SUPA_KEY);
+
+// Generation ranges
+const GENS = [
+  {n:1, name:'Gen I',   region:'Kanto',   start:1,   end:151},
+  {n:2, name:'Gen II',  region:'Johto',   start:152,  end:251},
+  {n:3, name:'Gen III', region:'Hoenn',   start:252,  end:386},
+  {n:4, name:'Gen IV',  region:'Sinnoh',  start:387,  end:493},
+  {n:5, name:'Gen V',   region:'Unova',   start:494,  end:649},
+  {n:6, name:'Gen VI',  region:'Kalos',   start:650,  end:721},
+  {n:7, name:'Gen VII', region:'Alola',   start:722,  end:809},
+  {n:8, name:'Gen VIII',region:'Galar',   start:810,  end:905},
+  {n:9, name:'Gen IX',  region:'Paldea',  start:906,  end:1025},
+];
+
+// Pokemon names (hardcoded to avoid 1025 API calls for names)
+// Will fetch sprites lazily
+var currentUser = null;
+var collected = new Set();
+var allPokemon = [];
+var currentGenFilter = 0;
+var showFilter = 'all'; // all, missing, collected
+
+function getGen(num) {
+  return GENS.find(g => num >= g.start && num <= g.end) || GENS[0];
+}
+
+function showToast(msg, type='success') {
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast ' + type + ' show';
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// AUTH
+async function doLogin() {
+  var email = document.getElementById('authEmail').value;
+  var pass = document.getElementById('authPass').value;
+  var {data,error} = await sb.auth.signInWithPassword({email,password:pass});
+  if(error) { showToast('Erro: '+error.message,'remove'); return; }
+  startApp(data.user);
+}
+
+async function init() {
+  var {data:{session}} = await sb.auth.getSession();
+  if(session) startApp(session.user);
+}
+
+async function startApp(user) {
+  currentUser = user;
+  document.getElementById('authScreen').style.display = 'none';
+  document.getElementById('mainApp').style.display = 'block';
+  document.getElementById('navUser').textContent = user.email;
+  await loadCollection();
+  await buildPokemonList();
+}
+
+// Load which pokemon user has collected
+async function loadCollection() {
+  var {data} = await sb.from('pokedex_collection')
+    .select('pokemon_number')
+    .eq('user_id', currentUser.id);
+  collected = new Set((data||[]).map(r => r.pokemon_number));
+}
+
+// Build full pokemon list with names from PokéAPI
+async function buildPokemonList() {
+  document.getElementById('loadingScreen').style.display = 'flex';
+  document.getElementById('pokeGrid').style.display = 'none';
+
+  // Fetch all pokemon names in one call
+  var res = await fetch('https://pokeapi.co/api/v2/pokemon?limit=1025&offset=0');
+  var data = await res.json();
+
+  allPokemon = data.results.map((p, idx) => ({
+    number: idx + 1,
+    name: p.name,
+    gen: getGen(idx + 1)
+  }));
+
+  document.getElementById('loadingBar').style.width = '100%';
+  document.getElementById('loadingTxt').textContent = '1025 Pokémons carregados!';
+
+  setTimeout(() => {
+    document.getElementById('loadingScreen').style.display = 'none';
+    document.getElementById('pokeGrid').style.display = 'grid';
+    renderGrid();
+    renderDashboard();
+  }, 400);
+}
+
+function renderDashboard() {
+  var html = '<div class="gen-card total"><div class="gen-name">Total Geral</div>';
+  html += '<div class="gen-count">' + collected.size + '<span> / 1025</span></div>';
+  html += '<div class="gen-bar-wrap"><div class="gen-bar" style="width:' + (collected.size/1025*100).toFixed(1) + '%"></div></div>';
+  html += '<div class="gen-pct">' + (collected.size/1025*100).toFixed(1) + '%</div></div>';
+
+  GENS.forEach(g => {
+    var total = g.end - g.start + 1;
+    var have = 0;
+    for(var i = g.start; i <= g.end; i++) if(collected.has(i)) have++;
+    var pct = (have/total*100).toFixed(1);
+    html += '<div class="gen-card">';
+    html += '<div class="gen-name">' + g.name + ' — ' + g.region + '</div>';
+    html += '<div class="gen-count">' + have + '<span> / ' + total + '</span></div>';
+    html += '<div class="gen-bar-wrap"><div class="gen-bar" style="width:' + pct + '%"></div></div>';
+    html += '<div class="gen-pct">' + pct + '%</div></div>';
+  });
+
+  document.getElementById('genGrid').innerHTML = html;
+}
+
+function renderGrid() {
+  var searchQ = document.getElementById('searchInput').value.toLowerCase();
+  var list = allPokemon.filter(p => {
+    if(currentGenFilter && (p.number < getGen(p.number).start || p.gen.n !== currentGenFilter)) return false;
+    if(searchQ && !p.name.toLowerCase().includes(searchQ) && !String(p.number).includes(searchQ)) return false;
+    if(showFilter === 'collected' && !collected.has(p.number)) return false;
+    if(showFilter === 'missing' && collected.has(p.number)) return false;
+    return true;
+  });
+
+  var grid = document.getElementById('pokeGrid');
+  grid.innerHTML = list.map(p => {
+    var isCollected = collected.has(p.number);
+    var sprite = 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/' + p.number + '.png';
+    var name = p.name.replace(/-/g,' ');
+    var numStr = '#' + String(p.number).padStart(4,'0');
+    return '<div class="poke-card' + (isCollected?' collected':'') + '" onclick="toggleCollect(' + p.number + ',this)" title="' + name + '">'
+      + '<div class="poke-check"><i class="ti ti-check"></i></div>'
+      + '<span class="poke-num">' + numStr + '</span>'
+      + '<img src="' + sprite + '" alt="' + name + '" loading="lazy" onerror="this.src=\'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/0.png\'">'
+      + '<div class="poke-name">' + name + '</div>'
+      + '</div>';
+  }).join('');
+}
+
+async function toggleCollect(num, el) {
+  var wasCollected = collected.has(num);
+  // Optimistic UI
+  if(wasCollected) {
+    collected.delete(num);
+    el.classList.remove('collected');
+  } else {
+    collected.add(num);
+    el.classList.add('collected');
+  }
+  renderDashboard();
+
+  // Persist
+  if(wasCollected) {
+    await sb.from('pokedex_collection').delete()
+      .eq('user_id', currentUser.id).eq('pokemon_number', num);
+    showToast('Removido da coleção','remove');
+  } else {
+    await sb.from('pokedex_collection').insert({
+      user_id: currentUser.id,
+      pokemon_number: num
+    });
+    showToast('Adicionado à coleção! ✓');
+  }
+}
+
+function filterGen(n, el) {
+  currentGenFilter = n;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  renderGrid();
+}
+
+function filterPokemon() { renderGrid(); }
+
+function toggleShow(type) {
+  var btn = document.getElementById('toggle' + type.charAt(0).toUpperCase() + type.slice(1));
+  if(showFilter === type) {
+    showFilter = 'all';
+    btn.classList.remove('active');
+  } else {
+    showFilter = type;
+    document.getElementById('toggleMissing').classList.remove('active');
+    document.getElementById('toggleCollected').classList.remove('active');
+    btn.classList.add('active');
+  }
+  renderGrid();
+}
+
+init();
+</script>
+</body>
+</html>
