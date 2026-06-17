@@ -231,7 +231,7 @@ async function loadCollection() {
   collected = new Set((data||[]).map(r => r.pokemon_number));
 }
 
-// Build full pokemon list with names from PokéAPI
+// Build full pokemon list with names from PokeAPI
 async function buildPokemonList() {
   document.getElementById('loadingScreen').style.display = 'flex';
   document.getElementById('pokeGrid').style.display = 'none';
@@ -247,7 +247,7 @@ async function buildPokemonList() {
   }));
 
   document.getElementById('loadingBar').style.width = '100%';
-  document.getElementById('loadingTxt').textContent = '1025 Pokémons carregados!';
+  document.getElementById('loadingTxt').textContent = '1025 Pokemons carregados!';
 
   setTimeout(() => {
     document.getElementById('loadingScreen').style.display = 'none';
@@ -269,7 +269,7 @@ function renderDashboard() {
     for(var i = g.start; i <= g.end; i++) if(collected.has(i)) have++;
     var pct = (have/total*100).toFixed(1);
     html += '<div class="gen-card">';
-    html += '<div class="gen-name">' + g.name + ' — ' + g.region + '</div>';
+    html += '<div class="gen-name">' + g.name + ' - ' + g.region + '</div>';
     html += '<div class="gen-count">' + have + '<span> / ' + total + '</span></div>';
     html += '<div class="gen-bar-wrap"><div class="gen-bar" style="width:' + pct + '%"></div></div>';
     html += '<div class="gen-pct">' + pct + '%</div></div>';
@@ -319,13 +319,13 @@ async function toggleCollect(num, el) {
   if(wasCollected) {
     await sb.from('pokedex_collection').delete()
       .eq('user_id', currentUser.id).eq('pokemon_number', num);
-    showToast('Removido da coleção','remove');
+    showToast('Removido da colecao','remove');
   } else {
     await sb.from('pokedex_collection').insert({
       user_id: currentUser.id,
       pokemon_number: num
     });
-    showToast('Adicionado à coleção! ✓');
+    showToast('Adicionado a colecao! ');
   }
 }
 
@@ -355,7 +355,7 @@ function toggleShow(type) {
 
 function exportMissing() {
   var missing = allPokemon.filter(p => !collected.has(p.number));
-  if(!missing.length) { showToast('Você tem todos os Pokémons!'); return; }
+  if(!missing.length) { showToast('Voce tem todos os Pokemons!'); return; }
 
   // Group by generation
   var byGen = {};
@@ -363,7 +363,7 @@ function exportMissing() {
   missing.forEach(p => byGen[p.gen.n].push(p));
 
   var lines = [];
-  lines.push('POKÉDEX TCG — FALTANDO (' + missing.length + ' de 1025)');
+  lines.push('POKEDEX TCG - FALTANDO (' + missing.length + ' de 1025)');
   lines.push('Gerado em ' + new Date().toLocaleDateString('pt-BR'));
   lines.push('');
 
@@ -371,7 +371,7 @@ function exportMissing() {
     var list = byGen[g.n];
     if(!list.length) return;
     var total = g.end - g.start + 1;
-    lines.push('── ' + g.name + ' · ' + g.region + ' (' + list.length + ' faltando de ' + total + ') ──');
+    lines.push('-- ' + g.name + ' - ' + g.region + ' (' + list.length + ' faltando de ' + total + ') --');
     // 3 per line for compact reading
     for(var i = 0; i < list.length; i += 3) {
       var row = list.slice(i, i+3).map(p =>
@@ -389,7 +389,7 @@ function exportMissing() {
   a.href = URL.createObjectURL(blob);
   a.download = 'pokedex-faltando-' + new Date().toISOString().slice(0,10) + '.txt';
   a.click();
-  showToast(missing.length + ' Pokémons exportados!');
+  showToast(missing.length + ' Pokemons exportados!');
 }
 
 init();
