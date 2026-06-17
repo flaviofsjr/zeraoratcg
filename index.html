@@ -217,36 +217,33 @@ tr:hover td{background:var(--bg2)}
     <!-- ESTOQUE -->
     <div class="page" id="page-estoque">
       <div class="section-header">
-      <div class="section-header">
         <h3>Estoque</h3>
         <div style="display:flex;gap:8px">
           <button class="btn-secondary" style="width:auto" onclick="openModal('verifyStockModal')"><i class="ti ti-shield-check"></i> Verificar estoque</button>
-          <button class="btn-secondary" style="width:auto" onclick="exportInvCSV()"><i class="ti ti-download"></i> CSV</button>
+          <button class="btn-secondary" style="width:auto" onclick="exportInventory()"><i class="ti ti-download"></i> CSV</button>
         </div>
       </div>
-        <div style="background:var(--bg);border:1px solid #a3c77d;border-radius:var(--radius-lg);padding:14px 16px">
-          <div style="font-size:12px;color:var(--success);font-weight:600;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.3px">A venda</div>
-          <div style="font-size:20px;font-weight:700;color:var(--success)" id="inv-sum-avenda-val">R$ 0,00</div>
+      <div id="invSummary" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:1.25rem">
+        <div style="background:var(--bg);border:1px solid #a3c77d;border-radius:var(--radius-lg);padding:14px 16px;min-height:90px">
+          <div style="font-size:11px;color:var(--success);font-weight:700;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px">A venda</div>
+          <div style="font-size:22px;font-weight:700;color:var(--success)" id="inv-sum-avenda-val">R$ 0,00</div>
           <div style="font-size:12px;color:var(--text2);margin-top:4px"><span id="inv-sum-avenda-qty">0</span> item(s)</div>
         </div>
-        <div style="background:var(--bg);border:1px solid #F0994A;border-radius:var(--radius-lg);padding:14px 16px">
-          <div style="font-size:12px;color:#7A5200;font-weight:600;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.3px">Reservado</div>
-          <div style="font-size:20px;font-weight:700;color:#7A5200" id="inv-sum-reservado-val">R$ 0,00</div>
+        <div style="background:var(--bg);border:1px solid #F0994A;border-radius:var(--radius-lg);padding:14px 16px;min-height:90px">
+          <div style="font-size:11px;color:#7A5200;font-weight:700;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px">Reservado</div>
+          <div style="font-size:22px;font-weight:700;color:#7A5200" id="inv-sum-reservado-val">R$ 0,00</div>
           <div style="font-size:12px;color:var(--text2);margin-top:4px"><span id="inv-sum-reservado-qty">0</span> item(s)</div>
         </div>
-        <div style="background:var(--bg);border:1px solid var(--border2);border-radius:var(--radius-lg);padding:14px 16px">
-          <div style="font-size:12px;color:var(--text2);font-weight:600;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.3px">Em estoque</div>
-          <div style="font-size:20px;font-weight:700;color:var(--text)" id="inv-sum-estoque-val">R$ 0,00</div>
+        <div style="background:var(--bg);border:1px solid var(--border2);border-radius:var(--radius-lg);padding:14px 16px;min-height:90px">
+          <div style="font-size:11px;color:var(--text2);font-weight:700;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px">Em estoque</div>
+          <div style="font-size:22px;font-weight:700;color:var(--text)" id="inv-sum-estoque-val">R$ 0,00</div>
           <div style="font-size:12px;color:var(--text2);margin-top:4px"><span id="inv-sum-estoque-qty">0</span> item(s)</div>
         </div>
-        <div style="background:var(--bg);border:1px solid var(--amber);border-radius:var(--radius-lg);padding:14px 16px">
-          <div style="font-size:12px;color:var(--amber-dark);font-weight:600;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.3px">Total geral</div>
-          <div style="font-size:20px;font-weight:700;color:var(--amber-dark)" id="inv-sum-total-val">R$ 0,00</div>
+        <div style="background:var(--bg);border:1px solid var(--amber);border-radius:var(--radius-lg);padding:14px 16px;min-height:90px">
+          <div style="font-size:11px;color:var(--amber-dark);font-weight:700;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px">Total geral</div>
+          <div style="font-size:22px;font-weight:700;color:var(--amber-dark)" id="inv-sum-total-val">R$ 0,00</div>
           <div style="font-size:12px;color:var(--text2);margin-top:4px"><span id="inv-sum-total-qty">0</span> item(s)</div>
         </div>
-      </div>
-        <h3>Estoque</h3>
-        <button class="btn-secondary" onclick="exportInventory()"><i class="ti ti-download"></i> CSV</button>
       </div>
       <div class="filters">
         <input type="text" id="filterInvName" placeholder="Buscar..." oninput="renderInventory()" style="width:190px">
