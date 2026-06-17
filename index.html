@@ -173,8 +173,8 @@ tr:hover td{background:var(--bg2)}
     <div class="nav-tab" onclick="showPage('dre',this)"><i class="ti ti-chart-bar"></i> DRE</div>
     <div class="nav-tab" onclick="showPage('binder',this)"><i class="ti ti-layout-grid"></i> Binder</div>
     <div class="nav-tab" onclick="showPage('precificador',this)"><i class="ti ti-calculator"></i> Preco</div>
-    <div class="nav-right">
     <div class="nav-tab" onclick="showPage('cadastros',this)"><i class="ti ti-database"></i> Cadastros</div>
+    <div class="nav-right">
       <span class="nav-user" id="navUser"></span>
       <button class="btn-secondary" onclick="doLogout()" style="padding:6px 12px;font-size:12px">Sair</button>
     </div>
@@ -964,7 +964,7 @@ function showPage(p,el){
   try{
     if(p==='binder'){loadBinder();updateProfileUI();}
     if(p==='dre')renderDRE();
-    if(p==='cadastros'){loadSuppliers();loadCustomers();loadProducts();}
+    if(p==='cadastros'){loadSuppliers();loadCustomers();loadProducts();setTimeout(runMigration,1000);}
   }catch(err){console.error('showPage error:',err);}
 }
 
