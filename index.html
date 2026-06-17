@@ -990,7 +990,7 @@ function renderInventory(){
       var invStr=(i.name+' '+(i.set_name||'')+' '+(i.language||'')+' '+(i.condition||'')+' '+(i.extras||'')).toLowerCase();
       // Also check supplier from purchases
       var invPur=purchases.filter(function(p){return p.id===i.purchase_id;})[0];
-      if(invPur) invStr+=(' '+(invPur.supplier||'')).toLowerCase();
+      if(!invPur){invPur=purchases.filter(function(p){return p.description&&i.name&&p.description.toLowerCase()===i.name.toLowerCase()&&p.supplier;})[0];}
       if(invStr.indexOf(nameF)===-1)return false;
     }
     if(typeF&&i.product_type!==typeF)return false;
@@ -1062,9 +1062,9 @@ function renderSales(){
     var tc=parseFloat(s.cost_price||0)*s.quantity;
     var p=ts-tc;
     var mg=ts>0?((p/ts)*100).toFixed(0)+'%':'-';
-    var invItem=inventory.filter(function(ii){return ii.id===s.inventory_id;})[0];
-    if(!invItem||!invItem.image_url){invItem=inventory.filter(function(ii){return ii.name&&s.card_name&&ii.name.toLowerCase()===s.card_name.toLowerCase()&&ii.image_url;})[0];}
-    if(!invItem||!invItem.image_url){var pm=purchases.filter(function(pp){return pp.description&&s.card_name&&pp.description.toLowerCase()===s.card_name.toLowerCase()&&pp.image_url;})[0];if(pm)invItem={image_url:pm.image_url};}
+    var invItem=inventory.filter(function(ii){return ii.id===s.inventory_id&&ii.image_url;})[0];
+    if(!invItem){invItem=inventory.filter(function(ii){return ii.name&&s.card_name&&ii.name.toLowerCase()===s.card_name.toLowerCase()&&ii.image_url;})[0];}
+    if(!invItem){var pm=purchases.filter(function(pp){return pp.description&&s.card_name&&pp.description.toLowerCase()===s.card_name.toLowerCase()&&pp.image_url;})[0];if(pm)invItem={image_url:pm.image_url};}
     var imgUrl=invItem&&invItem.image_url?invItem.image_url:'';
     var imgHtml=imgUrl?'<img src="'+imgUrl+'" class="inv-img" style="cursor:zoom-in" onclick="openLightbox(event,\''+imgUrl+'\')">'    :'<div class="inv-img-placeholder"><i class="ti ti-photo-off"></i></div>';
     var paidBtn='<button onclick="toggleSaleField(\''+s.id+'\',\'paid\',' +(s.paid?'false':'true')+')" style="font-size:18px;background:none;border:none;cursor:pointer" title="'+(s.paid?'Pago':'Marcar pago')+'">'+(s.paid?'✅':'⬜')+'</button>';
