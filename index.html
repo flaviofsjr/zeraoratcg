@@ -174,6 +174,7 @@ tr:hover td{background:var(--bg2)}
     <div class="nav-tab" onclick="showPage('binder',this)"><i class="ti ti-layout-grid"></i> Binder</div>
     <div class="nav-tab" onclick="showPage('precificador',this)"><i class="ti ti-calculator"></i> Preco</div>
     <div class="nav-right">
+    <div class="nav-tab" onclick="showPage('cadastros',this)"><i class="ti ti-database"></i> Cadastros</div>
       <span class="nav-user" id="navUser"></span>
       <button class="btn-secondary" onclick="doLogout()" style="padding:6px 12px;font-size:12px">Sair</button>
     </div>
@@ -331,6 +332,51 @@ tr:hover td{background:var(--bg2)}
         </div>
       </div>
     </div>
+    <!-- CADASTROS -->
+    <div class="page" id="page-cadastros">
+      <div class="section-header">
+        <h3>Cadastros</h3>
+      </div>
+      <div style="display:flex;gap:0;margin-bottom:1.25rem;border-bottom:2px solid var(--border)">
+        <button id="ctab-suppliers" onclick="showCadTab('suppliers')" style="padding:8px 20px;border:none;background:none;font-size:13px;font-weight:600;cursor:pointer;border-bottom:2px solid var(--amber);margin-bottom:-2px;color:var(--amber)">Fornecedores</button>
+        <button id="ctab-customers" onclick="showCadTab('customers')" style="padding:8px 20px;border:none;background:none;font-size:13px;font-weight:600;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;color:var(--text2)">Clientes</button>
+        <button id="ctab-products" onclick="showCadTab('products')" style="padding:8px 20px;border:none;background:none;font-size:13px;font-weight:600;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;color:var(--text2)">Produtos</button>
+      </div>
+      <!-- SUPPLIERS -->
+      <div id="cad-suppliers">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+          <input type="text" id="filterSupplierName" placeholder="Buscar fornecedor..." oninput="renderSuppliers()" style="padding:8px 12px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text);font-size:13px;width:220px">
+          <button class="btn-primary" style="width:auto" onclick="openModal('supplierModal')"><i class="ti ti-plus"></i> Novo fornecedor</button>
+        </div>
+        <div class="table-wrap">
+          <table><thead><tr><th>Nome</th><th>WhatsApp</th><th>Email</th><th>Obs</th><th>Compras</th><th></th></tr></thead>
+          <tbody id="suppliersTable"><tr><td colspan="6"><div class="empty-state"><i class="ti ti-truck"></i>Nenhum fornecedor</div></td></tr></tbody></table>
+        </div>
+      </div>
+      <!-- CUSTOMERS -->
+      <div id="cad-customers" style="display:none">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+          <input type="text" id="filterCustomerName" placeholder="Buscar cliente..." oninput="renderCustomers()" style="padding:8px 12px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text);font-size:13px;width:220px">
+          <button class="btn-primary" style="width:auto" onclick="openModal('customerModal')"><i class="ti ti-plus"></i> Novo cliente</button>
+        </div>
+        <div class="table-wrap">
+          <table><thead><tr><th>Nome</th><th>WhatsApp</th><th>Cidade</th><th>Vendas</th><th></th></tr></thead>
+          <tbody id="customersTable"><tr><td colspan="5"><div class="empty-state"><i class="ti ti-users"></i>Nenhum cliente</div></td></tr></tbody></table>
+        </div>
+      </div>
+      <!-- PRODUCTS -->
+      <div id="cad-products" style="display:none">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+          <input type="text" id="filterProductName" placeholder="Buscar produto..." oninput="renderProducts()" style="padding:8px 12px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text);font-size:13px;width:220px">
+          <button class="btn-primary" style="width:auto" onclick="openModal('productModal')"><i class="ti ti-plus"></i> Novo produto</button>
+        </div>
+        <div class="table-wrap">
+          <table><thead><tr><th>Foto</th><th>Nome</th><th>Set</th><th>Número</th><th>Tipo</th><th>Idioma</th><th></th></tr></thead>
+          <tbody id="productsTable"><tr><td colspan="7"><div class="empty-state"><i class="ti ti-cards"></i>Nenhum produto</div></td></tr></tbody></table>
+        </div>
+      </div>
+    </div>
+
 
   </div>
 </div>
@@ -756,6 +802,71 @@ tr:hover td{background:var(--bg2)}
   </div>
 </div>
 
+<!-- MODAL FORNECEDOR -->
+<div class="modal-bg" id="supplierModal">
+  <div class="modal" style="max-width:480px">
+    <h3 id="supplierModalTitle">Novo Fornecedor</h3>
+    <input type="hidden" id="sup-id">
+    <div class="modal-grid">
+      <div class="form-field full"><label>Nome *</label><input type="text" id="sup-name" placeholder="Ex: Henrique Silva"></div>
+      <div class="form-field"><label>WhatsApp</label><input type="text" id="sup-whatsapp" placeholder="55119..."></div>
+      <div class="form-field"><label>Email</label><input type="email" id="sup-email" placeholder="email@..."></div>
+      <div class="form-field full"><label>Observações</label><textarea id="sup-notes" rows="2"></textarea></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeModal('supplierModal')">Cancelar</button>
+      <button class="btn-primary" style="width:auto" onclick="saveSupplier()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CLIENTE -->
+<div class="modal-bg" id="customerModal">
+  <div class="modal" style="max-width:480px">
+    <h3 id="customerModalTitle">Novo Cliente</h3>
+    <input type="hidden" id="cus-id">
+    <div class="modal-grid">
+      <div class="form-field full"><label>Nome *</label><input type="text" id="cus-name" placeholder="Ex: João Silva"></div>
+      <div class="form-field"><label>WhatsApp</label><input type="text" id="cus-whatsapp" placeholder="55119..."></div>
+      <div class="form-field"><label>Cidade</label><input type="text" id="cus-city" placeholder="Ex: São Paulo"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeModal('customerModal')">Cancelar</button>
+      <button class="btn-primary" style="width:auto" onclick="saveCustomer()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL PRODUTO -->
+<div class="modal-bg" id="productModal">
+  <div class="modal" style="max-width:560px">
+    <h3 id="productModalTitle">Novo Produto</h3>
+    <input type="hidden" id="prod-id">
+    <div class="modal-grid">
+      <div class="form-field full"><label>Nome *</label><input type="text" id="prod-name" placeholder="Ex: Charizard (25/185)"></div>
+      <div class="form-field"><label>Set / Expansão</label><input type="text" id="prod-set" placeholder="Ex: Tempestade de Plasma"></div>
+      <div class="form-field"><label>Número</label><input type="text" id="prod-number" placeholder="Ex: 25/185"></div>
+      <div class="form-field"><label>Tipo</label>
+        <select id="prod-type"><option>Carta Avulsa</option><option>Lacrado</option><option>Acessorio</option><option>Lote</option></select>
+      </div>
+      <div class="form-field"><label>Idioma</label>
+        <select id="prod-lang"><option>PT-BR</option><option>EN</option><option>JP</option><option>FR</option><option>CH</option></select>
+      </div>
+      <div class="form-field full"><label>Link Liga Pokémon</label><input type="text" id="prod-liga" placeholder="https://www.ligapokemon.com.br/..."></div>
+      <div class="form-field full">
+        <label>Foto (URL)</label>
+        <input type="text" id="prod-img-url" placeholder="https://..." oninput="previewProdImg()">
+        <img id="prod-img-preview" class="img-preview" style="margin-top:6px">
+      </div>
+      <div class="form-field full"><label>Observações</label><textarea id="prod-notes" rows="2"></textarea></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeModal('productModal')">Cancelar</button>
+      <button class="btn-primary" style="width:auto" onclick="saveProduct()">Salvar</button>
+    </div>
+  </div>
+</div>
+
 <!-- LIGHTBOX FOTO -->
 <div id="lightbox" onclick="closeLightbox()" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.85);z-index:500;align-items:center;justify-content:center;cursor:zoom-out">
   <img id="lightboxImg" src="" style="max-width:90vw;max-height:90vh;border-radius:12px;box-shadow:0 8px 40px rgba(0,0,0,0.5)">
@@ -853,6 +964,7 @@ function showPage(p,el){
   try{
     if(p==='binder'){loadBinder();updateProfileUI();}
     if(p==='dre')renderDRE();
+    if(p==='cadastros'){loadSuppliers();loadCustomers();loadProducts();}
   }catch(err){console.error('showPage error:',err);}
 }
 
@@ -986,13 +1098,7 @@ function renderInventory(){
   var statusF=document.getElementById('filterInvStatus').value;
   var supplierF=document.getElementById('filterInvSupplier').value;
   var filtered=inventory.filter(function(i){
-    if(nameF){
-      var invStr=(i.name+' '+(i.set_name||'')+' '+(i.language||'')+' '+(i.condition||'')+' '+(i.extras||'')).toLowerCase();
-      // Also check supplier from purchases
-      var invPur=purchases.filter(function(p){return p.id===i.purchase_id;})[0];
-      if(!invPur){invPur=purchases.filter(function(p){return p.description&&i.name&&p.description.toLowerCase()===i.name.toLowerCase()&&p.supplier;})[0];}
-      if(invStr.indexOf(nameF)===-1)return false;
-    }
+    if(nameF&&i.name.toLowerCase().indexOf(nameF)===-1)return false;
     if(typeF&&i.product_type!==typeF)return false;
     if(langF&&i.language!==langF)return false;
     if(condF&&i.condition!==condF)return false;
@@ -1049,8 +1155,8 @@ function renderSales(){
     return true;
   });
   if(salSortField){filtered.sort(function(a,b){
-    var va=salSortField==='lucro'?(parseFloat(a.sale_price||0)-parseFloat(a.cost_price||0))*a.quantity:a[salSortField]||'';
-    var vb=salSortField==='lucro'?(parseFloat(b.sale_price||0)-parseFloat(b.cost_price||0))*b.quantity:b[salSortField]||'';
+    var va=salSortField==='lucro'?(parseFloat(a.sale_price||0)-parseFloat(a.cost_price||0))*a.quantity:a[salSortField]||0;
+    var vb=salSortField==='lucro'?(parseFloat(b.sale_price||0)-parseFloat(b.cost_price||0))*b.quantity:b[salSortField]||0;
     if(typeof va==='number'||typeof vb==='number'){va=parseFloat(va)||0;vb=parseFloat(vb)||0;}
     else{va=String(va).toLowerCase();vb=String(vb).toLowerCase();}
     return salSortAsc?(va>vb?1:-1):(va<vb?1:-1);
@@ -1064,7 +1170,7 @@ function renderSales(){
     var mg=ts>0?((p/ts)*100).toFixed(0)+'%':'-';
     var invItem=inventory.filter(function(ii){return ii.id===s.inventory_id&&ii.image_url;})[0];
     if(!invItem){invItem=inventory.filter(function(ii){return ii.name&&s.card_name&&ii.name.toLowerCase()===s.card_name.toLowerCase()&&ii.image_url;})[0];}
-    if(!invItem){var pm=purchases.filter(function(pp){return pp.description&&s.card_name&&pp.description.toLowerCase()===s.card_name.toLowerCase()&&pp.image_url;})[0];if(pm)invItem={image_url:pm.image_url};}
+    var imgUrl=invItem?invItem.image_url:'';
     var imgUrl=invItem&&invItem.image_url?invItem.image_url:'';
     var imgHtml=imgUrl?'<img src="'+imgUrl+'" class="inv-img" style="cursor:zoom-in" onclick="openLightbox(event,\''+imgUrl+'\')">'    :'<div class="inv-img-placeholder"><i class="ti ti-photo-off"></i></div>';
     var paidBtn='<button onclick="toggleSaleField(\''+s.id+'\',\'paid\',' +(s.paid?'false':'true')+')" style="font-size:18px;background:none;border:none;cursor:pointer" title="'+(s.paid?'Pago':'Marcar pago')+'">'+(s.paid?'✅':'⬜')+'</button>';
@@ -2315,6 +2421,293 @@ async function vrConfirm(){
   showToast('Venda registrada! '+inv.name+' — '+fmt(price));
   closeModal('vendaRapidaModal');
   loadAll();
+}
+
+
+// ============================================================
+// CADASTROS - Suppliers, Customers, Products
+// ============================================================
+var suppliers=[], customers=[], products=[], activeCadTab='suppliers';
+
+function showCadTab(tab){
+  activeCadTab=tab;
+  ['suppliers','customers','products'].forEach(function(t){
+    document.getElementById('cad-'+t).style.display=t===tab?'block':'none';
+    var btn=document.getElementById('ctab-'+t);
+    btn.style.borderBottomColor=t===tab?'var(--amber)':'transparent';
+    btn.style.color=t===tab?'var(--amber)':'var(--text2)';
+  });
+  if(tab==='suppliers')renderSuppliers();
+  if(tab==='customers')renderCustomers();
+  if(tab==='products')renderProducts();
+}
+
+// ---- SUPPLIERS ----
+async function loadSuppliers(){
+  var r=await sb.from('suppliers').select('*').eq('user_id',currentUser.id).order('name');
+  suppliers=r.data||[];
+  renderSuppliers();
+  populateSupplierSelects();
+}
+
+function renderSuppliers(){
+  var q=(document.getElementById('filterSupplierName').value||'').toLowerCase();
+  var list=suppliers.filter(function(s){return !q||s.name.toLowerCase().indexOf(q)!==-1;});
+  var tb=document.getElementById('suppliersTable');
+  if(!list.length){tb.innerHTML='<tr><td colspan="6"><div class="empty-state"><i class="ti ti-truck"></i>Nenhum fornecedor</div></td></tr>';return;}
+  tb.innerHTML=list.map(function(s){
+    var purCount=purchases.filter(function(p){return p.supplier_id===s.id||(p.supplier&&p.supplier.toLowerCase()===s.name.toLowerCase());}).length;
+    return '<tr>'
+      +'<td style="font-weight:600">'+s.name+'</td>'
+      +'<td>'+(s.whatsapp?'<a href="https://wa.me/'+s.whatsapp+'" target="_blank" style="color:var(--success)"><i class="ti ti-brand-whatsapp"></i> '+s.whatsapp+'</a>':'-')+'</td>'
+      +'<td>'+(s.email||'-')+'</td>'
+      +'<td style="color:var(--text2);font-size:12px">'+(s.notes||'-')+'</td>'
+      +'<td><span class="badge badge-carta">'+purCount+'</span></td>'
+      +'<td><div class="actions-cell">'
+      +'<button class="btn-small" onclick="editSupplier(\''+s.id+'\')" title="Editar"><i class="ti ti-edit"></i></button>'
+      +'<button class="btn-danger" onclick="deleteSupplier(\''+s.id+'\')" title="Excluir"><i class="ti ti-trash"></i></button>'
+      +'</div></td></tr>';
+  }).join('');
+}
+
+function openNewSupplier(){
+  document.getElementById('supplierModalTitle').textContent='Novo Fornecedor';
+  document.getElementById('sup-id').value='';
+  document.getElementById('sup-name').value='';
+  document.getElementById('sup-whatsapp').value='';
+  document.getElementById('sup-email').value='';
+  document.getElementById('sup-notes').value='';
+  openModal('supplierModal');
+}
+
+function editSupplier(id){
+  var s=suppliers.filter(function(x){return x.id===id;})[0];
+  if(!s)return;
+  document.getElementById('supplierModalTitle').textContent='Editar Fornecedor';
+  document.getElementById('sup-id').value=s.id;
+  document.getElementById('sup-name').value=s.name||'';
+  document.getElementById('sup-whatsapp').value=s.whatsapp||'';
+  document.getElementById('sup-email').value=s.email||'';
+  document.getElementById('sup-notes').value=s.notes||'';
+  openModal('supplierModal');
+}
+
+async function saveSupplier(){
+  var name=document.getElementById('sup-name').value.trim();
+  if(!name){showToast('Nome obrigatório','error');return;}
+  var id=document.getElementById('sup-id').value;
+  var payload={user_id:currentUser.id,name:name,whatsapp:document.getElementById('sup-whatsapp').value||null,email:document.getElementById('sup-email').value||null,notes:document.getElementById('sup-notes').value||null};
+  var r=id?await sb.from('suppliers').update(payload).eq('id',id):await sb.from('suppliers').insert(payload);
+  if(r.error){showToast('Erro ao salvar','error');return;}
+  showToast(id?'Fornecedor atualizado!':'Fornecedor criado!');
+  closeModal('supplierModal');
+  await loadSuppliers();
+}
+
+async function deleteSupplier(id){
+  if(!confirm('Excluir este fornecedor?'))return;
+  await sb.from('suppliers').delete().eq('id',id);
+  showToast('Fornecedor removido');
+  await loadSuppliers();
+}
+
+// ---- CUSTOMERS ----
+async function loadCustomers(){
+  var r=await sb.from('customers').select('*').eq('user_id',currentUser.id).order('name');
+  customers=r.data||[];
+  renderCustomers();
+  populateCustomerSelects();
+}
+
+function renderCustomers(){
+  var q=(document.getElementById('filterCustomerName').value||'').toLowerCase();
+  var list=customers.filter(function(c){return !q||c.name.toLowerCase().indexOf(q)!==-1;});
+  var tb=document.getElementById('customersTable');
+  if(!list.length){tb.innerHTML='<tr><td colspan="5"><div class="empty-state"><i class="ti ti-users"></i>Nenhum cliente</div></td></tr>';return;}
+  tb.innerHTML=list.map(function(c){
+    var saleCount=sales.filter(function(s){return s.customer_id===c.id||(s.buyer&&s.buyer.toLowerCase()===c.name.toLowerCase());}).length;
+    return '<tr>'
+      +'<td style="font-weight:600">'+c.name+'</td>'
+      +'<td>'+(c.whatsapp?'<a href="https://wa.me/'+c.whatsapp+'" target="_blank" style="color:var(--success)"><i class="ti ti-brand-whatsapp"></i> '+c.whatsapp+'</a>':'-')+'</td>'
+      +'<td>'+(c.city||'-')+'</td>'
+      +'<td><span class="badge badge-nm">'+saleCount+'</span></td>'
+      +'<td><div class="actions-cell">'
+      +'<button class="btn-small" onclick="editCustomer(\''+c.id+'\')" title="Editar"><i class="ti ti-edit"></i></button>'
+      +'<button class="btn-danger" onclick="deleteCustomer(\''+c.id+'\')" title="Excluir"><i class="ti ti-trash"></i></button>'
+      +'</div></td></tr>';
+  }).join('');
+}
+
+function editCustomer(id){
+  var c=customers.filter(function(x){return x.id===id;})[0];
+  if(!c)return;
+  document.getElementById('customerModalTitle').textContent='Editar Cliente';
+  document.getElementById('cus-id').value=c.id;
+  document.getElementById('cus-name').value=c.name||'';
+  document.getElementById('cus-whatsapp').value=c.whatsapp||'';
+  document.getElementById('cus-city').value=c.city||'';
+  openModal('customerModal');
+}
+
+async function saveCustomer(){
+  var name=document.getElementById('cus-name').value.trim();
+  if(!name){showToast('Nome obrigatório','error');return;}
+  var id=document.getElementById('cus-id').value;
+  var payload={user_id:currentUser.id,name:name,whatsapp:document.getElementById('cus-whatsapp').value||null,city:document.getElementById('cus-city').value||null};
+  var r=id?await sb.from('customers').update(payload).eq('id',id):await sb.from('customers').insert(payload);
+  if(r.error){showToast('Erro ao salvar','error');return;}
+  showToast(id?'Cliente atualizado!':'Cliente criado!');
+  closeModal('customerModal');
+  await loadCustomers();
+}
+
+async function deleteCustomer(id){
+  if(!confirm('Excluir este cliente?'))return;
+  await sb.from('customers').delete().eq('id',id);
+  showToast('Cliente removido');
+  await loadCustomers();
+}
+
+// ---- PRODUCTS ----
+async function loadProducts(){
+  var r=await sb.from('products').select('*').eq('user_id',currentUser.id).order('name');
+  products=r.data||[];
+  renderProducts();
+}
+
+function renderProducts(){
+  var q=(document.getElementById('filterProductName').value||'').toLowerCase();
+  var list=products.filter(function(p){return !q||(p.name+' '+(p.set_name||'')).toLowerCase().indexOf(q)!==-1;});
+  var tb=document.getElementById('productsTable');
+  if(!list.length){tb.innerHTML='<tr><td colspan="7"><div class="empty-state"><i class="ti ti-cards"></i>Nenhum produto</div></td></tr>';return;}
+  tb.innerHTML=list.map(function(p){
+    var img=p.image_url?'<img src="'+p.image_url+'" class="inv-img" style="cursor:zoom-in" onclick="openLightbox(event,this.src)">':'<div class="inv-img-placeholder"><i class="ti ti-photo-off"></i></div>';
+    return '<tr>'
+      +'<td>'+img+'</td>'
+      +'<td style="font-weight:600">'+(p.liga_url?'<a href="'+p.liga_url+'" target="_blank" style="color:inherit">'+p.name+'</a>':p.name)+'</td>'
+      +'<td style="color:var(--text2);font-size:12px">'+(p.set_name||'-')+'</td>'
+      +'<td style="font-size:12px">'+(p.card_number||'-')+'</td>'
+      +'<td>'+typeBadge(p.product_type)+'</td>'
+      +'<td>'+langBadge(p.language)+'</td>'
+      +'<td><div class="actions-cell">'
+      +'<button class="btn-small" onclick="editProduct(\''+p.id+'\')" title="Editar"><i class="ti ti-edit"></i></button>'
+      +'<button class="btn-danger" onclick="deleteProduct(\''+p.id+'\')" title="Excluir"><i class="ti ti-trash"></i></button>'
+      +'</div></td></tr>';
+  }).join('');
+}
+
+function previewProdImg(){
+  var url=document.getElementById('prod-img-url').value.trim();
+  var prev=document.getElementById('prod-img-preview');
+  if(url){prev.src=url;prev.style.display='block';}else{prev.style.display='none';}
+}
+
+function editProduct(id){
+  var p=products.filter(function(x){return x.id===id;})[0];
+  if(!p)return;
+  document.getElementById('productModalTitle').textContent='Editar Produto';
+  document.getElementById('prod-id').value=p.id;
+  document.getElementById('prod-name').value=p.name||'';
+  document.getElementById('prod-set').value=p.set_name||'';
+  document.getElementById('prod-number').value=p.card_number||'';
+  document.getElementById('prod-type').value=p.product_type||'Carta Avulsa';
+  document.getElementById('prod-lang').value=p.language||'PT-BR';
+  document.getElementById('prod-liga').value=p.liga_url||'';
+  document.getElementById('prod-notes').value=p.notes||'';
+  var prev=document.getElementById('prod-img-preview');
+  document.getElementById('prod-img-url').value=p.image_url||'';
+  if(p.image_url){prev.src=p.image_url;prev.style.display='block';}else{prev.style.display='none';}
+  openModal('productModal');
+}
+
+async function saveProduct(){
+  var name=document.getElementById('prod-name').value.trim();
+  if(!name){showToast('Nome obrigatório','error');return;}
+  var id=document.getElementById('prod-id').value;
+  var payload={
+    user_id:currentUser.id,
+    name:name,
+    set_name:document.getElementById('prod-set').value||null,
+    card_number:document.getElementById('prod-number').value||null,
+    product_type:document.getElementById('prod-type').value,
+    language:document.getElementById('prod-lang').value,
+    liga_url:document.getElementById('prod-liga').value||null,
+    image_url:document.getElementById('prod-img-url').value||null,
+    notes:document.getElementById('prod-notes').value||null
+  };
+  var r=id?await sb.from('products').update(payload).eq('id',id):await sb.from('products').insert(payload);
+  if(r.error){showToast('Erro ao salvar','error');return;}
+  showToast(id?'Produto atualizado!':'Produto criado!');
+  closeModal('productModal');
+  await loadProducts();
+}
+
+async function deleteProduct(id){
+  if(!confirm('Excluir este produto?'))return;
+  await sb.from('products').delete().eq('id',id);
+  showToast('Produto removido');
+  await loadProducts();
+}
+
+// ---- AUTO-MIGRATE: extract unique suppliers and customers ----
+async function migrateSuppliers(){
+  var existing=new Set(suppliers.map(function(s){return s.name.toLowerCase();}));
+  var unique={};
+  purchases.forEach(function(p){
+    if(p.supplier&&p.supplier.trim()&&!existing.has(p.supplier.toLowerCase())){
+      unique[p.supplier.toLowerCase()]={user_id:currentUser.id,name:p.supplier.trim()};
+    }
+  });
+  var toInsert=Object.values(unique);
+  if(!toInsert.length) return 0;
+  await sb.from('suppliers').insert(toInsert);
+  return toInsert.length;
+}
+
+async function migrateCustomers(){
+  var existing=new Set(customers.map(function(c){return c.name.toLowerCase();}));
+  var unique={};
+  sales.forEach(function(s){
+    if(s.buyer&&s.buyer.trim()&&s.buyer!=='—'&&!existing.has(s.buyer.toLowerCase())){
+      unique[s.buyer.toLowerCase()]={user_id:currentUser.id,name:s.buyer.trim()};
+    }
+  });
+  var toInsert=Object.values(unique);
+  if(!toInsert.length) return 0;
+  await sb.from('customers').insert(toInsert);
+  return toInsert.length;
+}
+
+async function runMigration(){
+  var s=await migrateSuppliers();
+  var c=await migrateCustomers();
+  await loadSuppliers();
+  await loadCustomers();
+  if(s+c>0) showToast(s+' fornecedor(es) e '+c+' cliente(s) importados!');
+  else showToast('Nada novo para importar');
+}
+
+function populateSupplierSelects(){
+  // Update supplier dropdowns in purchase form
+  var selects=['p-supplier-select','ep-supplier-select'];
+  selects.forEach(function(id){
+    var el=document.getElementById(id);
+    if(!el)return;
+    var cur=el.value;
+    el.innerHTML='<option value="">Selecionar fornecedor...</option>'+suppliers.map(function(s){return '<option value="'+s.name+'">'+s.name+'</option>';}).join('');
+    el.value=cur;
+  });
+}
+
+function populateCustomerSelects(){
+  var selects=['sale-buyer-select','es-buyer-select'];
+  selects.forEach(function(id){
+    var el=document.getElementById(id);
+    if(!el)return;
+    var cur=el.value;
+    el.innerHTML='<option value="">Selecionar cliente...</option>'+customers.map(function(c){return '<option value="'+c.name+'">'+c.name+'</option>';}).join('');
+    el.value=cur;
+  });
 }
 
 var invSortField=null,invSortAsc=true,purSortField=null,purSortAsc=true;
