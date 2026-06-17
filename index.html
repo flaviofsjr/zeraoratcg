@@ -909,6 +909,7 @@ var SUPA_URL='https://cpvmidouwpfvugelffza.supabase.co';
 var SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNwdm1pZG91d3BmdnVnZWxmZnphIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0OTkxNDIsImV4cCI6MjA5NzA3NTE0Mn0.haj8uqCjzMxqlhajkcaDMpbrzyMjUogoX4A6k4QgTNg';
 var sb=supabase.createClient(SUPA_URL,SUPA_KEY);
 var currentUser=null,isRegister=false,purchases=[],inventory=[],sales=[],drePeriod='all';
+var suppliers=[], customers=[], products=[];
 
 var LOGO_B64='https://i.ibb.co/Vc194DR8/dba84186-71fe-471a-87d3-5e2c89832ab3.png';
 
@@ -1033,7 +1034,7 @@ function previewImage(input,previewId,b64Id){
 }
 
 function loadAll(){
-  Promise.all([loadPurchases(),loadInventory(),loadSales(),loadProfile()]).then(function(){loadDashboard();});
+  Promise.all([loadPurchases(),loadInventory(),loadSales(),loadProfile(),loadProducts()]).then(function(){renderSales();renderPurchases();renderInventory();loadDashboard();});
 }
 
 function loadPurchases(){
@@ -1062,7 +1063,7 @@ function loadInventory(){
 
 function loadSales(){
   return sb.from('sales').select('*').eq('user_id',currentUser.id).order('sale_date',{ascending:false}).then(function(r){
-    sales=r.data||[];updatePlatformFilter();renderSales();
+    sales=r.data||[];updatePlatformFilter();
   populateCustomerSelects();
   });
 }
@@ -1197,10 +1198,11 @@ function renderSales(){
     var p=ts-tc;
     var mg=ts>0?((p/ts)*100).toFixed(0)+'%':'-';
     // Image: check product_id first, then inventory, then purchases
-    var prodItem=s.product_id?products.filter(function(p){return p.id===s.product_id&&p.image_url;})[0]:null;
-    if(!prodItem){prodItem=products.filter(function(p){return p.name&&s.card_name&&p.name.toLowerCase()===s.card_name.toLowerCase()&&p.image_url;})[0];}
+    var prodItem=s.product_id?products.filter(function(pr){return pr.id===s.product_id&&pr.image_url;})[0]:null;
+    if(!prodItem){prodItem=products.filter(function(pr){return pr.name&&s.card_name&&pr.name.toLowerCase()===s.card_name.toLowerCase()&&pr.image_url;})[0];}
     var invItem=!prodItem?inventory.filter(function(ii){return ii.id===s.inventory_id&&ii.image_url;})[0]:null;
     var imgUrl=(prodItem&&prodItem.image_url)||(invItem&&invItem.image_url)||'';
+    var imgHtml=imgUrl?'<img src="'+imgUrl+'" class="inv-img" style="cursor:zoom-in" onclick="openLightbox(event,\''+imgUrl+'\')">'    :'<div class="inv-img-placeholder"><i class="ti ti-photo-off"></i></div>';
     var paidBtn='<button onclick="toggleSaleField(\''+s.id+'\',\'paid\',' +(s.paid?'false':'true')+')" style="font-size:18px;background:none;border:none;cursor:pointer" title="'+(s.paid?'Pago':'Marcar pago')+'">'+(s.paid?'✅':'⬜')+'</button>';
     var delivBtn='<button onclick="toggleSaleField(\''+s.id+'\',\'delivered\',' +(s.delivered?'false':'true')+')" style="font-size:18px;background:none;border:none;cursor:pointer" title="'+(s.delivered?'Entregue':'Marcar entregue')+'">'+(s.delivered?'✅':'⬜')+'</button>';
     return '<tr style="opacity:'+(s.delivered?'0.6':'1')+'"><td>'+imgHtml+'</td><td style="font-weight:600">'+s.card_name+'</td><td>'+s.quantity+'</td><td>'+(s.platform||'-')+'</td><td>'+(s.buyer||'-')+'</td><td style="font-weight:600">'+fmt(ts)+'</td><td>'+fmt(tc)+'</td><td class="'+(p>=0?'profit-pos':'profit-neg')+'" style="font-weight:600">'+fmt(p)+'</td><td style="color:'+(p>=0?'var(--success)':'var(--danger)')+'">'+mg+'</td><td>'+s.sale_date+'</td><td style="text-align:center">'+paidBtn+'</td><td style="text-align:center">'+delivBtn+'</td><td><div class="actions-cell"><button class="btn-small" onclick="editSale(\''+s.id+'\')" title="Editar"><i class="ti ti-edit"></i></button><button class="btn-danger" onclick="deleteSale(\''+s.id+'\')" title="Excluir"><i class="ti ti-trash"></i></button></div></td></tr>';
@@ -2464,7 +2466,7 @@ async function vrConfirm(){
 // ============================================================
 // CADASTROS - Suppliers, Customers, Products
 // ============================================================
-var suppliers=[], customers=[], products=[], activeCadTab='suppliers';
+var activeCadTab='suppliers';
 
 function showCadTab(tab){
   activeCadTab=tab;
