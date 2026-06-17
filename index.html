@@ -346,7 +346,7 @@ tr:hover td{background:var(--bg2)}
       <div id="cad-suppliers">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
           <input type="text" id="filterSupplierName" placeholder="Buscar fornecedor..." oninput="renderSuppliers()" style="padding:8px 12px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text);font-size:13px;width:220px">
-          <button class="btn-primary" style="width:auto" onclick="openNewSupplier()"><i class="ti ti-plus"></i> Novo fornecedor</button>
+          <button class="btn-primary" style="width:auto" onclick="document.getElementById('supplierModal').classList.add('open')"><i class="ti ti-plus"></i> Novo fornecedor</button>
         </div>
         <div class="table-wrap">
           <table><thead><tr><th>Nome</th><th>WhatsApp</th><th>Email</th><th>Obs</th><th>Compras</th><th></th></tr></thead>
@@ -357,7 +357,7 @@ tr:hover td{background:var(--bg2)}
       <div id="cad-customers" style="display:none">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
           <input type="text" id="filterCustomerName" placeholder="Buscar cliente..." oninput="renderCustomers()" style="padding:8px 12px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text);font-size:13px;width:220px">
-          <button class="btn-primary" style="width:auto" onclick="openNewCustomer()"><i class="ti ti-plus"></i> Novo cliente</button>
+          <button class="btn-primary" style="width:auto" onclick="document.getElementById('customerModal').classList.add('open')"><i class="ti ti-plus"></i> Novo cliente</button>
         </div>
         <div class="table-wrap">
           <table><thead><tr><th>Nome</th><th>WhatsApp</th><th>Cidade</th><th>Vendas</th><th></th></tr></thead>
@@ -370,7 +370,7 @@ tr:hover td{background:var(--bg2)}
           <input type="text" id="filterProductName" placeholder="Buscar produto..." oninput="renderProducts()" style="padding:8px 12px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text);font-size:13px;width:220px">
           <div style="display:flex;gap:8px">
             <button class="btn-secondary" style="width:auto" onclick="migrateProducts()" id="migrateProductsBtn"><i class="ti ti-download"></i> Importar do estoque</button>
-            <button class="btn-primary" style="width:auto" onclick="openNewProduct()"><i class="ti ti-plus"></i> Novo produto</button>
+            <button class="btn-primary" style="width:auto" onclick="document.getElementById('productModal').classList.add('open')"><i class="ti ti-plus"></i> Novo produto</button>
           </div>
         </div>
         <div class="table-wrap">
@@ -902,6 +902,8 @@ tr:hover td{background:var(--bg2)}
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
+window.onerror=function(msg,src,line,col,err){document.title='JS ERR: '+msg+' L'+line;return false;};
+
 var SUPA_URL='https://cpvmidouwpfvugelffza.supabase.co';
 var SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNwdm1pZG91d3BmdnVnZWxmZnphIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0OTkxNDIsImV4cCI6MjA5NzA3NTE0Mn0.haj8uqCjzMxqlhajkcaDMpbrzyMjUogoX4A6k4QgTNg';
 var sb=supabase.createClient(SUPA_URL,SUPA_KEY);
