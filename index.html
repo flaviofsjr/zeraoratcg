@@ -348,6 +348,7 @@ tr:hover td{background:var(--bg2)}
           <input type="text" id="filterSupplierName" placeholder="Buscar fornecedor..." oninput="renderSuppliers()" style="padding:8px 12px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text);font-size:13px;width:220px">
           <div style="display:flex;gap:8px">
             <button class="btn-secondary" style="width:auto" onclick="runMigration()" id="migrateSupCustBtn"><i class="ti ti-download"></i> Importar de compras/vendas</button>
+            <button class="btn-secondary" style="width:auto" onclick="openSupplierCleanup()"><i class="ti ti-wand"></i> Limpar duplicados</button>
             <button class="btn-primary" style="width:auto" onclick="document.getElementById('supplierModal').classList.add('open')"><i class="ti ti-plus"></i> Novo fornecedor</button>
           </div>
         </div>
@@ -843,6 +844,19 @@ tr:hover td{background:var(--bg2)}
     <div class="modal-actions">
       <button class="btn-secondary" onclick="closeModal('supplierModal')">Cancelar</button>
       <button class="btn-primary" style="width:auto" onclick="saveSupplier()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL LIMPEZA DE FORNECEDORES DUPLICADOS -->
+<div class="modal-bg" id="supplierCleanupModal">
+  <div class="modal" style="max-width:640px">
+    <h3>Limpar fornecedores duplicados</h3>
+    <p style="font-size:12px;color:var(--text2);margin-bottom:12px">Fornecedores com o mesmo nome (ignorando maiusculas/espacos) serao mesclados. O registro mais antigo de cada grupo e mantido; os demais sao apagados e suas compras sao redirecionadas para o sobrevivente.</p>
+    <div id="supplierCleanupPreview" style="max-height:400px;overflow-y:auto"></div>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeModal('supplierCleanupModal')">Fechar</button>
+      <button class="btn-primary" style="width:auto;display:none" id="runSupplierCleanupBtn" onclick="runSupplierCleanup()"><i class="ti ti-check"></i> Confirmar e mesclar duplicados</button>
     </div>
   </div>
 </div>
@@ -1617,10 +1631,13 @@ function copyBinderText(){
 }
 
 function exportInventory(){
-  var rows=[['Nome','Tipo','Set','Idioma','Condicao','Qtd Total','Qtd Disponivel','Custo Unit.','Preco Venda','Margem']];
+  var rows=[['Nome','Tipo','Set','Idioma','Condicao','Status','Qtd Total','Qtd Disponivel','Custo Unit.','Preco Venda','Margem','Valor em Estoque']];
   inventory.forEach(function(i){
     var mg=i.sale_price>0?((i.sale_price-i.cost_price)/i.sale_price*100).toFixed(1)+'%':'-';
-    rows.push([i.name,i.product_type||'',i.set_name||'',i.language,i.condition,i.quantity_total,i.quantity_available,i.cost_price,i.sale_price,mg]);
+    var statusLabel=(i.quantity_available||0)===0?'Esgotado':(i.status||'A venda');
+    var precoRef=i.sale_price>0?i.sale_price:(i.cost_price||0);
+    var valorEstoque=(precoRef*(i.quantity_available||0)).toFixed(2);
+    rows.push([i.name,i.product_type||'',i.set_name||'',i.language,i.condition,statusLabel,i.quantity_total,i.quantity_available,i.cost_price,i.sale_price,mg,valorEstoque]);
   });
   exportCSV(rows,'estoque_zeraora.csv');
 }
@@ -2584,6 +2601,111 @@ async function deleteSupplier(id){
 }
 
 // ---- CUSTOMERS ----
+// ============================================================
+// LIMPEZA DE FORNECEDORES DUPLICADOS
+// ============================================================
+function buildSupplierDupGroups(){
+  var groups={};
+  suppliers.forEach(function(s){
+    var key=s.name.trim().toLowerCase();
+    if(!groups[key])groups[key]=[];
+    groups[key].push(s);
+  });
+  var dupGroups=[];
+  Object.keys(groups).forEach(function(key){
+    if(groups[key].length>1){
+      // Sobrevivente = o de menor id/created_at (mais antigo), com fallback pro primeiro
+      var sorted=groups[key].slice().sort(function(a,b){
+        var da=a.created_at?new Date(a.created_at).getTime():0;
+        var db=b.created_at?new Date(b.created_at).getTime():0;
+        if(da&&db)return da-db;
+        return String(a.id).localeCompare(String(b.id));
+      });
+      dupGroups.push(sorted);
+    }
+  });
+  return dupGroups;
+}
+
+function previewSupplierCleanup(){
+  var dupGroups=buildSupplierDupGroups();
+  var box=document.getElementById('supplierCleanupPreview');
+  if(!dupGroups.length){
+    box.innerHTML='<div class="empty-state" style="padding:20px"><i class="ti ti-check"></i> Nenhum fornecedor duplicado encontrado.</div>';
+    document.getElementById('runSupplierCleanupBtn').style.display='none';
+    return;
+  }
+  var totalDup=dupGroups.reduce(function(a,g){return a+g.length-1;},0);
+  var html='<div style="margin-bottom:10px;font-size:13px;color:var(--text2)">'+dupGroups.length+' nome(s) duplicado(s), '+totalDup+' registro(s) serao removidos apos a mesclagem.</div>';
+  html+=dupGroups.map(function(g){
+    var survivor=g[0];
+    var purCountSurvivor=purchases.filter(function(p){return p.supplier_id===survivor.id;}).length;
+    var rows=g.map(function(s,idx){
+      var purCount=purchases.filter(function(p){return p.supplier_id===s.id;}).length;
+      var tag=idx===0?'<span class="badge" style="background:var(--success);color:#fff">MANTER</span>':'<span class="badge" style="background:var(--danger);color:#fff">REMOVER</span>';
+      return '<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:12px;border-bottom:1px solid var(--border2)">'
+        +'<span>'+tag+' id='+s.id+' &nbsp;'+(s.whatsapp||'-')+' &nbsp;'+(s.email||'-')+' &nbsp;'+(s.notes||'-')+'</span>'
+        +'<span>'+purCount+' compra(s)</span></div>';
+    }).join('');
+    return '<div style="margin-bottom:14px;padding:10px;border:1px solid var(--border2);border-radius:var(--radius)">'
+      +'<div style="font-weight:700;margin-bottom:6px">'+survivor.name+' &nbsp;<span style="color:var(--text3);font-weight:400;font-size:12px">('+g.length+' copias)</span></div>'
+      +rows+'</div>';
+  }).join('');
+  box.innerHTML=html;
+  document.getElementById('runSupplierCleanupBtn').style.display='inline-flex';
+}
+
+async function runSupplierCleanup(){
+  var dupGroups=buildSupplierDupGroups();
+  if(!dupGroups.length){showToast('Nada para limpar');return;}
+  if(!confirm('Isso vai mesclar '+dupGroups.length+' fornecedor(es) duplicado(s) e apagar os registros excedentes. Esta acao nao pode ser desfeita. Continuar?'))return;
+  var btn=document.getElementById('runSupplierCleanupBtn');
+  btn.disabled=true;btn.innerHTML='<i class="ti ti-loader-2"></i> Limpando...';
+  var merged=0,purchasesFixed=0;
+  try{
+    for(var gi=0;gi<dupGroups.length;gi++){
+      var g=dupGroups[gi];
+      var survivor=g[0];
+      var dupes=g.slice(1);
+      // Herda dados preenchidos dos duplicados, se o sobrevivente estiver vazio
+      var patch={};
+      dupes.forEach(function(d){
+        if(!survivor.whatsapp&&d.whatsapp)survivor.whatsapp=d.whatsapp;
+        if(!survivor.email&&d.email)survivor.email=d.email;
+        if(!survivor.notes&&d.notes)survivor.notes=d.notes;
+      });
+      if(survivor.whatsapp)patch.whatsapp=survivor.whatsapp;
+      if(survivor.email)patch.email=survivor.email;
+      if(survivor.notes)patch.notes=survivor.notes;
+      if(Object.keys(patch).length){
+        await sb.from('suppliers').update(patch).eq('id',survivor.id);
+      }
+      // Reaponta as compras dos duplicados para o sobrevivente
+      for(var di=0;di<dupes.length;di++){
+        var dupId=dupes[di].id;
+        var upd=await sb.from('purchases').update({supplier_id:survivor.id}).eq('supplier_id',dupId);
+        purchasesFixed+=(upd.count||0);
+        await sb.from('suppliers').delete().eq('id',dupId);
+      }
+      merged++;
+    }
+    showToast(merged+' fornecedor(es) mesclado(s) com sucesso!');
+    await loadSuppliers();
+    await loadPurchases();
+    document.getElementById('supplierCleanupPreview').innerHTML='';
+    btn.style.display='none';
+  }catch(e){
+    showToast('Erro na limpeza: '+e.message,'error');
+  }finally{
+    btn.disabled=false;btn.innerHTML='<i class="ti ti-check"></i> Confirmar e mesclar duplicados';
+  }
+}
+
+function openSupplierCleanup(){
+  document.getElementById('supplierCleanupModal').classList.add('open');
+  previewSupplierCleanup();
+}
+
 async function loadCustomers(){
   var r=await sb.from('customers').select('*').eq('user_id',currentUser.id).order('name');
   customers=r.data||[];
