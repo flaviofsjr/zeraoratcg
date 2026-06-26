@@ -251,7 +251,7 @@ tr:hover td{background:var(--bg2)}
         <select id="filterInvType" onchange="renderInventory()"><option value="">Todos tipos</option><option>Carta Avulsa</option><option>Lacrado</option><option>Acessorio</option><option>Lote</option></select>
         <select id="filterInvLang" onchange="renderInventory()"><option value="">Todos idiomas</option><option>PT-BR</option><option>EN</option><option>JP</option><option>FR</option><option>CH</option></select>
         <select id="filterInvCond" onchange="renderInventory()"><option value="">Todas condicoes</option><option>M</option><option>NM</option><option>LP</option><option>MP</option><option>HP</option><option>D</option></select>
-        <select id="filterInvStatus" onchange="renderInventory()"><option value="">Todos status</option><option>A venda</option><option>Reservado</option><option>Em estoque</option></select>
+        <select id="filterInvStatus" onchange="renderInventory()"><option value="">Todos status</option><option>A venda</option><option>Reservado</option><option>Em estoque</option><option value="Esgotado">Esgotado</option></select>
         <select id="filterInvSupplier" onchange="renderInventory()"><option value="">Todos fornecedores</option></select>
       </div>
       <div class="table-wrap">
@@ -346,7 +346,10 @@ tr:hover td{background:var(--bg2)}
       <div id="cad-suppliers">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
           <input type="text" id="filterSupplierName" placeholder="Buscar fornecedor..." oninput="renderSuppliers()" style="padding:8px 12px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text);font-size:13px;width:220px">
-          <button class="btn-primary" style="width:auto" onclick="document.getElementById('supplierModal').classList.add('open')"><i class="ti ti-plus"></i> Novo fornecedor</button>
+          <div style="display:flex;gap:8px">
+            <button class="btn-secondary" style="width:auto" onclick="runMigration()" id="migrateSupCustBtn"><i class="ti ti-download"></i> Importar de compras/vendas</button>
+            <button class="btn-primary" style="width:auto" onclick="document.getElementById('supplierModal').classList.add('open')"><i class="ti ti-plus"></i> Novo fornecedor</button>
+          </div>
         </div>
         <div class="table-wrap">
           <table><thead><tr><th>Nome</th><th>WhatsApp</th><th>Email</th><th>Obs</th><th>Compras</th><th></th></tr></thead>
@@ -991,7 +994,7 @@ function showPage(p,el){
   try{
     if(p==='binder'){loadBinder();updateProfileUI();}
     if(p==='dre')renderDRE();
-    if(p==='cadastros'){loadSuppliers();loadCustomers();loadProducts();setTimeout(runMigration,1000);}
+    if(p==='cadastros'){loadSuppliers();loadCustomers();loadProducts();}
   }catch(err){console.error('showPage error:',err);}
 }
 
@@ -1131,7 +1134,12 @@ function renderInventory(){
     if(typeF&&i.product_type!==typeF)return false;
     if(langF&&i.language!==langF)return false;
     if(condF&&i.condition!==condF)return false;
-    if(statusF&&(i.status||'A venda')!==statusF)return false;
+    if(statusF==='Esgotado'){
+      if((i.quantity_available||0)>0)return false;
+    }else{
+      if((i.quantity_available||0)===0)return false;
+      if(statusF&&(i.status||'A venda')!==statusF)return false;
+    }
     if(supplierF){
       var pur=purchases.filter(function(p){return p.id===i.purchase_id||(p.description&&i.name&&p.description.toLowerCase()===i.name.toLowerCase());})[0];
       if(!pur||(pur.supplier||'')!==supplierF)return false;
@@ -2750,11 +2758,18 @@ async function migrateProducts(){
 }
 
 async function migrateSuppliers(){
-  var existing=new Set(suppliers.map(function(s){return s.name.toLowerCase();}));
+  // Sempre busca a lista mais recente direto do banco antes de checar duplicidade,
+  // em vez de confiar na variavel local 'suppliers' (que pode estar desatualizada).
+  var fresh=await sb.from('suppliers').select('name').eq('user_id',currentUser.id);
+  var freshNames=(fresh.data||[]).map(function(s){return s.name.trim().toLowerCase();});
+  var existing=new Set(freshNames);
   var unique={};
   purchases.forEach(function(p){
-    if(p.supplier&&p.supplier.trim()&&!existing.has(p.supplier.toLowerCase())){
-      unique[p.supplier.toLowerCase()]={user_id:currentUser.id,name:p.supplier.trim()};
+    if(p.supplier&&p.supplier.trim()){
+      var key=p.supplier.trim().toLowerCase();
+      if(!existing.has(key)&&!unique[key]){
+        unique[key]={user_id:currentUser.id,name:p.supplier.trim()};
+      }
     }
   });
   var toInsert=Object.values(unique);
@@ -2764,11 +2779,16 @@ async function migrateSuppliers(){
 }
 
 async function migrateCustomers(){
-  var existing=new Set(customers.map(function(c){return c.name.toLowerCase();}));
+  var fresh=await sb.from('customers').select('name').eq('user_id',currentUser.id);
+  var freshNames=(fresh.data||[]).map(function(c){return c.name.trim().toLowerCase();});
+  var existing=new Set(freshNames);
   var unique={};
   sales.forEach(function(s){
-    if(s.buyer&&s.buyer.trim()&&s.buyer!=='—'&&!existing.has(s.buyer.toLowerCase())){
-      unique[s.buyer.toLowerCase()]={user_id:currentUser.id,name:s.buyer.trim()};
+    if(s.buyer&&s.buyer.trim()&&s.buyer!=='—'){
+      var key=s.buyer.trim().toLowerCase();
+      if(!existing.has(key)&&!unique[key]){
+        unique[key]={user_id:currentUser.id,name:s.buyer.trim()};
+      }
     }
   });
   var toInsert=Object.values(unique);
@@ -2777,13 +2797,23 @@ async function migrateCustomers(){
   return toInsert.length;
 }
 
+var migrationRunning=false;
 async function runMigration(){
-  var s=await migrateSuppliers();
-  var c=await migrateCustomers();
-  await loadSuppliers();
-  await loadCustomers();
-  if(s+c>0) showToast(s+' fornecedor(es) e '+c+' cliente(s) importados!');
-  else showToast('Nada novo para importar');
+  if(migrationRunning) return;
+  migrationRunning=true;
+  var btn=document.getElementById('migrateSupCustBtn');
+  if(btn){btn.disabled=true;btn.innerHTML='<i class="ti ti-loader-2"></i> Importando...';}
+  try{
+    var s=await migrateSuppliers();
+    var c=await migrateCustomers();
+    await loadSuppliers();
+    await loadCustomers();
+    if(s+c>0) showToast(s+' fornecedor(es) e '+c+' cliente(s) importados!');
+    else showToast('Nada novo para importar');
+  }finally{
+    migrationRunning=false;
+    if(btn){btn.disabled=false;btn.innerHTML='<i class="ti ti-download"></i> Importar de compras/vendas';}
+  }
 }
 
 
@@ -2907,9 +2937,10 @@ function updateSupplierFilter(){
 
 
 function updateInvSummary(){
-  var aVenda=inventory.filter(function(i){return (i.status||'A venda')==='A venda';});
-  var reservado=inventory.filter(function(i){return i.status==='Reservado';});
-  var emEstoque=inventory.filter(function(i){return i.status==='Em estoque';});
+  var ativos=inventory.filter(function(i){return (i.quantity_available||0)>0;});
+  var aVenda=ativos.filter(function(i){return (i.status||'A venda')==='A venda';});
+  var reservado=ativos.filter(function(i){return i.status==='Reservado';});
+  var emEstoque=ativos.filter(function(i){return i.status==='Em estoque';});
 
   function sumVal(arr){return arr.reduce(function(a,i){
     var price=i.sale_price>0?i.sale_price:i.cost_price||0;
