@@ -223,6 +223,7 @@ tr:hover td{background:var(--bg2)}
         <div style="display:flex;gap:8px">
           <button class="btn-secondary" style="width:auto" onclick="openModal('verifyStockModal')"><i class="ti ti-shield-check"></i> Verificar estoque</button>
           <button class="btn-secondary" style="width:auto" onclick="exportInventory()"><i class="ti ti-download"></i> CSV</button>
+          <button class="btn-secondary" style="width:auto" id="toggleZeroBtn" onclick="toggleZeroStock()"><i class="ti ti-eye-off"></i> Ocultar esgotados</button>
         </div>
       </div>
       <div id="invSummary" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:1.25rem">
@@ -286,11 +287,7 @@ tr:hover td{background:var(--bg2)}
     <!-- DRE -->
     <div class="page" id="page-dre">
       <div class="section-header"><h3>DRE - Demonstracao de resultado</h3></div>
-      <div class="period-filter">
-        <button class="period-btn active" onclick="setDrePeriod('all',this)">Tudo</button>
-        <button class="period-btn" onclick="setDrePeriod('month',this)">Este mes</button>
-        <button class="period-btn" onclick="setDrePeriod('year',this)">Este ano</button>
-      </div>
+      <div class="section-header"><h3>DRE - Demonstracao de resultado 2026</h3></div>
       <div id="dreContent"></div>
     </div>
 
@@ -521,6 +518,10 @@ tr:hover td{background:var(--bg2)}
       </div>
       <div class="form-field full"><label>Observacoes</label><textarea id="p-notes" rows="2" placeholder="anotacoes..."></textarea></div>
     </div>
+      <div class="form-field full" style="display:flex;align-items:center;gap:8px;padding:8px 0">
+        <input type="checkbox" id="p-is-trade" style="width:16px;height:16px;accent-color:var(--amber)">
+        <label for="p-is-trade" style="margin:0;font-weight:600;cursor:pointer">&#x1F504; Esta compra e uma troca (nao saiu dinheiro)</label>
+      </div>
     <div class="modal-actions">
       <button class="btn-secondary" onclick="closeModal('purchaseModal')">Cancelar</button>
       <button class="btn-primary" style="width:auto" id="purchaseSaveBtn" onclick="savePurchase()">Registrar compra</button>
@@ -590,6 +591,10 @@ tr:hover td{background:var(--bg2)}
       <div class="form-field full"><label>Observacoes</label><textarea id="s-notes" rows="2" placeholder="anotacoes..."></textarea></div>
     </div>
     <div class="modal-actions">
+      <div class="form-field full" style="display:flex;align-items:center;gap:8px;padding:8px 0">
+        <input type="checkbox" id="s-is-trade" style="width:16px;height:16px;accent-color:var(--amber)">
+        <label for="s-is-trade" style="margin:0;font-weight:600;cursor:pointer">&#x1F504; Esta venda e uma troca (nao entrou dinheiro)</label>
+      </div>
       <button class="btn-secondary" onclick="closeModal('saleModal')">Cancelar</button>
       <button class="btn-primary" style="width:auto" onclick="saveSale()">Salvar venda</button>
     </div>
@@ -1380,6 +1385,7 @@ function renderInventory(){
   var statusF=document.getElementById('filterInvStatus').value;
   var supplierF=document.getElementById('filterInvSupplier').value;
   var filtered=inventory.filter(function(i){
+    if(hideZeroStock && (i.quantity_available||0) === 0) return false;
     if(nameF&&i.name.toLowerCase().indexOf(nameF)===-1)return false;
     if(typeF&&i.product_type!==typeF)return false;
     if(langF&&i.language!==langF)return false;
@@ -1510,6 +1516,7 @@ function savePurchase(){
   var pSupplier=document.getElementById('p-supplier').value;
   var pDate=document.getElementById('p-date').value;
   var pNotes=document.getElementById('p-notes').value;
+  var pIsTrade=document.getElementById('p-is-trade').checked;
 
   var purchasePayload={
     user_id:currentUser.id,
@@ -1526,7 +1533,8 @@ function savePurchase(){
     notes:pNotes,
     image_url:imgB64,
     extras:document.getElementById('p-extras').value||null,
-    liga_url:document.getElementById('p-liga').value||null
+    liga_url:document.getElementById('p-liga').value||null,
+    is_trade:pIsTrade
   };
 
   sb.from('purchases').insert(purchasePayload).then(function(r){
@@ -1714,7 +1722,8 @@ function saveSale(){
     buyer:document.getElementById('s-buyer').value,
     customer_id:(customers.filter(function(c){return c.name===document.getElementById('s-buyer').value;})[0]||{}).id||null,
     sale_date:document.getElementById('s-date').value,
-    notes:document.getElementById('s-notes').value
+    notes:document.getElementById('s-notes').value,
+    is_trade:document.getElementById('s-is-trade').checked
   };
 
   sb.from('sales').insert(salePayload).then(function(r){
@@ -1801,38 +1810,85 @@ function setDrePeriod(period,el){
 }
 
 function renderDRE(){
-  var now=new Date();
-  var ym=now.toISOString().slice(0,7);
-  var yr=now.getFullYear().toString();
-  var fs=sales,fp=purchases;
-  if(drePeriod==='month'){
-    fs=sales.filter(function(s){return s.sale_date&&s.sale_date.indexOf(ym)===0;});
-    fp=purchases.filter(function(p){return p.purchase_date&&p.purchase_date.indexOf(ym)===0;});
-  } else if(drePeriod==='year'){
-    fs=sales.filter(function(s){return s.sale_date&&s.sale_date.indexOf(yr)===0;});
-    fp=purchases.filter(function(p){return p.purchase_date&&p.purchase_date.indexOf(yr)===0;});
+  var now = new Date();
+  var yr = now.getFullYear();
+
+  // Build months Jan-Dec
+  var months = [];
+  for(var m=1; m<=12; m++){
+    var ym = yr + '-' + String(m).padStart(2,'0');
+    var label = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'][m-1];
+
+    var fs = sales.filter(function(s){ return s.sale_date && s.sale_date.indexOf(ym)===0 && !s.is_trade; });
+    var trades = sales.filter(function(s){ return s.sale_date && s.sale_date.indexOf(ym)===0 && s.is_trade; }).length;
+    var revenue = fs.reduce(function(a,s){ return a+parseFloat(s.sale_price||0)*s.quantity; },0);
+    var cogs = fs.reduce(function(a,s){ return a+parseFloat(s.cost_price||0)*s.quantity; },0);
+    var grossProfit = revenue - cogs;
+    var exp = expenses.filter(function(e){ return e.expense_date && e.expense_date.indexOf(ym)===0; })
+      .reduce(function(a,e){ return a+parseFloat(e.amount||0); },0);
+    var netProfit = grossProfit - exp;
+    var margin = revenue>0?(netProfit/revenue*100):0;
+
+    months.push({label:label, ym:ym, revenue:revenue, cogs:cogs, grossProfit:grossProfit, exp:exp, netProfit:netProfit, trades:trades, margin:margin, sales:fs.length});
   }
-  var revenue=fs.reduce(function(a,s){return a+parseFloat(s.sale_price||0)*s.quantity;},0);
-  var cogs=fs.reduce(function(a,s){return a+parseFloat(s.cost_price||0)*s.quantity;},0);
-  var grossProfit=revenue-cogs;
-  var totalPurchased=fp.reduce(function(a,p){return a+parseFloat(p.total_amount||0);},0);
-  var margin=revenue>0?(grossProfit/revenue*100):0;
-  var label=drePeriod==='month'?ym:drePeriod==='year'?yr:'Periodo completo';
-  document.getElementById('dreContent').innerHTML=
-    '<div class="dre-section"><h4>Receitas - '+label+'</h4>'
-    +'<div class="dre-row"><span>Faturamento bruto</span><span style="font-weight:600">'+fmt(revenue)+'</span></div></div>'
-    +'<div class="dre-section"><h4>Custos</h4>'
-    +'<div class="dre-row"><span>CMV - Custo das vendas</span><span>'+fmt(cogs)+'</span></div>'
-    +'<div class="dre-row total '+(grossProfit>=0?'green':'red')+'"><span>Lucro bruto</span><span>'+fmt(grossProfit)+'</span></div>'
-    +'<div class="dre-row"><span>Margem bruta</span><span>'+margin.toFixed(1)+'%</span></div></div>'
-    +'<div class="dre-section"><h4>Entradas no periodo</h4>'
-    +'<div class="dre-row"><span>Total investido em compras</span><span>'+fmt(totalPurchased)+'</span></div>'
-    +'<div class="dre-row"><span>Numero de compras</span><span>'+fp.length+'</span></div></div>'
-    +'<div class="dre-section"><h4>Resumo</h4>'
-    +'<div class="dre-row"><span>Numero de vendas</span><span>'+fs.length+'</span></div>'
-    +'<div class="dre-row"><span>Ticket medio</span><span>'+(fs.length?fmt(revenue/fs.length):'-')+'</span></div>'
-    +'<div class="dre-row total '+(grossProfit>=0?'green':'red')+'"><span>Resultado liquido estimado</span><span>'+fmt(grossProfit)+'</span></div></div>';
+
+  // Year totals
+  var totRevenue = months.reduce(function(a,m){ return a+m.revenue; },0);
+  var totCogs = months.reduce(function(a,m){ return a+m.cogs; },0);
+  var totGross = months.reduce(function(a,m){ return a+m.grossProfit; },0);
+  var totExp = months.reduce(function(a,m){ return a+m.exp; },0);
+  var totNet = months.reduce(function(a,m){ return a+m.netProfit; },0);
+  var totMargin = totRevenue>0?(totNet/totRevenue*100):0;
+  var totSales = months.reduce(function(a,m){ return a+m.sales; },0);
+  var totTrades = months.reduce(function(a,m){ return a+(m.trades||0); },0);
+
+  var rows = [
+    {label:'Faturamento',      key:'revenue',     fmt:true,  total:totRevenue,   color:''},
+    {label:'CMV',              key:'cogs',         fmt:true,  total:totCogs,      color:'var(--danger)'},
+    {label:'Lucro Bruto',      key:'grossProfit',  fmt:true,  total:totGross,     bold:true},
+    {label:'Despesas',         key:'exp',          fmt:true,  total:totExp,       color:'var(--danger)'},
+    {label:'Lucro Liquido',    key:'netProfit',    fmt:true,  total:totNet,       bold:true, highlight:true},
+    {label:'Margem Liquida',   key:'margin',       pct:true,  total:totMargin,    color:''},
+    {label:'Num. Vendas',      key:'sales',        num:true,  total:totSales,     color:''},
+    {label:'Trocas (excluidas)',key:'trades',       num:true,  total:totTrades,     color:'var(--text3)'},
+  ];
+
+  var html = '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px">';
+  // Header
+  html += '<thead><tr><th style="text-align:left;padding:5px 4px;background:var(--bg2);border-bottom:2px solid var(--border);width:110px">Indicador</th>';
+  months.forEach(function(m){
+    html += '<th style="text-align:right;padding:5px 4px;background:var(--bg2);border-bottom:2px solid var(--border);">' + m.label + '</th>';
+  });
+  html += '<th style="text-align:right;padding:5px 4px;background:var(--amber);border-bottom:2px solid var(--amber-dark);color:#000;font-weight:800;">Total ' + yr + '</th>';
+  html += '</tr></thead><tbody>';
+
+  rows.forEach(function(row){
+    var bg = row.highlight ? 'background:var(--bg2);border-top:2px solid var(--border);border-bottom:2px solid var(--border)' : '';
+    html += '<tr style="' + bg + '">';
+    html += '<td style="padding:5px 6px;font-weight:' + (row.bold?'700':'500') + ';color:var(--text)">' + row.label + '</td>';
+    months.forEach(function(m){
+      var val = m[row.key];
+      var str = row.pct ? val.toFixed(1)+'%' : row.num ? val : fmt(val);
+      var color = '';
+      if(row.highlight) color = val>=0?'color:var(--success)':'color:var(--danger)';
+      else if(row.color) color = 'color:'+row.color;
+      var style = 'text-align:right;padding:5px 3px;' + color + (row.bold?';font-weight:700':'');
+      // Gray out months with no data
+      if(m.revenue===0 && m.exp===0) style += ';opacity:.3';
+      html += '<td style="' + style + '">' + str + '</td>';
+    });
+    // Total column
+    var tval = row.total;
+    var tstr = row.pct ? tval.toFixed(1)+'%' : row.num ? tval : fmt(tval);
+    var tcol = row.highlight ? (tval>=0?'color:var(--success)':'color:var(--danger)') : (row.color?'color:'+row.color:'');
+    html += '<td style="text-align:right;padding:5px 4px;background:#fffbe6;' + tcol + ';font-weight:700">' + tstr + '</td>';
+    html += '</tr>';
+  });
+
+  html += '</tbody></table></div>';
+  document.getElementById('dreContent').innerHTML = html;
 }
+
 
 function loadBinder(){
   var forSale=inventory.filter(function(i){return (i.quantity_available||0)>0&&i.sale_price>0&&(i.status||'A venda')==='A venda';});
@@ -3129,6 +3185,16 @@ document.addEventListener('click', function(e){
   }
 });
 
+
+var hideZeroStock = true;
+function toggleZeroStock(){
+  hideZeroStock = !hideZeroStock;
+  var btn = document.getElementById('toggleZeroBtn');
+  btn.innerHTML = hideZeroStock ? '<i class="ti ti-eye-off"></i> Ocultar esgotados' : '<i class="ti ti-eye"></i> Mostrar esgotados';
+  btn.style.background = hideZeroStock ? '' : 'var(--amber)';
+  btn.style.color = hideZeroStock ? '' : '#000';
+  renderInventory();
+}
 
 var invSortField=null,invSortAsc=true,purSortField=null,purSortAsc=true;
 
