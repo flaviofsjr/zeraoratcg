@@ -174,6 +174,7 @@ tr:hover td{background:var(--bg2)}
     <div class="nav-tab" onclick="showPage('binder',this)"><i class="ti ti-layout-grid"></i> Binder</div>
     <div class="nav-tab" onclick="showPage('precificador',this)"><i class="ti ti-calculator"></i> Preco</div>
     <div class="nav-tab" onclick="showPage('cadastros',this)"><i class="ti ti-database"></i> Cadastros</div>
+    <div class="nav-tab" onclick="showPage('despesas',this)"><i class="ti ti-receipt"></i> Despesas</div>
     <div class="nav-right">
       <span class="nav-user" id="navUser"></span>
       <button class="btn-secondary" onclick="doLogout()" style="padding:6px 12px;font-size:12px">Sair</button>
@@ -251,7 +252,7 @@ tr:hover td{background:var(--bg2)}
         <select id="filterInvType" onchange="renderInventory()"><option value="">Todos tipos</option><option>Carta Avulsa</option><option>Lacrado</option><option>Acessorio</option><option>Lote</option></select>
         <select id="filterInvLang" onchange="renderInventory()"><option value="">Todos idiomas</option><option>PT-BR</option><option>EN</option><option>JP</option><option>FR</option><option>CH</option></select>
         <select id="filterInvCond" onchange="renderInventory()"><option value="">Todas condicoes</option><option>M</option><option>NM</option><option>LP</option><option>MP</option><option>HP</option><option>D</option></select>
-        <select id="filterInvStatus" onchange="renderInventory()"><option value="">Todos status</option><option>A venda</option><option>Reservado</option><option>Em estoque</option><option value="Esgotado">Esgotado</option></select>
+        <select id="filterInvStatus" onchange="renderInventory()"><option value="">Todos status</option><option>A venda</option><option>Reservado</option><option>Em estoque</option></select>
         <select id="filterInvSupplier" onchange="renderInventory()"><option value="">Todos fornecedores</option></select>
       </div>
       <div class="table-wrap">
@@ -332,6 +333,71 @@ tr:hover td{background:var(--bg2)}
         </div>
       </div>
     </div>
+
+    <!-- DESPESAS -->
+    <div class="page" id="page-despesas">
+      <div class="section-header">
+        <h3>Despesas</h3>
+        <button class="btn-primary" style="width:auto" onclick="openNewExpense()"><i class="ti ti-plus"></i> Nova despesa</button>
+      </div>
+
+      <!-- SUMMARY CARDS -->
+      <div id="expSummary" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:1.25rem">
+        <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px 16px;min-height:90px">
+          <div style="font-size:11px;color:var(--text2);font-weight:700;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px">Total Geral</div>
+          <div style="font-size:22px;font-weight:700;color:var(--danger)" id="exp-total">R$ 0,00</div>
+          <div style="font-size:12px;color:var(--text2);margin-top:4px" id="exp-count">0 despesa(s)</div>
+        </div>
+        <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px 16px;min-height:90px">
+          <div style="font-size:11px;color:var(--text2);font-weight:700;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px">Este mes</div>
+          <div style="font-size:22px;font-weight:700;color:var(--danger)" id="exp-month">R$ 0,00</div>
+        </div>
+        <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px 16px;min-height:90px">
+          <div style="font-size:11px;color:var(--text2);font-weight:700;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px">Maior categoria</div>
+          <div style="font-size:16px;font-weight:700;color:var(--text)" id="exp-top-cat">-</div>
+        </div>
+        <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px 16px;min-height:90px">
+          <div style="font-size:11px;color:var(--text2);font-weight:700;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px">Lucro liquido (mes)</div>
+          <div style="font-size:22px;font-weight:700" id="exp-net-profit">R$ 0,00</div>
+        </div>
+      </div>
+
+      <!-- FILTERS -->
+      <div class="filters" style="margin-bottom:12px">
+        <input type="text" id="filterExpName" placeholder="Buscar despesa..." oninput="renderExpenses()"
+          style="padding:8px 12px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text);font-size:13px;width:220px">
+        <select id="filterExpCat" onchange="renderExpenses()"
+          style="padding:8px 12px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text);font-size:13px">
+          <option value="">Todas categorias</option>
+          <option>Acessorios</option>
+          <option>Bulk</option>
+          <option>Frete</option>
+          <option>Taxas</option>
+          <option>Outros</option>
+        </select>
+        <input type="month" id="filterExpMonth" onchange="renderExpenses()"
+          style="padding:8px 12px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text);font-size:13px">
+        <button class="btn-secondary" style="width:auto" onclick="exportExpensesCSV()"><i class="ti ti-download"></i> CSV</button>
+      </div>
+
+      <!-- TABLE -->
+      <div class="table-wrap">
+        <table>
+          <thead><tr>
+            <th>Data</th>
+            <th>Descricao</th>
+            <th>Categoria</th>
+            <th>Valor</th>
+            <th>Obs</th>
+            <th></th>
+          </tr></thead>
+          <tbody id="expensesTable">
+            <tr><td colspan="6"><div class="empty-state"><i class="ti ti-receipt-off"></i>Nenhuma despesa registrada</div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
     <!-- CADASTROS -->
     <div class="page" id="page-cadastros">
       <div class="section-header">
@@ -346,11 +412,7 @@ tr:hover td{background:var(--bg2)}
       <div id="cad-suppliers">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
           <input type="text" id="filterSupplierName" placeholder="Buscar fornecedor..." oninput="renderSuppliers()" style="padding:8px 12px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text);font-size:13px;width:220px">
-          <div style="display:flex;gap:8px">
-            <button class="btn-secondary" style="width:auto" onclick="runMigration()" id="migrateSupCustBtn"><i class="ti ti-download"></i> Importar de compras/vendas</button>
-            <button class="btn-secondary" style="width:auto" onclick="openSupplierCleanup()"><i class="ti ti-wand"></i> Limpar duplicados</button>
-            <button class="btn-primary" style="width:auto" onclick="document.getElementById('supplierModal').classList.add('open')"><i class="ti ti-plus"></i> Novo fornecedor</button>
-          </div>
+          <button class="btn-primary" style="width:auto" onclick="document.getElementById('supplierModal').classList.add('open')"><i class="ti ti-plus"></i> Novo fornecedor</button>
         </div>
         <div class="table-wrap">
           <table><thead><tr><th>Nome</th><th>WhatsApp</th><th>Email</th><th>Obs</th><th>Compras</th><th></th></tr></thead>
@@ -848,19 +910,6 @@ tr:hover td{background:var(--bg2)}
   </div>
 </div>
 
-<!-- MODAL LIMPEZA DE FORNECEDORES DUPLICADOS -->
-<div class="modal-bg" id="supplierCleanupModal">
-  <div class="modal" style="max-width:640px">
-    <h3>Limpar fornecedores duplicados</h3>
-    <p style="font-size:12px;color:var(--text2);margin-bottom:12px">Fornecedores com o mesmo nome (ignorando maiusculas/espacos) serao mesclados. O registro mais antigo de cada grupo e mantido; os demais sao apagados e suas compras sao redirecionadas para o sobrevivente.</p>
-    <div id="supplierCleanupPreview" style="max-height:400px;overflow-y:auto"></div>
-    <div class="modal-actions">
-      <button class="btn-secondary" onclick="closeModal('supplierCleanupModal')">Fechar</button>
-      <button class="btn-primary" style="width:auto;display:none" id="runSupplierCleanupBtn" onclick="runSupplierCleanup()"><i class="ti ti-check"></i> Confirmar e mesclar duplicados</button>
-    </div>
-  </div>
-</div>
-
 <!-- MODAL CLIENTE -->
 <div class="modal-bg" id="customerModal">
   <div class="modal" style="max-width:480px">
@@ -904,6 +953,42 @@ tr:hover td{background:var(--bg2)}
     <div class="modal-actions">
       <button class="btn-secondary" onclick="closeModal('productModal')">Cancelar</button>
       <button class="btn-primary" style="width:auto" onclick="saveProduct()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL DESPESA -->
+<div class="modal-bg" id="expenseModal">
+  <div class="modal" style="max-width:480px">
+    <h3 id="expenseModalTitle">Nova Despesa</h3>
+    <input type="hidden" id="exp-id">
+    <div class="modal-grid">
+      <div class="form-field full"><label>Descricao *</label>
+        <input type="text" id="exp-desc" placeholder="Ex: Fichario 9 bolsos, Bulk 100 cartas...">
+      </div>
+      <div class="form-field"><label>Categoria *</label>
+        <select id="exp-cat">
+          <option value="">Selecionar...</option>
+          <option>Acessorios</option>
+          <option>Bulk</option>
+          <option>Frete</option>
+          <option>Taxas</option>
+          <option>Outros</option>
+        </select>
+      </div>
+      <div class="form-field"><label>Valor (R$) *</label>
+        <input type="number" id="exp-amount" placeholder="0,00" min="0" step="0.01">
+      </div>
+      <div class="form-field"><label>Data *</label>
+        <input type="date" id="exp-date">
+      </div>
+      <div class="form-field full"><label>Observacoes</label>
+        <textarea id="exp-notes" rows="2" placeholder="Opcional..."></textarea>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeModal('expenseModal')">Cancelar</button>
+      <button class="btn-primary" style="width:auto" onclick="saveExpense()">Salvar</button>
     </div>
   </div>
 </div>
@@ -1008,7 +1093,8 @@ function showPage(p,el){
   try{
     if(p==='binder'){loadBinder();updateProfileUI();}
     if(p==='dre')renderDRE();
-    if(p==='cadastros'){loadSuppliers();loadCustomers();loadProducts();}
+    if(p==='despesas'){loadExpenses();}
+    if(p==='cadastros'){loadSuppliers();loadCustomers();loadProducts();setTimeout(runMigration,1000);}
   }catch(err){console.error('showPage error:',err);}
 }
 
@@ -1050,8 +1136,158 @@ function previewImage(input,previewId,b64Id){
   reader.readAsDataURL(file);
 }
 
+
+// ============================================================
+// DESPESAS
+// ============================================================
+var expenses = [];
+
+async function loadExpenses(){
+  var r = await sb.from('expenses').select('*').eq('user_id', currentUser.id).order('expense_date', {ascending:false});
+  expenses = r.data || [];
+  renderExpenses();
+  updateExpSummary();
+}
+
+function renderExpenses(){
+  var q = (document.getElementById('filterExpName').value||'').toLowerCase();
+  var cat = document.getElementById('filterExpCat').value;
+  var month = document.getElementById('filterExpMonth').value;
+
+  var filtered = expenses.filter(function(e){
+    if(q && (e.description||'').toLowerCase().indexOf(q)===-1) return false;
+    if(cat && e.category !== cat) return false;
+    if(month && (e.expense_date||'').indexOf(month) !== 0) return false;
+    return true;
+  });
+
+  var tb = document.getElementById('expensesTable');
+  if(!filtered.length){
+    tb.innerHTML = '<tr><td colspan="6"><div class="empty-state"><i class="ti ti-receipt-off"></i>Nenhuma despesa encontrada</div></td></tr>';
+    return;
+  }
+
+  var catColors = {
+    'Acessorios':'#EBF5FF','Bulk':'#F3E8FF','Frete':'#FFF3E0','Taxas':'#FFEBEE','Outros':'#F1EFE8'
+  };
+  var catText = {
+    'Acessorios':'#1a56db','Bulk':'#6B21A8','Frete':'#E65100','Taxas':'#B71C1C','Outros':'#5F5E5A'
+  };
+
+  tb.innerHTML = filtered.map(function(e){
+    var bg = catColors[e.category]||'#F1EFE8';
+    var tc = catText[e.category]||'#5F5E5A';
+    return '<tr>'
+      + '<td style="color:var(--text2);font-size:12px">' + (e.expense_date||'-') + '</td>'
+      + '<td style="font-weight:600">' + (e.description||'-') + '</td>'
+      + '<td><span class="badge" style="background:'+bg+';color:'+tc+'">' + (e.category||'-') + '</span></td>'
+      + '<td style="font-weight:700;color:var(--danger)">' + fmt(e.amount) + '</td>'
+      + '<td style="color:var(--text2);font-size:12px">' + (e.notes||'-') + '</td>'
+      + '<td><div class="actions-cell">'
+      + '<button class="btn-small" onclick="editExpense(\''+e.id+'\')" title="Editar"><i class="ti ti-edit"></i></button>'
+      + '<button class="btn-danger" onclick="deleteExpense(\''+e.id+'\')" title="Excluir"><i class="ti ti-trash"></i></button>'
+      + '</div></td></tr>';
+  }).join('');
+}
+
+function updateExpSummary(){
+  var total = expenses.reduce(function(a,e){ return a + parseFloat(e.amount||0); }, 0);
+  var now = new Date().toISOString().slice(0,7);
+  var monthExp = expenses.filter(function(e){ return (e.expense_date||'').indexOf(now)===0; })
+    .reduce(function(a,e){ return a + parseFloat(e.amount||0); }, 0);
+
+  // Top category
+  var catTotals = {};
+  expenses.forEach(function(e){ catTotals[e.category] = (catTotals[e.category]||0) + parseFloat(e.amount||0); });
+  var topCat = Object.keys(catTotals).sort(function(a,b){ return catTotals[b]-catTotals[a]; })[0] || '-';
+
+  // Net profit this month (sales - expenses)
+  var monthSales = sales.filter(function(s){ return (s.sale_date||'').indexOf(now)===0; })
+    .reduce(function(a,s){ return a + (parseFloat(s.sale_price||0)-parseFloat(s.cost_price||0))*s.quantity; }, 0);
+  var netProfit = monthSales - monthExp;
+
+  document.getElementById('exp-total').textContent = fmt(total);
+  document.getElementById('exp-count').textContent = expenses.length + ' despesa(s)';
+  document.getElementById('exp-month').textContent = fmt(monthExp);
+  document.getElementById('exp-top-cat').textContent = topCat + (topCat!=='-'?' - '+fmt(catTotals[topCat]):'');
+  var netEl = document.getElementById('exp-net-profit');
+  netEl.textContent = fmt(netProfit);
+  netEl.style.color = netProfit >= 0 ? 'var(--success)' : 'var(--danger)';
+}
+
+function openNewExpense(){
+  document.getElementById('expenseModalTitle').textContent = 'Nova Despesa';
+  document.getElementById('exp-id').value = '';
+  document.getElementById('exp-desc').value = '';
+  document.getElementById('exp-cat').value = '';
+  document.getElementById('exp-amount').value = '';
+  document.getElementById('exp-date').value = new Date().toISOString().slice(0,10);
+  document.getElementById('exp-notes').value = '';
+  openModal('expenseModal');
+}
+
+function editExpense(id){
+  var e = expenses.filter(function(x){ return x.id===id; })[0];
+  if(!e) return;
+  document.getElementById('expenseModalTitle').textContent = 'Editar Despesa';
+  document.getElementById('exp-id').value = e.id;
+  document.getElementById('exp-desc').value = e.description||'';
+  document.getElementById('exp-cat').value = e.category||'';
+  document.getElementById('exp-amount').value = e.amount||'';
+  document.getElementById('exp-date').value = e.expense_date||'';
+  document.getElementById('exp-notes').value = e.notes||'';
+  openModal('expenseModal');
+}
+
+async function saveExpense(){
+  var desc = document.getElementById('exp-desc').value.trim();
+  var cat = document.getElementById('exp-cat').value;
+  var amount = parseFloat(document.getElementById('exp-amount').value);
+  var date = document.getElementById('exp-date').value;
+  if(!desc){ showToast('Informe a descricao','error'); return; }
+  if(!cat){ showToast('Selecione uma categoria','error'); return; }
+  if(!amount||amount<=0){ showToast('Informe o valor','error'); return; }
+  if(!date){ showToast('Informe a data','error'); return; }
+
+  var id = document.getElementById('exp-id').value;
+  var payload = {
+    user_id: currentUser.id,
+    description: desc,
+    category: cat,
+    amount: amount,
+    expense_date: date,
+    notes: document.getElementById('exp-notes').value||null
+  };
+
+  var r = id ? await sb.from('expenses').update(payload).eq('id',id)
+              : await sb.from('expenses').insert(payload);
+  if(r.error){ showToast('Erro ao salvar','error'); return; }
+  showToast(id ? 'Despesa atualizada!' : 'Despesa registrada!');
+  closeModal('expenseModal');
+  await loadExpenses();
+}
+
+async function deleteExpense(id){
+  if(!confirm('Excluir esta despesa?')) return;
+  await sb.from('expenses').delete().eq('id',id);
+  showToast('Despesa removida');
+  await loadExpenses();
+}
+
+function exportExpensesCSV(){
+  var rows = [['Data','Descricao','Categoria','Valor','Obs']];
+  expenses.forEach(function(e){
+    rows.push([e.expense_date, e.description, e.category, e.amount, e.notes||'']);
+  });
+  var csv = rows.map(function(r){ return r.join(';'); }).join('\n');
+  var a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+  a.download = 'despesas.csv';
+  a.click();
+}
+
 function loadAll(){
-  Promise.all([loadPurchases(),loadInventory(),loadSales(),loadProfile(),loadProducts()]).then(function(){renderSales();renderPurchases();renderInventory();loadDashboard();});
+  Promise.all([loadPurchases(),loadInventory(),loadSales(),loadProfile(),loadProducts(),loadExpenses()]).then(function(){renderSales();renderPurchases();renderInventory();loadDashboard();});
 }
 
 function loadPurchases(){
@@ -1148,12 +1384,7 @@ function renderInventory(){
     if(typeF&&i.product_type!==typeF)return false;
     if(langF&&i.language!==langF)return false;
     if(condF&&i.condition!==condF)return false;
-    if(statusF==='Esgotado'){
-      if((i.quantity_available||0)>0)return false;
-    }else{
-      if((i.quantity_available||0)===0)return false;
-      if(statusF&&(i.status||'A venda')!==statusF)return false;
-    }
+    if(statusF&&(i.status||'A venda')!==statusF)return false;
     if(supplierF){
       var pur=purchases.filter(function(p){return p.id===i.purchase_id||(p.description&&i.name&&p.description.toLowerCase()===i.name.toLowerCase());})[0];
       if(!pur||(pur.supplier||'')!==supplierF)return false;
@@ -1631,13 +1862,10 @@ function copyBinderText(){
 }
 
 function exportInventory(){
-  var rows=[['Nome','Tipo','Set','Idioma','Condicao','Status','Qtd Total','Qtd Disponivel','Custo Unit.','Preco Venda','Margem','Valor em Estoque']];
+  var rows=[['Nome','Tipo','Set','Idioma','Condicao','Qtd Total','Qtd Disponivel','Custo Unit.','Preco Venda','Margem']];
   inventory.forEach(function(i){
     var mg=i.sale_price>0?((i.sale_price-i.cost_price)/i.sale_price*100).toFixed(1)+'%':'-';
-    var statusLabel=(i.quantity_available||0)===0?'Esgotado':(i.status||'A venda');
-    var precoRef=i.sale_price>0?i.sale_price:(i.cost_price||0);
-    var valorEstoque=(precoRef*(i.quantity_available||0)).toFixed(2);
-    rows.push([i.name,i.product_type||'',i.set_name||'',i.language,i.condition,statusLabel,i.quantity_total,i.quantity_available,i.cost_price,i.sale_price,mg,valorEstoque]);
+    rows.push([i.name,i.product_type||'',i.set_name||'',i.language,i.condition,i.quantity_total,i.quantity_available,i.cost_price,i.sale_price,mg]);
   });
   exportCSV(rows,'estoque_zeraora.csv');
 }
@@ -2601,111 +2829,6 @@ async function deleteSupplier(id){
 }
 
 // ---- CUSTOMERS ----
-// ============================================================
-// LIMPEZA DE FORNECEDORES DUPLICADOS
-// ============================================================
-function buildSupplierDupGroups(){
-  var groups={};
-  suppliers.forEach(function(s){
-    var key=s.name.trim().toLowerCase();
-    if(!groups[key])groups[key]=[];
-    groups[key].push(s);
-  });
-  var dupGroups=[];
-  Object.keys(groups).forEach(function(key){
-    if(groups[key].length>1){
-      // Sobrevivente = o de menor id/created_at (mais antigo), com fallback pro primeiro
-      var sorted=groups[key].slice().sort(function(a,b){
-        var da=a.created_at?new Date(a.created_at).getTime():0;
-        var db=b.created_at?new Date(b.created_at).getTime():0;
-        if(da&&db)return da-db;
-        return String(a.id).localeCompare(String(b.id));
-      });
-      dupGroups.push(sorted);
-    }
-  });
-  return dupGroups;
-}
-
-function previewSupplierCleanup(){
-  var dupGroups=buildSupplierDupGroups();
-  var box=document.getElementById('supplierCleanupPreview');
-  if(!dupGroups.length){
-    box.innerHTML='<div class="empty-state" style="padding:20px"><i class="ti ti-check"></i> Nenhum fornecedor duplicado encontrado.</div>';
-    document.getElementById('runSupplierCleanupBtn').style.display='none';
-    return;
-  }
-  var totalDup=dupGroups.reduce(function(a,g){return a+g.length-1;},0);
-  var html='<div style="margin-bottom:10px;font-size:13px;color:var(--text2)">'+dupGroups.length+' nome(s) duplicado(s), '+totalDup+' registro(s) serao removidos apos a mesclagem.</div>';
-  html+=dupGroups.map(function(g){
-    var survivor=g[0];
-    var purCountSurvivor=purchases.filter(function(p){return p.supplier_id===survivor.id;}).length;
-    var rows=g.map(function(s,idx){
-      var purCount=purchases.filter(function(p){return p.supplier_id===s.id;}).length;
-      var tag=idx===0?'<span class="badge" style="background:var(--success);color:#fff">MANTER</span>':'<span class="badge" style="background:var(--danger);color:#fff">REMOVER</span>';
-      return '<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:12px;border-bottom:1px solid var(--border2)">'
-        +'<span>'+tag+' id='+s.id+' &nbsp;'+(s.whatsapp||'-')+' &nbsp;'+(s.email||'-')+' &nbsp;'+(s.notes||'-')+'</span>'
-        +'<span>'+purCount+' compra(s)</span></div>';
-    }).join('');
-    return '<div style="margin-bottom:14px;padding:10px;border:1px solid var(--border2);border-radius:var(--radius)">'
-      +'<div style="font-weight:700;margin-bottom:6px">'+survivor.name+' &nbsp;<span style="color:var(--text3);font-weight:400;font-size:12px">('+g.length+' copias)</span></div>'
-      +rows+'</div>';
-  }).join('');
-  box.innerHTML=html;
-  document.getElementById('runSupplierCleanupBtn').style.display='inline-flex';
-}
-
-async function runSupplierCleanup(){
-  var dupGroups=buildSupplierDupGroups();
-  if(!dupGroups.length){showToast('Nada para limpar');return;}
-  if(!confirm('Isso vai mesclar '+dupGroups.length+' fornecedor(es) duplicado(s) e apagar os registros excedentes. Esta acao nao pode ser desfeita. Continuar?'))return;
-  var btn=document.getElementById('runSupplierCleanupBtn');
-  btn.disabled=true;btn.innerHTML='<i class="ti ti-loader-2"></i> Limpando...';
-  var merged=0,purchasesFixed=0;
-  try{
-    for(var gi=0;gi<dupGroups.length;gi++){
-      var g=dupGroups[gi];
-      var survivor=g[0];
-      var dupes=g.slice(1);
-      // Herda dados preenchidos dos duplicados, se o sobrevivente estiver vazio
-      var patch={};
-      dupes.forEach(function(d){
-        if(!survivor.whatsapp&&d.whatsapp)survivor.whatsapp=d.whatsapp;
-        if(!survivor.email&&d.email)survivor.email=d.email;
-        if(!survivor.notes&&d.notes)survivor.notes=d.notes;
-      });
-      if(survivor.whatsapp)patch.whatsapp=survivor.whatsapp;
-      if(survivor.email)patch.email=survivor.email;
-      if(survivor.notes)patch.notes=survivor.notes;
-      if(Object.keys(patch).length){
-        await sb.from('suppliers').update(patch).eq('id',survivor.id);
-      }
-      // Reaponta as compras dos duplicados para o sobrevivente
-      for(var di=0;di<dupes.length;di++){
-        var dupId=dupes[di].id;
-        var upd=await sb.from('purchases').update({supplier_id:survivor.id}).eq('supplier_id',dupId);
-        purchasesFixed+=(upd.count||0);
-        await sb.from('suppliers').delete().eq('id',dupId);
-      }
-      merged++;
-    }
-    showToast(merged+' fornecedor(es) mesclado(s) com sucesso!');
-    await loadSuppliers();
-    await loadPurchases();
-    document.getElementById('supplierCleanupPreview').innerHTML='';
-    btn.style.display='none';
-  }catch(e){
-    showToast('Erro na limpeza: '+e.message,'error');
-  }finally{
-    btn.disabled=false;btn.innerHTML='<i class="ti ti-check"></i> Confirmar e mesclar duplicados';
-  }
-}
-
-function openSupplierCleanup(){
-  document.getElementById('supplierCleanupModal').classList.add('open');
-  previewSupplierCleanup();
-}
-
 async function loadCustomers(){
   var r=await sb.from('customers').select('*').eq('user_id',currentUser.id).order('name');
   customers=r.data||[];
@@ -2880,18 +3003,11 @@ async function migrateProducts(){
 }
 
 async function migrateSuppliers(){
-  // Sempre busca a lista mais recente direto do banco antes de checar duplicidade,
-  // em vez de confiar na variavel local 'suppliers' (que pode estar desatualizada).
-  var fresh=await sb.from('suppliers').select('name').eq('user_id',currentUser.id);
-  var freshNames=(fresh.data||[]).map(function(s){return s.name.trim().toLowerCase();});
-  var existing=new Set(freshNames);
+  var existing=new Set(suppliers.map(function(s){return s.name.toLowerCase();}));
   var unique={};
   purchases.forEach(function(p){
-    if(p.supplier&&p.supplier.trim()){
-      var key=p.supplier.trim().toLowerCase();
-      if(!existing.has(key)&&!unique[key]){
-        unique[key]={user_id:currentUser.id,name:p.supplier.trim()};
-      }
+    if(p.supplier&&p.supplier.trim()&&!existing.has(p.supplier.toLowerCase())){
+      unique[p.supplier.toLowerCase()]={user_id:currentUser.id,name:p.supplier.trim()};
     }
   });
   var toInsert=Object.values(unique);
@@ -2901,16 +3017,11 @@ async function migrateSuppliers(){
 }
 
 async function migrateCustomers(){
-  var fresh=await sb.from('customers').select('name').eq('user_id',currentUser.id);
-  var freshNames=(fresh.data||[]).map(function(c){return c.name.trim().toLowerCase();});
-  var existing=new Set(freshNames);
+  var existing=new Set(customers.map(function(c){return c.name.toLowerCase();}));
   var unique={};
   sales.forEach(function(s){
-    if(s.buyer&&s.buyer.trim()&&s.buyer!=='—'){
-      var key=s.buyer.trim().toLowerCase();
-      if(!existing.has(key)&&!unique[key]){
-        unique[key]={user_id:currentUser.id,name:s.buyer.trim()};
-      }
+    if(s.buyer&&s.buyer.trim()&&s.buyer!=='—'&&!existing.has(s.buyer.toLowerCase())){
+      unique[s.buyer.toLowerCase()]={user_id:currentUser.id,name:s.buyer.trim()};
     }
   });
   var toInsert=Object.values(unique);
@@ -2919,23 +3030,13 @@ async function migrateCustomers(){
   return toInsert.length;
 }
 
-var migrationRunning=false;
 async function runMigration(){
-  if(migrationRunning) return;
-  migrationRunning=true;
-  var btn=document.getElementById('migrateSupCustBtn');
-  if(btn){btn.disabled=true;btn.innerHTML='<i class="ti ti-loader-2"></i> Importando...';}
-  try{
-    var s=await migrateSuppliers();
-    var c=await migrateCustomers();
-    await loadSuppliers();
-    await loadCustomers();
-    if(s+c>0) showToast(s+' fornecedor(es) e '+c+' cliente(s) importados!');
-    else showToast('Nada novo para importar');
-  }finally{
-    migrationRunning=false;
-    if(btn){btn.disabled=false;btn.innerHTML='<i class="ti ti-download"></i> Importar de compras/vendas';}
-  }
+  var s=await migrateSuppliers();
+  var c=await migrateCustomers();
+  await loadSuppliers();
+  await loadCustomers();
+  if(s+c>0) showToast(s+' fornecedor(es) e '+c+' cliente(s) importados!');
+  else showToast('Nada novo para importar');
 }
 
 
@@ -3059,10 +3160,9 @@ function updateSupplierFilter(){
 
 
 function updateInvSummary(){
-  var ativos=inventory.filter(function(i){return (i.quantity_available||0)>0;});
-  var aVenda=ativos.filter(function(i){return (i.status||'A venda')==='A venda';});
-  var reservado=ativos.filter(function(i){return i.status==='Reservado';});
-  var emEstoque=ativos.filter(function(i){return i.status==='Em estoque';});
+  var aVenda=inventory.filter(function(i){return (i.status||'A venda')==='A venda';});
+  var reservado=inventory.filter(function(i){return i.status==='Reservado';});
+  var emEstoque=inventory.filter(function(i){return i.status==='Em estoque';});
 
   function sumVal(arr){return arr.reduce(function(a,i){
     var price=i.sale_price>0?i.sale_price:i.cost_price||0;
