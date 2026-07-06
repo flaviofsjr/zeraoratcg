@@ -849,6 +849,10 @@ tr:hover td{background:var(--bg2)}
       <div class="form-field"><label>Data</label><input type="date" id="es-date"></div>
       <div class="form-field full"><label>Observacoes</label><textarea id="es-notes" rows="2"></textarea></div>
     </div>
+    <div class="form-field full" style="display:flex;align-items:center;gap:8px;padding:4px 0">
+      <input type="checkbox" id="es-is-trade" style="width:16px;height:16px;accent-color:var(--amber)">
+      <label for="es-is-trade" style="margin:0;font-weight:600;cursor:pointer">&#x1F504; Esta venda e uma troca (nao entrou dinheiro)</label>
+    </div>
     <div class="modal-actions">
       <button class="btn-secondary" onclick="closeModal('editSaleModal')">Cancelar</button>
       <button class="btn-primary" style="width:auto" onclick="saveEditSale()">Salvar alteracoes</button>
@@ -2774,6 +2778,7 @@ function editSale(id){
   document.getElementById('es-cost').value=s.cost_price||'';
   document.getElementById('es-date').value=s.sale_date||'';
   document.getElementById('es-notes').value=s.notes||'';
+  document.getElementById('es-is-trade').checked=!!s.is_trade;
   openModal('editSaleModal');
 }
 
@@ -2790,7 +2795,8 @@ function saveEditSale(){
     platform:document.getElementById('es-platform').value||null,
     buyer:document.getElementById('es-buyer').value||null,
     sale_date:document.getElementById('es-date').value,
-    notes:document.getElementById('es-notes').value||null
+    notes:document.getElementById('es-notes').value||null,
+    is_trade:document.getElementById('es-is-trade').checked
   };
   sb.from('sales').update(payload).eq('id',id).then(function(r){
     if(r.error){showToast('Erro ao salvar','error');return;}
