@@ -62,6 +62,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .nav-tab{padding:14px 12px;font-size:13px;color:var(--text2);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap;flex-shrink:0}
 .nav-tab.active{color:var(--text);border-bottom-color:var(--amber);font-weight:600}
 .nav-tab:hover:not(.active){color:var(--text)}
+.nav-badge{display:inline-block;background:var(--danger);color:#fff;font-size:10px;font-weight:700;border-radius:10px;padding:1px 6px;margin-left:4px;vertical-align:middle}
 .nav-right{margin-left:auto;display:flex;align-items:center;gap:8px;padding-left:12px;flex-shrink:0}
 .nav-user{font-size:12px;color:var(--text2);white-space:nowrap;max-width:160px;overflow:hidden;text-overflow:ellipsis}
 .content{padding:1.5rem;max-width:1200px;margin:0 auto;width:100%}
@@ -186,6 +187,7 @@ tr:hover td{background:var(--bg2)}
     <div class="nav-tab" onclick="showPage('precificador',this)"><i class="ti ti-calculator"></i> Preco</div>
     <div class="nav-tab" onclick="showPage('cadastros',this)"><i class="ti ti-database"></i> Cadastros</div>
     <div class="nav-tab" onclick="showPage('despesas',this)"><i class="ti ti-receipt"></i> Despesas</div>
+    <div class="nav-tab" onclick="showPage('desejos',this)"><i class="ti ti-star"></i> Desejos<span id="wishlistBadge" class="nav-badge" style="display:none">0</span></div>
     <div class="nav-right">
       <span class="nav-user" id="navUser"></span>
       <button class="btn-secondary" onclick="doLogout()" style="padding:6px 12px;font-size:12px">Sair</button>
@@ -402,6 +404,47 @@ tr:hover td{background:var(--bg2)}
           </tr></thead>
           <tbody id="expensesTable">
             <tr><td colspan="6"><div class="empty-state"><i class="ti ti-receipt-off"></i>Nenhuma despesa registrada</div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- DESEJOS (WISHLIST) -->
+    <div class="page" id="page-desejos">
+      <div class="section-header">
+        <h3>Lista de desejos</h3>
+        <button class="btn-primary" style="width:auto" onclick="openNewWishlist()"><i class="ti ti-plus"></i> Nova carta</button>
+      </div>
+
+      <div id="wishlistAlert" style="display:none;background:var(--danger-bg);border:1px solid #F7C1C1;border-radius:var(--radius);padding:12px 16px;margin-bottom:1rem;color:var(--danger);font-size:13px;font-weight:600">
+        <i class="ti ti-alert-triangle"></i> <span id="wishlistAlertText"></span>
+      </div>
+
+      <div class="filters" style="margin-bottom:12px">
+        <input type="text" id="filterWishName" placeholder="Buscar carta..." oninput="renderWishlist()"
+          style="padding:8px 12px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text);font-size:13px;width:220px">
+        <select id="filterWishStatus" onchange="renderWishlist()"
+          style="padding:8px 12px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text);font-size:13px">
+          <option value="">Todas</option>
+          <option value="atrasadas">Atrasadas para revisao</option>
+          <option value="em-dia">Em dia</option>
+        </select>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr>
+            <th>Foto</th>
+            <th>Nome</th>
+            <th>Set</th>
+            <th>Cond. / Idioma</th>
+            <th>Preco alvo</th>
+            <th>Ultimo preco visto</th>
+            <th>Revisao</th>
+            <th></th>
+          </tr></thead>
+          <tbody id="wishlistTable">
+            <tr><td colspan="8"><div class="empty-state"><i class="ti ti-star-off"></i>Nenhuma carta na lista de desejos</div></td></tr>
           </tbody>
         </table>
       </div>
@@ -1127,6 +1170,96 @@ tr:hover td{background:var(--bg2)}
   </div>
 </div>
 
+<!-- MODAL DESEJO (CRIAR/EDITAR) -->
+<div class="modal-bg" id="wishlistModal">
+  <div class="modal">
+    <h3 id="wishlistModalTitle">Nova carta desejada</h3>
+    <input type="hidden" id="w-id">
+    <input type="hidden" id="w-product-id">
+    <input type="hidden" id="w-img">
+    <div class="modal-grid">
+      <div class="form-field full" style="position:relative"><label>Nome *</label>
+        <input type="text" id="w-name" placeholder="Digite para buscar produto..." autocomplete="off" oninput="wishlistAutocomplete(this)">
+        <div id="w-autocomplete" style="display:none;position:absolute;z-index:100;background:var(--bg);border:1px solid var(--border2);border-radius:var(--radius);width:100%;max-height:200px;overflow-y:auto;box-shadow:0 4px 12px rgba(0,0,0,0.1)"></div>
+      </div>
+      <div class="form-field"><label>Tipo</label>
+        <select id="w-type">
+          <option value="Carta Avulsa">Carta Avulsa</option>
+          <option value="Lacrado">Lacrado</option>
+          <option value="Acessorio">Acessorio</option>
+          <option value="Lote">Lote / Bulk</option>
+        </select>
+      </div>
+      <div class="form-field"><label>Idioma</label>
+        <select id="w-lang">
+          <option value="PT-BR">PT-BR</option>
+          <option value="EN">EN</option>
+          <option value="JP">JP</option>
+          <option value="FR">FR</option>
+          <option value="CH">CH</option>
+          <option value="N/A">N/A</option>
+        </select>
+      </div>
+      <div class="form-field"><label>Condicao</label>
+        <select id="w-cond">
+          <option value="NM">NM</option>
+          <option value="M">M</option>
+          <option value="LP">LP</option>
+          <option value="MP">MP</option>
+          <option value="HP">HP</option>
+          <option value="D">D</option>
+          <option value="N/A">N/A</option>
+        </select>
+      </div>
+      <div class="form-field"><label>Set / Expansao</label>
+        <input type="text" id="w-set" placeholder="ex: Prismatic Evolutions">
+      </div>
+      <div class="form-field"><label>Preco alvo (R$)</label>
+        <input type="number" id="w-target" placeholder="0,00" min="0" step="0.01">
+      </div>
+      <div class="form-field"><label>Ultimo preco visto (R$)</label>
+        <input type="number" id="w-lastprice" placeholder="0,00" min="0" step="0.01">
+        <div style="font-size:11px;color:var(--text2);margin-top:4px">Preencher aqui conta como uma revisao feita hoje</div>
+      </div>
+      <div class="form-field"><label>Revisar a cada</label>
+        <select id="w-freq">
+          <option value="7">7 dias</option>
+          <option value="15" selected>15 dias</option>
+          <option value="30">30 dias</option>
+          <option value="60">60 dias</option>
+          <option value="90">90 dias</option>
+        </select>
+      </div>
+      <div class="form-field full"><label>Link Liga Pokemon</label>
+        <input type="text" id="w-liga" placeholder="https://www.ligapokemon.com.br/...">
+      </div>
+      <div class="form-field full"><label>Observacoes</label>
+        <textarea id="w-notes" rows="2" placeholder="Opcional..."></textarea>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeModal('wishlistModal')">Cancelar</button>
+      <button class="btn-primary" style="width:auto" onclick="saveWishlistItem()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL REVISAR PRECO -->
+<div class="modal-bg" id="wishlistCheckModal">
+  <div class="modal" style="max-width:400px">
+    <h3>Revisar preco</h3>
+    <input type="hidden" id="wc-id">
+    <div style="font-weight:600;margin-bottom:4px" id="wc-name"></div>
+    <div class="form-field"><label>Preco atual encontrado (R$) *</label>
+      <input type="number" id="wc-price" placeholder="0,00" min="0" step="0.01">
+    </div>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeModal('wishlistCheckModal')">Cancelar</button>
+      <button class="btn-primary" style="width:auto" onclick="saveWishlistCheck()">Salvar revisao</button>
+    </div>
+  </div>
+</div>
+
 <!-- LIGHTBOX FOTO -->
 <div id="lightbox" onclick="closeLightbox()" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.85);z-index:500;align-items:center;justify-content:center;cursor:zoom-out">
   <img id="lightboxImg" src="" style="max-width:90vw;max-height:90vh;border-radius:12px;box-shadow:0 8px 40px rgba(0,0,0,0.5)">
@@ -1145,7 +1278,7 @@ var SUPA_URL='https://cpvmidouwpfvugelffza.supabase.co';
 var SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNwdm1pZG91d3BmdnVnZWxmZnphIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0OTkxNDIsImV4cCI6MjA5NzA3NTE0Mn0.haj8uqCjzMxqlhajkcaDMpbrzyMjUogoX4A6k4QgTNg';
 var sb=supabase.createClient(SUPA_URL,SUPA_KEY);
 var currentUser=null,isRegister=false,purchases=[],inventory=[],sales=[],drePeriod='all';
-var suppliers=[], customers=[], products=[];
+var suppliers=[], customers=[], products=[], wishlist=[];
 
 var LOGO_B64='https://i.ibb.co/Vc194DR8/dba84186-71fe-471a-87d3-5e2c89832ab3.png';
 
@@ -1420,8 +1553,240 @@ function exportExpensesCSV(){
   a.click();
 }
 
+// ============================================================
+// LISTA DE DESEJOS (WISHLIST)
+// ============================================================
+
+async function loadWishlist(){
+  var r = await sb.from('wishlist').select('*').eq('user_id', currentUser.id).order('name');
+  wishlist = r.data || [];
+  renderWishlist();
+  updateWishlistBadge();
+}
+
+function wishlistDaysUntilReview(w){
+  if(!w.last_checked_date) return -Infinity; // nunca revisado = sempre atrasado
+  var last = new Date(w.last_checked_date+'T00:00:00');
+  var next = new Date(last.getTime() + (w.review_frequency_days||15)*86400000);
+  var today = new Date(); today.setHours(0,0,0,0);
+  return Math.round((next-today)/86400000);
+}
+
+function updateWishlistBadge(){
+  var overdue = wishlist.filter(function(w){ return wishlistDaysUntilReview(w)<=0; }).length;
+  var badge = document.getElementById('wishlistBadge');
+  if(overdue>0){ badge.textContent=overdue; badge.style.display='inline-block'; }
+  else{ badge.style.display='none'; }
+
+  var alertBox = document.getElementById('wishlistAlert');
+  if(alertBox){
+    if(overdue>0){
+      alertBox.style.display='block';
+      document.getElementById('wishlistAlertText').textContent = overdue+' carta(s) atrasada(s) para revisao de preco';
+    } else {
+      alertBox.style.display='none';
+    }
+  }
+}
+
+function renderWishlist(){
+  var tb = document.getElementById('wishlistTable');
+  var q = (document.getElementById('filterWishName').value||'').toLowerCase();
+  var statusFilter = document.getElementById('filterWishStatus').value;
+
+  var list = wishlist.filter(function(w){
+    if(q && w.name.toLowerCase().indexOf(q)===-1) return false;
+    var days = wishlistDaysUntilReview(w);
+    if(statusFilter==='atrasadas' && days>0) return false;
+    if(statusFilter==='em-dia' && days<=0) return false;
+    return true;
+  });
+
+  if(!list.length){
+    tb.innerHTML = '<tr><td colspan="8"><div class="empty-state"><i class="ti ti-star-off"></i>Nenhuma carta na lista de desejos</div></td></tr>';
+    return;
+  }
+
+  tb.innerHTML = list.map(function(w){
+    var days = wishlistDaysUntilReview(w);
+    var revisaoHtml;
+    if(!w.last_checked_date){
+      revisaoHtml = '<span class="badge" style="background:var(--danger-bg);color:var(--danger)">Nunca revisado</span>';
+    } else if(days<=0){
+      revisaoHtml = '<span class="badge" style="background:var(--danger-bg);color:var(--danger)">Atrasado ('+Math.abs(days)+'d)</span>';
+    } else {
+      revisaoHtml = '<span class="badge" style="background:var(--bg2);color:var(--text2)">Revisar em '+days+'d</span>';
+    }
+
+    var priceHtml = w.last_price ? fmt(w.last_price) : '<span style="color:var(--text3)">—</span>';
+    if(w.last_price && w.target_price){
+      var diff = w.last_price - w.target_price;
+      var color = diff<=0 ? 'var(--success)' : 'var(--text2)';
+      priceHtml += '<div style="font-size:11px;color:'+color+'">'+(diff<=0?'no alvo ou abaixo':'+'+fmt(diff)+' acima')+'</div>';
+    }
+
+    var img = w.image_url ? '<img src="'+w.image_url+'" style="width:36px;height:48px;object-fit:cover;border-radius:4px;cursor:pointer" onclick="openLightbox(event,\''+w.image_url+'\')">' : '<div style="width:36px;height:48px;background:var(--bg2);border-radius:4px"></div>';
+
+    return '<tr>'
+      +'<td>'+img+'</td>'
+      +'<td><div style="font-weight:600">'+w.name+'</div>'+(w.liga_url?'<a href="'+w.liga_url+'" target="_blank" style="font-size:11px;color:var(--amber-dark)">Ver na Liga Pokemon</a>':'')+'</td>'
+      +'<td>'+(w.set_name||'—')+'</td>'
+      +'<td>'+(w.condition||'')+' '+(w.language||'')+'</td>'
+      +'<td>'+(w.target_price?fmt(w.target_price):'<span style="color:var(--text3)">—</span>')+'</td>'
+      +'<td>'+priceHtml+'</td>'
+      +'<td>'+revisaoHtml+'</td>'
+      +'<td><div class="actions-cell">'
+        +'<button class="btn-success" onclick="openWishlistCheck(\''+w.id+'\')" title="Revisar preco agora"><i class="ti ti-refresh"></i></button>'
+        +'<button class="btn-small" onclick="editWishlistItem(\''+w.id+'\')" title="Editar"><i class="ti ti-edit"></i></button>'
+        +'<button class="btn-danger" onclick="deleteWishlistItem(\''+w.id+'\')" title="Remover"><i class="ti ti-trash"></i></button>'
+      +'</div></td>'
+      +'</tr>';
+  }).join('');
+}
+
+function openNewWishlist(){
+  document.getElementById('wishlistModalTitle').textContent='Nova carta desejada';
+  document.getElementById('w-id').value='';
+  document.getElementById('w-product-id').value='';
+  document.getElementById('w-img').value='';
+  document.getElementById('w-name').value='';
+  document.getElementById('w-type').value='Carta Avulsa';
+  document.getElementById('w-lang').value='PT-BR';
+  document.getElementById('w-cond').value='NM';
+  document.getElementById('w-set').value='';
+  document.getElementById('w-target').value='';
+  document.getElementById('w-lastprice').value='';
+  document.getElementById('w-freq').value='15';
+  document.getElementById('w-liga').value='';
+  document.getElementById('w-notes').value='';
+  openModal('wishlistModal');
+}
+
+function editWishlistItem(id){
+  var w = wishlist.filter(function(x){ return x.id===id; })[0];
+  if(!w) return;
+  document.getElementById('wishlistModalTitle').textContent='Editar carta desejada';
+  document.getElementById('w-id').value=w.id;
+  document.getElementById('w-product-id').value=w.product_id||'';
+  document.getElementById('w-img').value=w.image_url||'';
+  document.getElementById('w-name').value=w.name;
+  document.getElementById('w-type').value=w.product_type||'Carta Avulsa';
+  document.getElementById('w-lang').value=w.language||'PT-BR';
+  document.getElementById('w-cond').value=w.condition||'NM';
+  document.getElementById('w-set').value=w.set_name||'';
+  document.getElementById('w-target').value=w.target_price||'';
+  document.getElementById('w-lastprice').value=w.last_price||'';
+  document.getElementById('w-freq').value=w.review_frequency_days||15;
+  document.getElementById('w-liga').value=w.liga_url||'';
+  document.getElementById('w-notes').value=w.notes||'';
+  openModal('wishlistModal');
+}
+
+async function saveWishlistItem(){
+  var name=document.getElementById('w-name').value.trim();
+  if(!name){ showToast('Informe o nome da carta','error'); return; }
+
+  var id=document.getElementById('w-id').value;
+  var existing = id ? wishlist.filter(function(x){return x.id===id;})[0] : null;
+  var lastPriceInput = document.getElementById('w-lastprice').value;
+  var lastPrice = lastPriceInput!=='' ? parseFloat(lastPriceInput) : null;
+  var lastPriceChanged = !existing || parseFloat(existing.last_price||0)!==(lastPrice||0);
+
+  var payload = {
+    user_id: currentUser.id,
+    name: name,
+    product_type: document.getElementById('w-type').value,
+    language: document.getElementById('w-lang').value,
+    condition: document.getElementById('w-cond').value,
+    set_name: document.getElementById('w-set').value||null,
+    product_id: document.getElementById('w-product-id').value||null,
+    target_price: parseFloat(document.getElementById('w-target').value)||null,
+    last_price: lastPrice,
+    review_frequency_days: parseInt(document.getElementById('w-freq').value)||15,
+    liga_url: document.getElementById('w-liga').value||null,
+    image_url: document.getElementById('w-img').value||null,
+    notes: document.getElementById('w-notes').value||null
+  };
+  // Preencher o preco conta como revisao feita agora
+  if(lastPrice!==null && lastPriceChanged){
+    payload.last_checked_date = new Date().toISOString().slice(0,10);
+  } else if(existing){
+    payload.last_checked_date = existing.last_checked_date||null;
+  }
+
+  var r = id ? await sb.from('wishlist').update(payload).eq('id',id)
+              : await sb.from('wishlist').insert(payload);
+  if(r.error){ showToast('Erro ao salvar','error'); return; }
+  showToast(id ? 'Carta atualizada!' : 'Carta adicionada a lista de desejos!');
+  closeModal('wishlistModal');
+  await loadWishlist();
+}
+
+async function deleteWishlistItem(id){
+  if(!confirm('Remover esta carta da lista de desejos?')) return;
+  await sb.from('wishlist').delete().eq('id',id);
+  showToast('Carta removida');
+  await loadWishlist();
+}
+
+function openWishlistCheck(id){
+  var w = wishlist.filter(function(x){ return x.id===id; })[0];
+  if(!w) return;
+  document.getElementById('wc-id').value=w.id;
+  document.getElementById('wc-name').textContent=w.name;
+  document.getElementById('wc-price').value=w.last_price||'';
+  openModal('wishlistCheckModal');
+}
+
+async function saveWishlistCheck(){
+  var id=document.getElementById('wc-id').value;
+  var price=parseFloat(document.getElementById('wc-price').value);
+  if(isNaN(price)||price<0){ showToast('Informe o preco encontrado','error'); return; }
+  var r = await sb.from('wishlist').update({
+    last_price: price,
+    last_checked_date: new Date().toISOString().slice(0,10)
+  }).eq('id', id);
+  if(r.error){ showToast('Erro ao salvar revisao','error'); return; }
+  showToast('Revisao registrada!');
+  closeModal('wishlistCheckModal');
+  await loadWishlist();
+}
+
+function wishlistAutocomplete(input){
+  var q = input.value.toLowerCase().trim();
+  var dd = document.getElementById('w-autocomplete');
+  document.getElementById('w-product-id').value='';
+  document.getElementById('w-img').value='';
+  if(!q){ dd.style.display='none'; return; }
+  var matches = products.filter(function(p){
+    return p.name.toLowerCase().indexOf(q)!==-1;
+  }).slice(0,10);
+  if(!matches.length){ dd.style.display='none'; return; }
+  dd.style.display='block';
+  dd.innerHTML = matches.map(function(p){
+    var img = p.image_url ? '<img src="'+p.image_url+'" style="width:28px;height:38px;object-fit:cover;border-radius:3px;margin-right:8px;vertical-align:middle">' : '';
+    return '<div onclick="selectWishlistProduct(\''+p.id+'\')" style="padding:8px 12px;cursor:pointer;display:flex;align-items:center;border-bottom:1px solid var(--border);font-size:13px" onmouseover="this.style.background=\'var(--bg2)\'" onmouseout="this.style.background=\'\'">'
+      + img + '<div><div style="font-weight:600">'+p.name+'</div>'
+      + (p.set_name?'<div style="font-size:11px;color:var(--text2)">'+p.set_name+'</div>':'')
+      + '</div></div>';
+  }).join('');
+}
+
+function selectWishlistProduct(id){
+  var p = products.filter(function(x){ return x.id===id; })[0];
+  if(!p) return;
+  document.getElementById('w-name').value=p.name;
+  document.getElementById('w-product-id').value=p.id;
+  document.getElementById('w-img').value=p.image_url||'';
+  if(p.set_name) document.getElementById('w-set').value=p.set_name;
+  if(p.product_type) document.getElementById('w-type').value=p.product_type;
+  if(p.language) document.getElementById('w-lang').value=p.language;
+  if(p.liga_url) document.getElementById('w-liga').value=p.liga_url;
+  document.getElementById('w-autocomplete').style.display='none';
+}
+
 function loadAll(){
-  Promise.all([loadPurchases(),loadInventory(),loadSales(),loadProfile(),loadProducts(),loadExpenses(),loadSuppliers(),loadCustomers()]).then(function(){renderSales();renderPurchases();renderInventory();loadDashboard();});
+  Promise.all([loadPurchases(),loadInventory(),loadSales(),loadProfile(),loadProducts(),loadExpenses(),loadSuppliers(),loadCustomers(),loadWishlist()]).then(function(){renderSales();renderPurchases();renderInventory();loadDashboard();});
 }
 
 function loadPurchases(){
