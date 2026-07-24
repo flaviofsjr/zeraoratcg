@@ -3501,6 +3501,9 @@ async function runStockVerify(){
 
   // Find purchases not in inventory
   verifyMissing = purchases.filter(function(p){
+    // Skip if not yet received - Pendente/Cancelado purchases should not be in stock
+    // (adding them here creates a duplicate later when the purchase is efetivada)
+    if(p.status==='Pendente'||p.status==='Cancelado') return false;
     // Skip if already in inventory by purchase_id
     if(invPurchaseIds.has(p.id)) return false;
     // Skip if name exists in inventory
