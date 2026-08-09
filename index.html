@@ -2328,36 +2328,64 @@ function savePurchase(){
     shipping_cost:pShipping
   };
 
-  sb.from('purchases').insert(purchasePayload).then(function(r){
-    if(r.error){showToast('Erro ao salvar compra','error');btn.textContent='Registrar compra';btn.disabled=false;return;}
+  function unlockBtn(){btn.textContent='Registrar compra';btn.disabled=false;}
+  function finishError(msg,err){
+    console.error('savePurchase error:',msg,err);
+    showToast(msg+(err&&err.message?(': '+err.message):''),'error');
+    unlockBtn();
+  }
 
-    var invPayload={
-      user_id:currentUser.id,
-      purchase_id:r.data&&r.data[0]?r.data[0].id:null,
-      name:name,
-      product_type:pType,
-      set_name:pSet,
-      language:pLang,
-      condition:pCond,
-      quantity_total:qty,
-      quantity_available:qty,
-      cost_price:parseFloat(costUnit.toFixed(2)),
-      sale_price:salePrice,
-      image_url:imgB64,
-      notes:pNotes,
-      extras:document.getElementById('p-extras').value||null,
-      liga_url:document.getElementById('p-liga').value||null
-    };
+  try{
+    sb.from('purchases').insert(purchasePayload).select().then(function(r){
+      if(r.error){finishError('Erro ao salvar compra',r.error);return;}
 
-    pStatus!=='Pendente'&&pStatus!=='Cancelado'?sb.from('inventory').insert(invPayload):Promise.resolve({data:null,error:null}).then(function(r2){
-      if(r2.error){showToast('Compra salva mas erro no estoque','error');}
-      else{showToast('Compra registrada e estoque atualizado!');}
-      closeModal('purchaseModal');
-      btn.textContent='Registrar compra';btn.disabled=false;
-      resetPurchaseForm();
-      loadAll();
+      var newPurchaseId=(r.data&&r.data[0])?r.data[0].id:null;
+      var invPayload={
+        user_id:currentUser.id,
+        purchase_id:newPurchaseId,
+        name:name,
+        product_type:pType,
+        set_name:pSet,
+        language:pLang,
+        condition:pCond,
+        quantity_total:qty,
+        quantity_available:qty,
+        cost_price:parseFloat(costUnit.toFixed(2)),
+        sale_price:salePrice,
+        image_url:imgB64,
+        notes:pNotes,
+        extras:document.getElementById('p-extras').value||null,
+        liga_url:document.getElementById('p-liga').value||null
+      };
+
+      var invInsertPromise;
+      try{
+        invInsertPromise=(pStatus!=='Pendente'&&pStatus!=='Cancelado')
+          ?sb.from('inventory').insert(invPayload)
+          :Promise.resolve({data:null,error:null});
+      }catch(errSync){
+        finishError('Compra salva mas erro ao montar item de estoque',errSync);
+        closeModal('purchaseModal');resetPurchaseForm();loadAll();
+        return;
+      }
+
+      invInsertPromise.then(function(r2){
+        if(r2.error){showToast('Compra salva mas erro no estoque: '+(r2.error.message||''),'error');}
+        else{showToast('Compra registrada e estoque atualizado!');}
+        closeModal('purchaseModal');
+        unlockBtn();
+        resetPurchaseForm();
+        loadAll();
+      }).catch(function(errIns){
+        finishError('Compra salva mas erro ao adicionar ao estoque',errIns);
+        closeModal('purchaseModal');resetPurchaseForm();loadAll();
+      });
+    }).catch(function(errPur){
+      finishError('Erro ao salvar compra',errPur);
     });
-  });
+  }catch(errOuter){
+    finishError('Erro inesperado ao registrar compra',errOuter);
+  }
 }
 
 function resetPurchaseForm(){
