@@ -239,7 +239,7 @@ tr:hover td{background:var(--bg2)}
           <button class="btn-secondary" style="width:auto" id="toggleZeroBtn" onclick="toggleZeroStock()"><i class="ti ti-eye-off"></i> Ocultar esgotados</button>
         </div>
       </div>
-      <div id="invSummary" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:1.25rem">
+      <div id="invSummary" style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:1.25rem">
         <div style="background:var(--bg);border:1px solid #a3c77d;border-radius:var(--radius-lg);padding:14px 16px;min-height:90px">
           <div style="font-size:11px;color:var(--success);font-weight:700;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px">A venda</div>
           <div style="font-size:22px;font-weight:700;color:var(--success)" id="inv-sum-avenda-val">R$ 0,00</div>
@@ -255,6 +255,11 @@ tr:hover td{background:var(--bg2)}
           <div style="font-size:22px;font-weight:700;color:var(--text)" id="inv-sum-estoque-val">R$ 0,00</div>
           <div style="font-size:12px;color:var(--text2);margin-top:4px"><span id="inv-sum-estoque-qty">0</span> item(s)</div>
         </div>
+        <div style="background:var(--bg);border:1px solid #6FA8DC;border-radius:var(--radius-lg);padding:14px 16px;min-height:90px">
+          <div style="font-size:11px;color:#0C447C;font-weight:700;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px">A caminho</div>
+          <div style="font-size:22px;font-weight:700;color:#0C447C" id="inv-sum-caminho-val">R$ 0,00</div>
+          <div style="font-size:12px;color:var(--text2);margin-top:4px"><span id="inv-sum-caminho-qty">0</span> item(s)</div>
+        </div>
         <div style="background:var(--bg);border:1px solid var(--amber);border-radius:var(--radius-lg);padding:14px 16px;min-height:90px">
           <div style="font-size:11px;color:var(--amber-dark);font-weight:700;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px">Total geral</div>
           <div style="font-size:22px;font-weight:700;color:var(--amber-dark)" id="inv-sum-total-val">R$ 0,00</div>
@@ -266,7 +271,7 @@ tr:hover td{background:var(--bg2)}
         <select id="filterInvType" onchange="renderInventory()"><option value="">Todos tipos</option><option>Carta Avulsa</option><option>Lacrado</option><option>Acessorio</option><option>Lote</option></select>
         <select id="filterInvLang" onchange="renderInventory()"><option value="">Todos idiomas</option><option>PT-BR</option><option>EN</option><option>JP</option><option>FR</option><option>CH</option></select>
         <select id="filterInvCond" onchange="renderInventory()"><option value="">Todas condicoes</option><option>M</option><option>NM</option><option>LP</option><option>MP</option><option>HP</option><option>D</option></select>
-        <select id="filterInvStatus" onchange="renderInventory()"><option value="">Todos status</option><option>A venda</option><option>Reservado</option><option>Em estoque</option></select>
+        <select id="filterInvStatus" onchange="renderInventory()"><option value="">Todos status</option><option>A venda</option><option>Reservado</option><option>Em estoque</option><option>A Caminho</option></select>
         <select id="filterInvSupplier" onchange="renderInventory()"><option value="">Todos fornecedores</option></select>
       </div>
       <div class="table-wrap">
@@ -658,7 +663,7 @@ tr:hover td{background:var(--bg2)}
       <div class="form-field"><label>Custo unitario</label><input type="text" id="inv-edit-cost" readonly style="background:var(--bg2)"></div>
       <div class="form-field"><label>Preco de venda (R$)</label><input type="number" id="inv-edit-price" placeholder="0.00" step="0.01" oninput="updateInvMarginPreview()"></div>
       <div class="form-field"><label>Margem estimada</label><input type="text" id="inv-edit-margin" readonly style="background:var(--bg2)"></div>
-      <div class="form-field"><label>Status</label><select id="inv-edit-status"><option value="A venda">A venda</option><option value="Reservado">Reservado</option><option value="Em estoque">Em estoque</option></select></div>
+      <div class="form-field"><label>Status</label><select id="inv-edit-status"><option value="A venda">A venda</option><option value="Reservado">Reservado</option><option value="Em estoque">Em estoque</option><option value="A Caminho">A Caminho</option></select></div>
       <div class="form-field"><label>Extras</label><select id="inv-edit-extras"><option value="">Nenhum</option><option>Foil</option><option>Reverse Foil</option><option>Pokeball Foil</option><option>Masterball Foil</option><option>Full Art</option><option>Secret Rare</option><option>Holo</option><option>Shiny</option><option>Promo</option><option>Outro</option></select></div>
       <div class="form-field full"><label>Link Liga Pokemon</label><input type="text" id="inv-edit-liga" placeholder="https://www.ligapokemon.com.br/..."></div>
       <div class="form-field full">
@@ -1809,7 +1814,7 @@ function loadInventory(){
       sel.innerHTML='<option value="">Todos fornecedores</option>'+suppliers.map(function(s){return '<option>'+s+'</option>';}).join('');
       sel.value=current;
     }
-    renderInventory();updateInvSummary();
+    renderInventory();
   });
 }
 
@@ -1867,17 +1872,31 @@ function renderPurchases(){
   if(!purList.length){tb.innerHTML='<tr><td colspan="11"><div class="empty-state"><i class="ti ti-shopping-bag"></i>Nenhuma compra registrada</div></td></tr>';return;}
   tb.innerHTML=purList.map(function(p){
     var costUnit=p.quantity>0?(parseFloat(p.total_amount||0)/p.quantity):0;
-    var pExtrasBadge=p.extras?'<span style="font-size:10px;background:#F3E8FF;color:#6B21A8;padding:1px 6px;border-radius:10px;font-weight:600;margin-left:4px">'+p.extras+'</span>':''; var purImg=p.image_url?'<img src="'+p.image_url+'" class="inv-img" style="cursor:zoom-in" onclick="openLightbox(event,\''+p.image_url+'\')" onerror="this.style.display=\'none\'">':'<div class="inv-img-placeholder"><i class="ti ti-photo-off"></i></div>'; return '<tr><td>'+purImg+'</td><td style="font-weight:600">'+p.description+pExtrasBadge+'</td><td>'+typeBadge(p.product_type)+'</td><td>'+langBadge(p.language)+'</td><td>'+condBadge(p.condition)+'</td><td style="text-align:center">'+p.quantity+'</td><td>'+(p.supplier||'-')+'</td><td style="font-weight:600;color:var(--amber-dark)" title="Carta: '+fmt(p.total_amount)+' + Frete: '+fmt(p.shipping_cost||0)+'">'+fmt(parseFloat(p.total_amount||0)+parseFloat(p.shipping_cost||0))+'</td>'+'<td><span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:10px;background:'+(p.status==='Pendente'?'#FFF3E0':p.status==='Cancelado'?'#FFEBEE':'#EAF3DE')+';color:'+(p.status==='Pendente'?'#E65100':p.status==='Cancelado'?'#B71C1C':'#27500A')+'">'+(p.status||'Recebido')+'</span></td>'+'<td>'+p.purchase_date+'</td><td><div class="actions-cell">'+(p.status==='Pendente'?'<button class="btn-success" onclick="efetivarCompra(\''+p.id+'\')" title="Efetivar - marcar como recebido e adicionar ao estoque"><i class="ti ti-check"></i></button>':'')+'<button class="btn-small" onclick="editPurchase(\''+p.id+'\')" title="Editar"><i class="ti ti-edit"></i></button><button class="btn-small" onclick="duplicatePurchase(\''+p.id+'\')" title="Duplicar"><i class="ti ti-copy"></i></button><button class="btn-danger" onclick="deletePurchase(\''+p.id+'\')"><i class="ti ti-trash"></i></button></div></td></tr>';
+    var jaNoEstoque=inventory.some(function(i){return i.purchase_id===p.id;});
+    var pExtrasBadge=p.extras?'<span style="font-size:10px;background:#F3E8FF;color:#6B21A8;padding:1px 6px;border-radius:10px;font-weight:600;margin-left:4px">'+p.extras+'</span>':''; var purImg=p.image_url?'<img src="'+p.image_url+'" class="inv-img" style="cursor:zoom-in" onclick="openLightbox(event,\''+p.image_url+'\')" onerror="this.style.display=\'none\'">':'<div class="inv-img-placeholder"><i class="ti ti-photo-off"></i></div>'; return '<tr><td>'+purImg+'</td><td style="font-weight:600">'+p.description+pExtrasBadge+'</td><td>'+typeBadge(p.product_type)+'</td><td>'+langBadge(p.language)+'</td><td>'+condBadge(p.condition)+'</td><td style="text-align:center">'+p.quantity+'</td><td>'+(p.supplier||'-')+'</td><td style="font-weight:600;color:var(--amber-dark)" title="Carta: '+fmt(p.total_amount)+' + Frete: '+fmt(p.shipping_cost||0)+'">'+fmt(parseFloat(p.total_amount||0)+parseFloat(p.shipping_cost||0))+'</td>'+'<td><span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:10px;background:'+(p.status==='Pendente'?'#FFF3E0':p.status==='Cancelado'?'#FFEBEE':'#EAF3DE')+';color:'+(p.status==='Pendente'?'#E65100':p.status==='Cancelado'?'#B71C1C':'#27500A')+'">'+(p.status||'Recebido')+'</span></td>'+'<td>'+p.purchase_date+'</td><td><div class="actions-cell">'+(p.status==='Pendente'&&!jaNoEstoque?'<button class="btn-small" style="color:#0C447C;border-color:#6FA8DC" onclick="marcarACaminho(\''+p.id+'\')" title="Marcar como A Caminho - ja pago, aguardando chegada"><i class="ti ti-truck-delivery"></i></button>':'')+(p.status==='Pendente'?'<button class="btn-success" onclick="efetivarCompra(\''+p.id+'\')" title="Efetivar - marcar como recebido e adicionar ao estoque"><i class="ti ti-check"></i></button>':'')+'<button class="btn-small" onclick="editPurchase(\''+p.id+'\')" title="Editar"><i class="ti ti-edit"></i></button><button class="btn-small" onclick="duplicatePurchase(\''+p.id+'\')" title="Duplicar"><i class="ti ti-copy"></i></button><button class="btn-danger" onclick="deletePurchase(\''+p.id+'\')"><i class="ti ti-trash"></i></button></div></td></tr>';
   }).join('');
 }
 
 function efetivarCompra(id){
   var p=purchases.filter(function(x){return x.id===id;})[0];
   if(!p){showToast('Compra nao encontrada','error');return;}
-  if(!confirm('Confirmar recebimento de "'+p.description+'"?\n\nIsso vai:\n- Marcar a compra como Recebido\n- Adicionar '+p.quantity+' unidade(s) ao estoque'))return;
+  var existing=inventory.filter(function(i){return i.purchase_id===p.id;})[0];
+  var confirmMsg=existing
+    ?'Confirmar recebimento de "'+p.description+'"?\n\nIsso vai:\n- Marcar a compra como Recebido\n- Atualizar o item que ja esta no estoque (A Caminho) para "A venda"'
+    :'Confirmar recebimento de "'+p.description+'"?\n\nIsso vai:\n- Marcar a compra como Recebido\n- Adicionar '+p.quantity+' unidade(s) ao estoque';
+  if(!confirm(confirmMsg))return;
 
   sb.from('purchases').update({status:'Recebido'}).eq('id',id).then(function(r){
     if(r.error){showToast('Erro ao atualizar status da compra','error');return;}
+
+    if(existing){
+      sb.from('inventory').update({status:'A venda'}).eq('id',existing.id).then(function(r2){
+        if(r2.error){showToast('Status da compra atualizado mas erro ao atualizar o estoque','error');}
+        else{showToast('Compra efetivada e item atualizado no estoque!');}
+        loadAll();
+      });
+      return;
+    }
 
     var qty=p.quantity||1;
     var costUnit=(parseFloat(p.total_amount||0)+parseFloat(p.shipping_cost||0))/qty;
@@ -1905,6 +1924,41 @@ function efetivarCompra(id){
       else{showToast('Compra efetivada e adicionada ao estoque!');}
       loadAll();
     });
+  });
+}
+
+function marcarACaminho(id){
+  var p=purchases.filter(function(x){return x.id===id;})[0];
+  if(!p){showToast('Compra nao encontrada','error');return;}
+  if(inventory.some(function(i){return i.purchase_id===p.id;})){showToast('Este item ja esta no estoque','error');return;}
+  if(!confirm('Marcar "'+p.description+'" como A Caminho?\n\nIsso vai adicionar '+p.quantity+' unidade(s) ao estoque com status "A Caminho" (valor ja pago, aguardando chegada). O status da compra continua Pendente.'))return;
+
+  var qty=p.quantity||1;
+  var costUnit=(parseFloat(p.total_amount||0)+parseFloat(p.shipping_cost||0))/qty;
+  var invPayload={
+    user_id:currentUser.id,
+    purchase_id:p.id,
+    name:p.description,
+    product_type:p.product_type,
+    set_name:p.set_name||null,
+    language:p.language,
+    condition:p.condition,
+    quantity_total:qty,
+    quantity_available:qty,
+    cost_price:parseFloat(costUnit.toFixed(2)),
+    sale_price:p.sale_price||0,
+    image_url:p.image_url||null,
+    notes:p.notes||null,
+    extras:p.extras||null,
+    liga_url:p.liga_url||null,
+    product_id:p.product_id||null,
+    status:'A Caminho'
+  };
+
+  sb.from('inventory').insert(invPayload).then(function(r){
+    if(r.error){showToast('Erro ao adicionar ao estoque','error');}
+    else{showToast('Item adicionado ao estoque como A Caminho!');}
+    loadAll();
   });
 }
 
@@ -2130,14 +2184,14 @@ function renderInventory(){
   });
   if(invSortField){filtered.sort(function(a,b){var va=a[invSortField]||'';var vb=b[invSortField]||'';if(typeof va==='number'||typeof vb==='number'){va=parseFloat(va)||0;vb=parseFloat(vb)||0;}else{va=String(va).toLowerCase();vb=String(vb).toLowerCase();}return invSortAsc?(va>vb?1:-1):(va<vb?1:-1);});}
   var tb=document.getElementById('inventoryTable');
-  updateInvSummary();
+  updateInvSummary(filtered);
   if(!filtered.length){tb.innerHTML='<tr><td colspan="12"><div class="empty-state"><i class="ti ti-package"></i>Nenhum item encontrado</div></td></tr>';return;}
   tb.innerHTML=filtered.map(function(inv){
     var avail=inv.quantity_available||0;
     var qtyClass=avail===0?'zero':avail<=2?'low':'';
     var mg=inv.sale_price>0?((inv.sale_price-inv.cost_price)/inv.sale_price*100).toFixed(0)+'%':'-';
     var mgColor=inv.sale_price>inv.cost_price?'var(--success)':'var(--danger)';
-    var extrasBadge=inv.extras?'<span style="font-size:10px;background:#F3E8FF;color:#6B21A8;padding:1px 6px;border-radius:10px;font-weight:600;margin-left:4px">'+inv.extras+'</span>':''; var ligaLink=inv.liga_url?'<a href="'+inv.liga_url+'" target="_blank" style="font-size:11px;color:var(--blue);margin-left:4px" title="Ver na Liga Pokemon"><i class="ti ti-external-link"></i></a>':''; var statusClass=inv.status==='Reservado'?'badge-mp':inv.status==='Em estoque'?'badge-nosale':'badge-nm';
+    var extrasBadge=inv.extras?'<span style="font-size:10px;background:#F3E8FF;color:#6B21A8;padding:1px 6px;border-radius:10px;font-weight:600;margin-left:4px">'+inv.extras+'</span>':''; var ligaLink=inv.liga_url?'<a href="'+inv.liga_url+'" target="_blank" style="font-size:11px;color:var(--blue);margin-left:4px" title="Ver na Liga Pokemon"><i class="ti ti-external-link"></i></a>':''; var statusClass=inv.status==='Reservado'?'badge-mp':inv.status==='Em estoque'?'badge-nosale':inv.status==='A Caminho'?'badge-lp':'badge-nm';
     var statusLabel=inv.status||'A venda';
     return '<tr>'
       +'<td>'+imgCell(inv.image_url)+'</td>'
@@ -4144,10 +4198,12 @@ function updateSupplierFilter(){
 }
 
 
-function updateInvSummary(){
-  var aVenda=inventory.filter(function(i){return (i.status||'A venda')==='A venda';});
-  var reservado=inventory.filter(function(i){return i.status==='Reservado';});
-  var emEstoque=inventory.filter(function(i){return i.status==='Em estoque';});
+function updateInvSummary(list){
+  var base=list||inventory;
+  var aVenda=base.filter(function(i){return (i.status||'A venda')==='A venda';});
+  var reservado=base.filter(function(i){return i.status==='Reservado';});
+  var emEstoque=base.filter(function(i){return i.status==='Em estoque';});
+  var aCaminho=base.filter(function(i){return i.status==='A Caminho';});
 
   function sumVal(arr){return arr.reduce(function(a,i){
     var price=i.sale_price>0?i.sale_price:i.cost_price||0;
@@ -4163,8 +4219,10 @@ function updateInvSummary(){
   document.getElementById('inv-sum-reservado-qty').textContent=sumQty(reservado);
   document.getElementById('inv-sum-estoque-val').textContent=fmtV(sumVal(emEstoque));
   document.getElementById('inv-sum-estoque-qty').textContent=sumQty(emEstoque);
-  var total=sumVal(aVenda)+sumVal(reservado)+sumVal(emEstoque);
-  var totalQty=sumQty(aVenda)+sumQty(reservado)+sumQty(emEstoque);
+  document.getElementById('inv-sum-caminho-val').textContent=fmtV(sumVal(aCaminho));
+  document.getElementById('inv-sum-caminho-qty').textContent=sumQty(aCaminho);
+  var total=sumVal(aVenda)+sumVal(reservado)+sumVal(emEstoque)+sumVal(aCaminho);
+  var totalQty=sumQty(aVenda)+sumQty(reservado)+sumQty(emEstoque)+sumQty(aCaminho);
   document.getElementById('inv-sum-total-val').textContent=fmtV(total);
   document.getElementById('inv-sum-total-qty').textContent=totalQty;
 }
