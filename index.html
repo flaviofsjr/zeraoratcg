@@ -546,6 +546,7 @@ tr:hover td{background:var(--bg2)}
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
           <input type="text" id="filterProductName" placeholder="Buscar produto..." oninput="renderProducts()" style="padding:8px 12px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text);font-size:13px;width:220px">
           <div style="display:flex;gap:8px">
+            <button class="btn-secondary" style="width:auto;background:#1F6FA8;color:#fff;border-color:#1F6FA8;font-weight:700" onclick="openPublicDbImport()"><i class="ti ti-database-import"></i> Importar do banco público</button>
             <button class="btn-secondary" style="width:auto;background:#E8B422;color:#2C1A00;border-color:#E8B422;font-weight:700" onclick="openProductPriceReview()"><i class="ti ti-refresh"></i> Revisão em lote</button>
             <button class="btn-secondary" style="width:auto" onclick="openModal('productImportModal')"><i class="ti ti-table-import"></i> Importar Excel</button>
             <button class="btn-secondary" style="width:auto" onclick="migrateProducts()" id="migrateProductsBtn"><i class="ti ti-download"></i> Importar do estoque</button>
@@ -1225,6 +1226,57 @@ tr:hover td{background:var(--bg2)}
         <button class="btn-secondary" onclick="priceReviewSkip()">Pular</button>
         <button class="btn-primary" style="width:auto" onclick="priceReviewSave()">Salvar e avançar</button>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL IMPORTAR DO BANCO PUBLICO (Pokemon TCG API) -->
+<div class="modal-bg" id="publicDbImportModal">
+  <div class="modal" style="max-width:640px">
+    <h3>Importar do banco público de cartas</h3>
+    <p style="font-size:12px;color:var(--text2);margin-top:-8px">Fonte: TCGdex (nome, set, número e imagem, no idioma de busca escolhido abaixo). Preço não é importado. Link de busca na Liga Pokémon é preenchido automaticamente.</p>
+    <div class="modal-grid">
+      <div class="form-field"><label>Nome da carta</label>
+        <input type="text" id="pd-search-name" placeholder="Ex: Charizard" onkeydown="if(event.key==='Enter')searchPublicDb()">
+      </div>
+      <div class="form-field"><label>Set / Expansão (opcional)</label>
+        <input type="text" id="pd-search-set" placeholder="Ex: Base Set" onkeydown="if(event.key==='Enter')searchPublicDb()">
+      </div>
+      <div class="form-field"><label>Idioma de busca</label>
+        <select id="pd-search-lang" onchange="pdSearchLangChanged()">
+          <option value="en">Inglês (EN)</option>
+          <option value="pt-br">Português Brasileiro (PT-BR)</option>
+          <option value="ja">Japonês (JA)</option>
+          <option value="zh-cn">Chinês Simplificado (ZH-CN)</option>
+          <option value="zh-tw">Chinês Tradicional (ZH-TW)</option>
+          <option value="fr">Francês (FR)</option>
+          <option value="es">Espanhol (ES)</option>
+          <option value="de">Alemão (DE)</option>
+          <option value="it">Italiano (IT)</option>
+          <option value="ko">Coreano (KO)</option>
+        </select>
+        <div style="font-size:11px;color:var(--text2);margin-top:2px">Nome e set devem ser digitados nesse idioma — a cobertura pode ser parcial fora do inglês</div>
+      </div>
+    </div>
+    <button class="btn-primary" style="width:auto" onclick="searchPublicDb()"><i class="ti ti-search"></i> Buscar</button>
+    <div id="pd-status" style="font-size:12px;color:var(--text2)"></div>
+    <div id="pd-results-controls" style="display:none;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+      <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer"><input type="checkbox" id="pd-select-all" onchange="togglePdSelectAll(this.checked)"> Selecionar todos</label>
+      <div style="display:flex;align-items:center;gap:8px">
+        <label style="font-size:12px;color:var(--text2)">Idioma ao importar:</label>
+        <select id="pd-import-lang" style="padding:5px 8px;border:1px solid var(--border2);border-radius:6px;background:var(--bg);color:var(--text);font-size:12px">
+          <option value="EN">EN</option>
+          <option value="PT-BR">PT-BR</option>
+          <option value="JP">JP</option>
+          <option value="FR">FR</option>
+          <option value="CH">CH</option>
+        </select>
+      </div>
+    </div>
+    <div id="pd-results" style="max-height:340px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--radius);display:none"></div>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeModal('publicDbImportModal')">Fechar</button>
+      <button class="btn-primary" style="width:auto" id="pd-import-btn" onclick="importSelectedPdCards()" disabled>Importar selecionados (0)</button>
     </div>
   </div>
 </div>
@@ -4619,6 +4671,191 @@ async function priceReviewSave(){
 
 function priceReviewFinish(){
   closeModal('priceReviewModal');
+  renderProducts();
+}
+
+// ---- IMPORTAR DO BANCO PUBLICO (TCGdex) ----
+var pdSearchResults=[], pdSelectedIds={}, pdSearchLang='en';
+
+var PD_LANG_IMPORT_DEFAULT={'en':'EN','pt-br':'PT-BR','ja':'JP','zh-cn':'CH','zh-tw':'CH','fr':'FR','es':'EN','de':'EN','it':'EN','ko':'EN'};
+
+function pdSearchLangChanged(){
+  var lang=document.getElementById('pd-search-lang').value;
+  var mapped=PD_LANG_IMPORT_DEFAULT[lang]||'EN';
+  document.getElementById('pd-import-lang').value=mapped;
+}
+
+function openPublicDbImport(){
+  document.getElementById('pd-search-name').value='';
+  document.getElementById('pd-search-set').value='';
+  document.getElementById('pd-search-lang').value='en';
+  document.getElementById('pd-import-lang').value='EN';
+  document.getElementById('pd-status').textContent='';
+  document.getElementById('pd-results').style.display='none';
+  document.getElementById('pd-results').innerHTML='';
+  document.getElementById('pd-results-controls').style.display='none';
+  document.getElementById('pd-select-all').checked=false;
+  pdSearchResults=[];
+  pdSelectedIds={};
+  updatePdImportBtn();
+  openModal('publicDbImportModal');
+}
+
+async function searchPublicDb(){
+  var name=document.getElementById('pd-search-name').value.trim();
+  var setName=document.getElementById('pd-search-set').value.trim();
+  var lang=document.getElementById('pd-search-lang').value;
+  if(!name&&!setName){showToast('Informe um nome ou set para buscar','error');return;}
+  pdSearchLang=lang;
+  var statusEl=document.getElementById('pd-status');
+  statusEl.textContent='Buscando...';
+  document.getElementById('pd-results').style.display='none';
+  document.getElementById('pd-results-controls').style.display='none';
+  try{
+    var url=SUPA_URL+'/functions/v1/pokemon-tcg-proxy?lang='+encodeURIComponent(lang)+'&name='+encodeURIComponent(name)+(setName?'&set='+encodeURIComponent(setName):'');
+    var resp=await fetch(url,{headers:{'Authorization':'Bearer '+SUPA_KEY}});
+    if(!resp.ok)throw new Error('HTTP '+resp.status);
+    var json=await resp.json();
+    pdSearchResults=Array.isArray(json)?json:(json.data||[]);
+    pdSelectedIds={};
+    if(!pdSearchResults.length){
+      statusEl.textContent='Nenhuma carta encontrada (a cobertura nesse idioma pode ser parcial — tenta digitar o nome em inglês, ou verifica o nome/set no idioma escolhido).';
+      updatePdImportBtn();
+      return;
+    }
+    statusEl.textContent=pdSearchResults.length+' carta(s) encontrada(s)'+(pdSearchResults.length===300?' (mostrando as primeiras 300 — refine a busca se precisar)':'');
+    renderPdResults();
+    document.getElementById('pd-results').style.display='block';
+    document.getElementById('pd-results-controls').style.display='flex';
+  }catch(err){
+    statusEl.textContent='Não foi possível conectar (verifique se a Edge Function "pokemon-tcg-proxy" foi publicada no Supabase, ou tente novamente em instantes).';
+  }
+  updatePdImportBtn();
+}
+
+function pdExistingNames(){
+  var set={};
+  products.forEach(function(p){set[p.name.toLowerCase()]=true;});
+  return set;
+}
+
+// Nome curto pra lista de busca (a API só devolve nome+numero nessa etapa, sem o total do set)
+function pdBriefLabel(card){
+  return card.name+' ('+card.localId+')';
+}
+
+// Verifica se já existe algo parecido no catálogo (nome + numero, ignorando o total)
+function pdAlreadyInCatalog(card,existing){
+  var prefix=(card.name+' ('+card.localId).toLowerCase();
+  for(var key in existing){
+    if(key.indexOf(prefix)===0)return true;
+  }
+  return false;
+}
+
+function renderPdResults(){
+  var existing=pdExistingNames();
+  var box=document.getElementById('pd-results');
+  box.innerHTML=pdSearchResults.map(function(card){
+    var already=pdAlreadyInCatalog(card,existing);
+    var img=card.image?'<img src="'+card.image+'/low.webp" style="width:32px;height:44px;object-fit:cover;border-radius:3px;margin-right:10px">':'';
+    return '<div class="suggest-item">'
+      +'<label style="display:flex;align-items:center;flex:1;cursor:'+(already?'default':'pointer')+';opacity:'+(already?'0.5':'1')+'">'
+      +'<input type="checkbox" style="margin-right:10px" '+(already?'disabled':'')+' onchange="togglePdCard(\''+card.id+'\',this.checked)">'
+      +img
+      +'<span class="suggest-item-info"><span class="suggest-item-name">'+pdBriefLabel(card)+'</span>'
+      +'<span class="suggest-item-sub">'+(already?'já está no seu catálogo':'ID: '+card.id)+'</span></span>'
+      +'</label></div>';
+  }).join('');
+}
+
+function togglePdCard(id,checked){
+  if(checked)pdSelectedIds[id]=true;else delete pdSelectedIds[id];
+  updatePdImportBtn();
+}
+
+function togglePdSelectAll(checked){
+  var existing=pdExistingNames();
+  pdSearchResults.forEach(function(card){
+    if(pdAlreadyInCatalog(card,existing))return;
+    if(checked)pdSelectedIds[card.id]=true;else delete pdSelectedIds[card.id];
+  });
+  renderPdResults();
+  document.querySelectorAll('#pd-results input[type=checkbox]').forEach(function(cb,i){
+    var card=pdSearchResults[i];
+    if(card)cb.checked=!!pdSelectedIds[card.id];
+  });
+  updatePdImportBtn();
+}
+
+function updatePdImportBtn(){
+  var n=Object.keys(pdSelectedIds).length;
+  var btn=document.getElementById('pd-import-btn');
+  btn.textContent='Importar selecionados ('+n+')';
+  btn.disabled=n===0;
+}
+
+async function pdFetchCardDetail(id){
+  var url=SUPA_URL+'/functions/v1/pokemon-tcg-proxy?lang='+encodeURIComponent(pdSearchLang)+'&id='+encodeURIComponent(id);
+  var resp=await fetch(url,{headers:{'Authorization':'Bearer '+SUPA_KEY}});
+  if(!resp.ok)throw new Error('HTTP '+resp.status);
+  return await resp.json();
+}
+
+async function importSelectedPdCards(){
+  var lang=document.getElementById('pd-import-lang').value;
+  var selected=pdSearchResults.filter(function(c){return pdSelectedIds[c.id];});
+  if(!selected.length)return;
+  var btn=document.getElementById('pd-import-btn');
+  btn.disabled=true;
+
+  var existing=pdExistingNames();
+  var toInsert=[];
+  var skipped=0;
+  var failed=0;
+
+  for(var i=0;i<selected.length;i++){
+    btn.textContent='Importando ('+(i+1)+'/'+selected.length+')...';
+    var brief=selected[i];
+    if(pdAlreadyInCatalog(brief,existing)){skipped++;continue;}
+    try{
+      var card=await pdFetchCardDetail(brief.id);
+      var localIdStr=String(card.localId);
+      var totalRaw=card.set&&card.set.cardCount?(card.set.cardCount.official||card.set.cardCount.total):'';
+      var totalStr=totalRaw?String(totalRaw):'';
+      var displayName=card.name+' ('+localIdStr+(totalStr?'/'+totalStr:'')+')';
+      toInsert.push({
+        user_id:currentUser.id,
+        name:displayName,
+        set_name:card.set?card.set.name:null,
+        product_type:'Carta Avulsa',
+        language:lang,
+        image_url:card.image?(card.image+'/high.webp'):null,
+        liga_url:'https://www.ligapokemon.com.br/?view=cards/search&card='+encodeURIComponent(displayName)
+      });
+    }catch(err){
+      failed++;
+    }
+  }
+
+  if(!toInsert.length){
+    showToast(skipped?'Todas as cartas selecionadas já estavam no catálogo':'Não foi possível importar as cartas selecionadas','error');
+    updatePdImportBtn();
+    return;
+  }
+
+  var ok=0;
+  for(var j=0;j<toInsert.length;j+=50){
+    var batch=toInsert.slice(j,j+50);
+    var r=await sb.from('products').insert(batch);
+    if(!r.error)ok+=batch.length;
+  }
+  var msg=ok+' carta(s) importada(s)';
+  if(skipped)msg+=', '+skipped+' já existiam';
+  if(failed)msg+=', '+failed+' falharam';
+  showToast(msg);
+  closeModal('publicDbImportModal');
+  await loadProducts();
   renderProducts();
 }
 
