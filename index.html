@@ -294,8 +294,8 @@ tr:hover td{background:var(--bg2)}
         <select id="filterInvSupplier" onchange="renderInventory()"><option value="">Todos fornecedores</option></select>
       </div>
       <div class="table-wrap">
-        <table><thead><tr><th>Foto</th><th onclick="sortTable('inv','name')" style="cursor:pointer;user-select:none">Nome ↕</th><th onclick="sortTable('inv','product_type')" style="cursor:pointer;user-select:none">Tipo ↕</th><th onclick="sortTable('inv','set_name')" style="cursor:pointer;user-select:none">Set ↕</th><th onclick="sortTable('inv','language')" style="cursor:pointer;user-select:none">Idioma ↕</th><th onclick="sortTable('inv','condition')" style="cursor:pointer;user-select:none">Cond. ↕</th><th onclick="sortTable('inv','quantity_available')" style="cursor:pointer;user-select:none">Disponivel ↕</th><th onclick="sortTable('inv','quantity_total')" style="cursor:pointer;user-select:none">Total ↕</th><th onclick="sortTable('inv','cost_price')" style="cursor:pointer;user-select:none">Custo ↕</th><th onclick="sortTable('inv','sale_price')" style="cursor:pointer;user-select:none">Preco venda ↕</th><th>Margem</th><th onclick="sortTable('inv','status')" style="cursor:pointer;user-select:none">Status ↕</th><th></th></tr></thead>
-        <tbody id="inventoryTable"><tr><td colspan="12"><div class="empty-state"><i class="ti ti-package"></i>Estoque vazio — registre compras para popular</div></td></tr></tbody></table>
+        <table><thead><tr><th>Foto</th><th onclick="sortTable('inv','name')" style="cursor:pointer;user-select:none">Nome ↕</th><th onclick="sortTable('inv','product_type')" style="cursor:pointer;user-select:none">Tipo ↕</th><th onclick="sortTable('inv','set_name')" style="cursor:pointer;user-select:none">Set ↕</th><th onclick="sortTable('inv','language')" style="cursor:pointer;user-select:none">Idioma ↕</th><th onclick="sortTable('inv','condition')" style="cursor:pointer;user-select:none">Cond. ↕</th><th onclick="sortTable('inv','quantity_available')" style="cursor:pointer;user-select:none">Disponivel ↕</th><th onclick="sortTable('inv','quantity_total')" style="cursor:pointer;user-select:none">Total ↕</th><th onclick="sortTable('inv','cost_price')" style="cursor:pointer;user-select:none">Custo ↕</th><th onclick="sortTable('inv','sale_price')" style="cursor:pointer;user-select:none">Preco venda ↕</th><th>Margem</th><th>Preço Mercado</th><th onclick="sortTable('inv','status')" style="cursor:pointer;user-select:none">Status ↕</th><th></th></tr></thead>
+        <tbody id="inventoryTable"><tr><td colspan="13"><div class="empty-state"><i class="ti ti-package"></i>Estoque vazio — registre compras para popular</div></td></tr></tbody></table>
       </div>
     </div>
 
@@ -546,14 +546,15 @@ tr:hover td{background:var(--bg2)}
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
           <input type="text" id="filterProductName" placeholder="Buscar produto..." oninput="renderProducts()" style="padding:8px 12px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text);font-size:13px;width:220px">
           <div style="display:flex;gap:8px">
+            <button class="btn-secondary" style="width:auto;background:#E8B422;color:#2C1A00;border-color:#E8B422;font-weight:700" onclick="openProductPriceReview()"><i class="ti ti-refresh"></i> Revisão em lote</button>
             <button class="btn-secondary" style="width:auto" onclick="openModal('productImportModal')"><i class="ti ti-table-import"></i> Importar Excel</button>
             <button class="btn-secondary" style="width:auto" onclick="migrateProducts()" id="migrateProductsBtn"><i class="ti ti-download"></i> Importar do estoque</button>
             <button class="btn-primary" style="width:auto" onclick="document.getElementById('productModal').classList.add('open')"><i class="ti ti-plus"></i> Novo produto</button>
           </div>
         </div>
         <div class="table-wrap">
-          <table><thead><tr><th>Foto</th><th>Nome</th><th>Set</th><th>Tipo</th><th>Idioma</th><th></th></tr></thead>
-          <tbody id="productsTable"><tr><td colspan="6"><div class="empty-state"><i class="ti ti-cards"></i>Nenhum produto</div></td></tr></tbody></table>
+          <table><thead><tr><th>Foto</th><th>Nome</th><th>Set</th><th>Tipo</th><th>Idioma</th><th>Preço de Mercado</th><th></th></tr></thead>
+          <tbody id="productsTable"><tr><td colspan="7"><div class="empty-state"><i class="ti ti-cards"></i>Nenhum produto</div></td></tr></tbody></table>
         </div>
       </div>
     </div>
@@ -1179,6 +1180,10 @@ tr:hover td{background:var(--bg2)}
       <div class="form-field"><label>Idioma</label>
         <select id="prod-lang"><option>PT-BR</option><option>EN</option><option>JP</option><option>FR</option><option>CH</option></select>
       </div>
+      <div class="form-field"><label>Preço de Mercado (R$)</label>
+        <input type="number" id="prod-market-price" placeholder="0,00" min="0" step="0.01">
+        <div style="font-size:11px;color:var(--text2);margin-top:2px">Referência de valor atual — usada no estoque e nos fichários pessoais</div>
+      </div>
       <div class="form-field full"><label>Link Liga Pokémon</label><input type="text" id="prod-liga" placeholder="https://www.ligapokemon.com.br/..."></div>
       <div class="form-field full">
         <label>Foto (URL)</label>
@@ -1190,6 +1195,36 @@ tr:hover td{background:var(--bg2)}
     <div class="modal-actions">
       <button class="btn-secondary" onclick="closeModal('productModal')">Cancelar</button>
       <button class="btn-primary" style="width:auto" onclick="saveProduct()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL REVISAO EM LOTE DE PRECO DE MERCADO -->
+<div class="modal-bg" id="priceReviewModal">
+  <div class="modal" style="max-width:420px">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <h3>Revisão de Preço de Mercado</h3>
+      <div style="font-size:12px;color:var(--text2);font-weight:600" id="pr-progress">0 de 0</div>
+    </div>
+    <input type="hidden" id="pr-product-id">
+    <div style="display:flex;gap:12px;align-items:center">
+      <img id="pr-img" class="img-preview" style="width:70px;height:98px;object-fit:cover;border-radius:8px;display:none;margin-top:0;flex-shrink:0">
+      <div>
+        <div id="pr-name" style="font-weight:700;font-size:15px"></div>
+        <div id="pr-set" style="font-size:12px;color:var(--text2)"></div>
+        <div id="pr-current" style="font-size:12px;color:var(--text2);margin-top:4px"></div>
+      </div>
+    </div>
+    <a id="pr-liga-link" href="#" target="_blank" class="btn-secondary" style="text-align:center;text-decoration:none;display:block"><i class="ti ti-external-link"></i> Abrir na Liga Pokémon</a>
+    <div class="form-field"><label>Novo preço de mercado (R$)</label>
+      <input type="number" id="pr-price" placeholder="0,00" min="0" step="0.01" autofocus>
+    </div>
+    <div class="modal-actions" style="justify-content:space-between">
+      <button class="btn-secondary" onclick="priceReviewFinish()">Encerrar revisão</button>
+      <div style="display:flex;gap:8px">
+        <button class="btn-secondary" onclick="priceReviewSkip()">Pular</button>
+        <button class="btn-primary" style="width:auto" onclick="priceReviewSave()">Salvar e avançar</button>
+      </div>
     </div>
   </div>
 </div>
@@ -1356,11 +1391,23 @@ tr:hover td{background:var(--bg2)}
   <div class="modal" style="max-width:420px">
     <h3 id="collectionModalTitle">Novo fichário</h3>
     <input type="hidden" id="col-id">
+    <input type="hidden" id="col-color" value="#f7f7f5">
     <div class="form-field"><label>Nome *</label>
       <input type="text" id="col-name" placeholder="ex: Base Set, Kanto, Ilustrações raras...">
     </div>
     <div class="form-field"><label>Descrição</label>
       <textarea id="col-desc" rows="2" placeholder="Opcional..."></textarea>
+    </div>
+    <div class="form-field" id="col-grid-field"><label>Tamanho das páginas</label>
+      <select id="col-grid">
+        <option value="2">2x2 (4 cartas por página)</option>
+        <option value="3" selected>3x3 (9 cartas por página)</option>
+        <option value="4">4x4 (16 cartas por página)</option>
+      </select>
+      <div id="col-grid-note" style="font-size:11px;color:var(--text2);margin-top:2px;display:none">Não pode ser alterado depois de criado</div>
+    </div>
+    <div class="form-field"><label>Cor de fundo</label>
+      <div id="col-color-swatches" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:2px"></div>
     </div>
     <div class="modal-actions">
       <button class="btn-secondary" onclick="closeModal('collectionModal')">Cancelar</button>
@@ -1403,6 +1450,7 @@ tr:hover td{background:var(--bg2)}
       </div>
       <div class="form-field"><label>Valor estimado (R$)</label>
         <input type="number" id="cc-value" placeholder="0,00" min="0" step="0.01">
+        <div style="font-size:11px;color:var(--text2);margin-top:2px">Preenchido automaticamente com o Preço de Mercado do produto — pode editar</div>
       </div>
       <div class="form-field"><label>Página</label>
         <input type="number" id="cc-page" min="1" step="1">
@@ -1963,6 +2011,18 @@ function loadAll(){
 
 // ==================== COLECAO PESSOAL (FICHARIO) ====================
 var personalCollections=[], collectionCards=[], currentCollectionId=null, ficharioCurrentPage=1;
+var COL_COLOR_PRESETS=[
+  {name:'Creme',hex:'#f7f7f5'},
+  {name:'Verde',hex:'#E8F5E0'},
+  {name:'Azul',hex:'#E3F0FA'},
+  {name:'Rosa',hex:'#FCE8F0'},
+  {name:'Amarelo',hex:'#FFF6D9'},
+  {name:'Roxo',hex:'#F0E6FA'},
+  {name:'Laranja',hex:'#FFE9D6'},
+  {name:'Cinza',hex:'#E5E5E0'},
+  {name:'Vermelho',hex:'#FBE5E5'},
+  {name:'Escuro',hex:'#2c2c2a'}
+];
 
 async function loadPersonalCollections(){
   var r1=await sb.from('personal_collections').select('*').eq('user_id',currentUser.id).order('name');
@@ -1985,15 +2045,30 @@ function renderCollectionsList(){
   grid.innerHTML=personalCollections.map(function(col){
     var qty=collectionCards.filter(function(c){return c.collection_id===col.id;}).length;
     var val=collectionValue(col.id);
-    return '<div class="collection-card" onclick="openCollection(\''+col.id+'\')">'
+    var gridSize=col.grid_size||3;
+    var bg=col.bg_color||'#f7f7f5';
+    return '<div class="collection-card" style="background:'+bg+'" onclick="openCollection(\''+col.id+'\')">'
       +'<div class="collection-card-name">'+col.name+'</div>'
-      +'<div class="collection-card-sub">'+qty+' carta(s)'+(col.description?' · '+col.description:'')+'</div>'
+      +'<div class="collection-card-sub">'+qty+' carta(s) · '+gridSize+'x'+gridSize+(col.description?' · '+col.description:'')+'</div>'
       +'<div class="collection-card-value">'+fmt(val)+'</div>'
       +'<div class="collection-card-actions">'
-      +'<button class="btn-small" onclick="event.stopPropagation();editCollection(\''+col.id+'\')" title="Renomear"><i class="ti ti-edit"></i></button>'
+      +'<button class="btn-small" onclick="event.stopPropagation();editCollection(\''+col.id+'\')" title="Editar"><i class="ti ti-edit"></i></button>'
       +'<button class="btn-danger" onclick="event.stopPropagation();deleteCollection(\''+col.id+'\')" title="Excluir"><i class="ti ti-trash"></i></button>'
       +'</div></div>';
   }).join('');
+}
+
+function renderColorSwatches(selectedHex){
+  var box=document.getElementById('col-color-swatches');
+  box.innerHTML=COL_COLOR_PRESETS.map(function(c){
+    var sel=c.hex.toLowerCase()===String(selectedHex||'').toLowerCase();
+    return '<div onclick="selectColColor(\''+c.hex+'\')" title="'+c.name+'" style="width:30px;height:30px;border-radius:50%;background:'+c.hex+';cursor:pointer;border:'+(sel?'3px solid var(--amber)':'2px solid var(--border2)')+'"></div>';
+  }).join('');
+}
+
+function selectColColor(hex){
+  document.getElementById('col-color').value=hex;
+  renderColorSwatches(hex);
 }
 
 function openNewCollection(){
@@ -2001,6 +2076,11 @@ function openNewCollection(){
   document.getElementById('col-id').value='';
   document.getElementById('col-name').value='';
   document.getElementById('col-desc').value='';
+  document.getElementById('col-grid').value='3';
+  document.getElementById('col-grid').disabled=false;
+  document.getElementById('col-grid-note').style.display='none';
+  document.getElementById('col-color').value='#f7f7f5';
+  renderColorSwatches('#f7f7f5');
   openModal('collectionModal');
 }
 
@@ -2008,10 +2088,16 @@ function editCollection(id){
   id=id||currentCollectionId;
   var col=personalCollections.filter(function(x){return x.id===id;})[0];
   if(!col)return;
-  document.getElementById('collectionModalTitle').textContent='Renomear fichário';
+  document.getElementById('collectionModalTitle').textContent='Editar fichário';
   document.getElementById('col-id').value=col.id;
   document.getElementById('col-name').value=col.name;
   document.getElementById('col-desc').value=col.description||'';
+  document.getElementById('col-grid').value=String(col.grid_size||3);
+  document.getElementById('col-grid').disabled=true;
+  document.getElementById('col-grid-note').style.display='block';
+  var color=col.bg_color||'#f7f7f5';
+  document.getElementById('col-color').value=color;
+  renderColorSwatches(color);
   openModal('collectionModal');
 }
 
@@ -2019,14 +2105,23 @@ async function saveCollection(){
   var name=document.getElementById('col-name').value.trim();
   if(!name){showToast('Informe o nome do fichário','error');return;}
   var id=document.getElementById('col-id').value;
-  var payload={user_id:currentUser.id,name:name,description:document.getElementById('col-desc').value||null};
+  var payload={
+    user_id:currentUser.id,
+    name:name,
+    description:document.getElementById('col-desc').value||null,
+    bg_color:document.getElementById('col-color').value||'#f7f7f5'
+  };
+  if(!id) payload.grid_size=parseInt(document.getElementById('col-grid').value)||3;
   var r=id?await sb.from('personal_collections').update(payload).eq('id',id):await sb.from('personal_collections').insert(payload);
   if(r.error){showToast('Erro ao salvar fichário','error');return;}
   showToast(id?'Fichário atualizado!':'Fichário criado!');
   closeModal('collectionModal');
   await loadPersonalCollections();
   renderCollectionsList();
-  if(currentCollectionId){document.getElementById('ficharioTitle').textContent=(personalCollections.filter(function(x){return x.id===currentCollectionId;})[0]||{}).name||'';}
+  if(currentCollectionId){
+    document.getElementById('ficharioTitle').textContent=(personalCollections.filter(function(x){return x.id===currentCollectionId;})[0]||{}).name||'';
+    renderFicharioPage();
+  }
 }
 
 async function deleteCollection(id){
@@ -2037,6 +2132,10 @@ async function deleteCollection(id){
   if(currentCollectionId===id) closeCollectionDetail();
   await loadPersonalCollections();
   renderCollectionsList();
+}
+
+function currentCollection(){
+  return personalCollections.filter(function(x){return x.id===currentCollectionId;})[0];
 }
 
 function openCollection(id){
@@ -2072,12 +2171,17 @@ function ficharioAddPage(){
 }
 
 function renderFicharioPage(){
+  var col=currentCollection();
+  var gridSize=col?(col.grid_size||3):3;
+  var totalSlots=gridSize*gridSize;
   document.getElementById('ficharioPageLabel').textContent='Página '+ficharioCurrentPage+' de '+Math.max(ficharioCurrentPage,ficharioMaxPage());
   document.getElementById('ficharioTotalValue').textContent=fmt(collectionValue(currentCollectionId));
   var pageCards=collectionCards.filter(function(c){return c.collection_id===currentCollectionId&&c.page_number===ficharioCurrentPage;});
   var grid=document.getElementById('ficharioGrid');
+  grid.style.gridTemplateColumns='repeat('+gridSize+',1fr)';
+  grid.style.background=col?(col.bg_color||'var(--bg2)'):'var(--bg2)';
   var html='';
-  for(var slot=1;slot<=9;slot++){
+  for(var slot=1;slot<=totalSlots;slot++){
     var card=pageCards.filter(function(c){return c.slot_position===slot;})[0];
     if(card){
       var prod=products.filter(function(p){return p.id===card.product_id;})[0];
@@ -2092,6 +2196,19 @@ function renderFicharioPage(){
     }
   }
   grid.innerHTML=html;
+}
+
+function populateSlotOptions(selected){
+  var col=currentCollection();
+  var gridSize=col?(col.grid_size||3):3;
+  var sel=document.getElementById('cc-slot');
+  var html='';
+  for(var s=1;s<=gridSize*gridSize;s++){
+    var row=Math.floor((s-1)/gridSize)+1, colN=((s-1)%gridSize)+1;
+    html+='<option value="'+s+'">'+s+' — linha '+row+', col '+colN+'</option>';
+  }
+  sel.innerHTML=html;
+  sel.value=selected||1;
 }
 
 function openSlotModal(page,slot,cardId){
@@ -2109,7 +2226,7 @@ function openSlotModal(page,slot,cardId){
     document.getElementById('cc-lang').value=card.language||'PT-BR';
     document.getElementById('cc-value').value=card.estimated_value||'';
     document.getElementById('cc-page').value=card.page_number;
-    document.getElementById('cc-slot').value=card.slot_position;
+    populateSlotOptions(card.slot_position);
     document.getElementById('cc-notes').value=card.notes||'';
   }else{
     document.getElementById('collectionCardModalTitle').textContent='Adicionar carta';
@@ -2120,7 +2237,7 @@ function openSlotModal(page,slot,cardId){
     document.getElementById('cc-lang').value='PT-BR';
     document.getElementById('cc-value').value='';
     document.getElementById('cc-page').value=page;
-    document.getElementById('cc-slot').value=slot;
+    populateSlotOptions(slot);
     document.getElementById('cc-notes').value='';
   }
   openModal('collectionCardModal');
@@ -2149,6 +2266,7 @@ function selectCollectionCardProduct(id){
   document.getElementById('cc-name').value=p.name;
   document.getElementById('cc-product-id').value=p.id;
   if(p.language)document.getElementById('cc-lang').value=p.language;
+  if(p.market_price&&!document.getElementById('cc-value').value){document.getElementById('cc-value').value=p.market_price;}
   document.getElementById('cc-autocomplete').style.display='none';
 }
 
@@ -2596,12 +2714,14 @@ function renderInventory(){
   if(invSortField){filtered.sort(function(a,b){var va=a[invSortField]||'';var vb=b[invSortField]||'';if(typeof va==='number'||typeof vb==='number'){va=parseFloat(va)||0;vb=parseFloat(vb)||0;}else{va=String(va).toLowerCase();vb=String(vb).toLowerCase();}return invSortAsc?(va>vb?1:-1):(va<vb?1:-1);});}
   var tb=document.getElementById('inventoryTable');
   updateInvSummary(filtered);
-  if(!filtered.length){tb.innerHTML='<tr><td colspan="12"><div class="empty-state"><i class="ti ti-package"></i>Nenhum item encontrado</div></td></tr>';return;}
+  if(!filtered.length){tb.innerHTML='<tr><td colspan="13"><div class="empty-state"><i class="ti ti-package"></i>Nenhum item encontrado</div></td></tr>';return;}
   tb.innerHTML=filtered.map(function(inv){
     var avail=inv.quantity_available||0;
     var qtyClass=avail===0?'zero':avail<=2?'low':'';
     var mg=inv.sale_price>0?((inv.sale_price-inv.cost_price)/inv.sale_price*100).toFixed(0)+'%':'-';
     var mgColor=inv.sale_price>inv.cost_price?'var(--success)':'var(--danger)';
+    var prod=inv.product_id?products.filter(function(p){return p.id===inv.product_id;})[0]:null;
+    var marketPriceCell=prod&&prod.market_price?fmt(prod.market_price):'<span style="color:var(--text3)">-</span>';
     var extrasBadge=inv.extras?'<span style="font-size:10px;background:#F3E8FF;color:#6B21A8;padding:1px 6px;border-radius:10px;font-weight:600;margin-left:4px">'+inv.extras+'</span>':''; var ligaLink=inv.liga_url?'<a href="'+inv.liga_url+'" target="_blank" style="font-size:11px;color:var(--blue);margin-left:4px" title="Ver na Liga Pokemon"><i class="ti ti-external-link"></i></a>':''; var statusClass=inv.status==='Reservado'?'badge-mp':inv.status==='Em estoque'?'badge-nosale':inv.status==='A Caminho'?'badge-lp':'badge-nm';
     var statusLabel=inv.status||'A venda';
     return '<tr>'
@@ -2616,12 +2736,12 @@ function renderInventory(){
       +'<td>'+fmt(inv.cost_price)+'</td>'
       +'<td style="font-weight:600">'+(inv.sale_price>0?fmt(inv.sale_price):'<span style="color:var(--text3)">Nao definido</span>')+'</td>'
       +'<td style="color:'+mgColor+'">'+mg+'</td>'
+      +'<td style="color:var(--text2)">'+marketPriceCell+'</td>'
       +'<td><span class="badge '+statusClass+'">'+statusLabel+'</span></td>'
       +'<td><div class="actions-cell">'
       +'<button class="btn-small" onclick="openInvEdit(\''+inv.id+'\')" title="Editar"><i class="ti ti-tag"></i></button>'
       +'<button class="btn-small" onclick="openPriceHistory(\''+inv.id+'\')" title="Historico"><i class="ti ti-chart-line"></i></button>'
       +'</div></td>'
-      +'</tr>';
       +'</tr>';
   }).join('');
 }
@@ -4242,6 +4362,7 @@ function openNewProduct(){
   document.getElementById('prod-set').value='';
   document.getElementById('prod-type').value='Carta Avulsa';
   document.getElementById('prod-lang').value='PT-BR';
+  document.getElementById('prod-market-price').value='';
   document.getElementById('prod-liga').value='';
   document.getElementById('prod-notes').value='';
   document.getElementById('prod-img-url').value='';
@@ -4369,6 +4490,7 @@ function renderProducts(){
       
       +'<td>'+typeBadge(p.product_type)+'</td>'
       +'<td>'+langBadge(p.language)+'</td>'
+      +'<td style="font-weight:600;color:var(--amber-dark)">'+(p.market_price?fmt(p.market_price):'-')+'</td>'
       +'<td><div class="actions-cell">'
       +'<button class="btn-small" onclick="editProduct(\''+p.id+'\')" title="Editar"><i class="ti ti-edit"></i></button>'
       +'<button class="btn-danger" onclick="deleteProduct(\''+p.id+'\')" title="Excluir"><i class="ti ti-trash"></i></button>'
@@ -4391,6 +4513,7 @@ function editProduct(id){
   document.getElementById('prod-set').value=p.set_name||'';
   document.getElementById('prod-type').value=p.product_type||'Carta Avulsa';
   document.getElementById('prod-lang').value=p.language||'PT-BR';
+  document.getElementById('prod-market-price').value=p.market_price||'';
   document.getElementById('prod-liga').value=p.liga_url||'';
   document.getElementById('prod-notes').value=p.notes||'';
   var prev=document.getElementById('prod-img-preview');
@@ -4409,6 +4532,7 @@ async function saveProduct(){
     set_name:document.getElementById('prod-set').value||null,
     product_type:document.getElementById('prod-type').value,
     language:document.getElementById('prod-lang').value,
+    market_price:parseFloat(document.getElementById('prod-market-price').value)||null,
     liga_url:document.getElementById('prod-liga').value||null,
     image_url:document.getElementById('prod-img-url').value||null,
     notes:document.getElementById('prod-notes').value||null
@@ -4425,6 +4549,77 @@ async function deleteProduct(id){
   await sb.from('products').delete().eq('id',id);
   showToast('Produto removido');
   await loadProducts();
+}
+
+// ---- REVISAO EM LOTE DE PRECO DE MERCADO ----
+var priceReviewQueue=[], priceReviewIndex=0;
+
+function buildLigaSearchUrl(p){
+  if(p.liga_url) return p.liga_url;
+  return 'https://www.ligapokemon.com.br/?view=cards/search&card='+encodeURIComponent(p.name);
+}
+
+function openProductPriceReview(){
+  var q=(document.getElementById('filterProductName').value||'').toLowerCase();
+  priceReviewQueue=products.filter(function(p){
+    return !q||(p.name+' '+(p.set_name||'')).toLowerCase().indexOf(q)!==-1;
+  }).slice().sort(function(a,b){
+    var da=a.market_price_updated_at||'';
+    var db=b.market_price_updated_at||'';
+    if(da!==db) return da<db?-1:1;
+    return a.name.localeCompare(b.name);
+  });
+  if(!priceReviewQueue.length){showToast('Nenhum produto para revisar','error');return;}
+  priceReviewIndex=0;
+  renderPriceReviewStep();
+  openModal('priceReviewModal');
+}
+
+function renderPriceReviewStep(){
+  var p=priceReviewQueue[priceReviewIndex];
+  document.getElementById('pr-progress').textContent=(priceReviewIndex+1)+' de '+priceReviewQueue.length;
+  document.getElementById('pr-product-id').value=p.id;
+  document.getElementById('pr-name').textContent=p.name;
+  document.getElementById('pr-set').textContent=p.set_name||'';
+  document.getElementById('pr-current').textContent='Preço atual: '+(p.market_price?fmt(p.market_price):'não definido');
+  var img=document.getElementById('pr-img');
+  if(p.image_url){img.src=p.image_url;img.style.display='block';}else{img.style.display='none';}
+  document.getElementById('pr-liga-link').href=buildLigaSearchUrl(p);
+  document.getElementById('pr-price').value=p.market_price||'';
+}
+
+function priceReviewAdvance(){
+  priceReviewIndex++;
+  if(priceReviewIndex>=priceReviewQueue.length){
+    showToast('Revisão concluída!');
+    closeModal('priceReviewModal');
+    renderProducts();
+    return;
+  }
+  renderPriceReviewStep();
+}
+
+function priceReviewSkip(){
+  priceReviewAdvance();
+}
+
+async function priceReviewSave(){
+  var id=document.getElementById('pr-product-id').value;
+  var priceInput=document.getElementById('pr-price').value;
+  var price=priceInput!==''?parseFloat(priceInput):null;
+  var r=await sb.from('products').update({
+    market_price:price,
+    market_price_updated_at:new Date().toISOString()
+  }).eq('id',id);
+  if(r.error){showToast('Erro ao salvar preço','error');return;}
+  var local=products.filter(function(x){return x.id===id;})[0];
+  if(local){local.market_price=price;local.market_price_updated_at=new Date().toISOString();}
+  priceReviewAdvance();
+}
+
+function priceReviewFinish(){
+  closeModal('priceReviewModal');
+  renderProducts();
 }
 
 // ---- AUTO-MIGRATE: extract unique suppliers and customers ----
