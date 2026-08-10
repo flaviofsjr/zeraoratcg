@@ -492,6 +492,7 @@ tr:hover td{background:var(--bg2)}
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
           <input type="text" id="filterProductName" placeholder="Buscar produto..." oninput="renderProducts()" style="padding:8px 12px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text);font-size:13px;width:220px">
           <div style="display:flex;gap:8px">
+            <button class="btn-secondary" style="width:auto" onclick="openModal('productImportModal')"><i class="ti ti-table-import"></i> Importar Excel</button>
             <button class="btn-secondary" style="width:auto" onclick="migrateProducts()" id="migrateProductsBtn"><i class="ti ti-download"></i> Importar do estoque</button>
             <button class="btn-primary" style="width:auto" onclick="document.getElementById('productModal').classList.add('open')"><i class="ti ti-plus"></i> Novo produto</button>
           </div>
@@ -1135,6 +1136,37 @@ tr:hover td{background:var(--bg2)}
     <div class="modal-actions">
       <button class="btn-secondary" onclick="closeModal('productModal')">Cancelar</button>
       <button class="btn-primary" style="width:auto" onclick="saveProduct()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL IMPORTAR PRODUTOS -->
+<div class="modal-bg" id="productImportModal">
+  <div class="modal" style="max-width:640px">
+    <h3>Importar produtos do Excel</h3>
+    <div style="background:var(--bg2);border-radius:var(--radius);padding:12px 14px;font-size:13px;color:var(--text2);margin-bottom:4px">
+      <strong style="color:var(--text)">Formato esperado das colunas:</strong><br>
+      Nome | Set / Expansao | Tipo | Idioma | Link Liga Pokemon | Foto (URL) | Observacoes
+      <div style="margin-top:8px;font-size:12px">
+        <strong style="color:var(--text)">Tipo</strong> aceita: Carta Avulsa, Lacrado, Acessorio, Lote (padrao: Carta Avulsa)<br>
+        <strong style="color:var(--text)">Idioma</strong> aceita: PT-BR, EN, JP, FR, CH (padrao: PT-BR)
+      </div>
+      <div style="margin-top:8px">
+        <a href="#" onclick="downloadProductTemplate();return false;" style="color:var(--amber);font-weight:600"><i class="ti ti-file-spreadsheet"></i> Baixar modelo Excel</a>
+      </div>
+    </div>
+    <div class="form-field">
+      <label>Selecione o arquivo .xlsx ou .csv</label>
+      <input type="file" id="pimport-file" accept=".xlsx,.xls,.csv" onchange="previewProductImport(this)">
+    </div>
+    <div id="pimport-preview" style="display:none">
+      <div style="font-size:13px;font-weight:500;margin-bottom:8px" id="pimport-count"></div>
+      <div style="max-height:260px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--radius);font-size:12px" id="pimport-table-wrap"></div>
+    </div>
+    <div id="pimport-progress" style="display:none;font-size:13px;color:var(--text2)"></div>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeModal('productImportModal');resetProductImport()">Cancelar</button>
+      <button class="btn-primary" style="width:auto" id="pimportBtn" onclick="runProductImport()" disabled>Importar tudo</button>
     </div>
   </div>
 </div>
@@ -4052,6 +4084,125 @@ async function migrateProducts(){
   btn.innerHTML='<i class="ti ti-check"></i> Importado!';
   btn.style.background='var(--success)';btn.style.color='#fff';
   await loadProducts();
+}
+
+// ---- PRODUCTS BULK IMPORT (Excel/CSV) ----
+
+var PROD_TYPES=['Carta Avulsa','Lacrado','Acessorio','Lote'];
+var PROD_LANGS=['PT-BR','EN','JP','FR','CH'];
+
+function normalizeProdType(v){
+  v=String(v||'').trim();
+  var m=PROD_TYPES.filter(function(t){return t.toLowerCase()===v.toLowerCase();})[0];
+  return m||'Carta Avulsa';
+}
+function normalizeProdLang(v){
+  v=String(v||'').trim();
+  var m=PROD_LANGS.filter(function(l){return l.toLowerCase()===v.toLowerCase();})[0];
+  return m||'PT-BR';
+}
+
+function downloadProductTemplate(){
+  var aoa=[
+    ['Nome','Set / Expansao','Tipo','Idioma','Link Liga Pokemon','Foto (URL)','Observacoes'],
+    ['Charizard (25/185)','Tempestade de Plasma','Carta Avulsa','PT-BR','https://www.ligapokemon.com.br/...','https://...','Ex: NM, holo']
+  ];
+  var ws=XLSX.utils.aoa_to_sheet(aoa);
+  ws['!cols']=[{wch:28},{wch:22},{wch:14},{wch:10},{wch:32},{wch:32},{wch:24}];
+  var wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'Produtos');
+  XLSX.writeFile(wb,'modelo_importacao_produtos.xlsx');
+}
+
+var productImportRows=[];
+
+function previewProductImport(input){
+  var file=input.files[0];
+  if(!file)return;
+  var reader=new FileReader();
+  reader.onload=function(e){
+    var data=new Uint8Array(e.target.result);
+    var wb=XLSX.read(data,{type:'array'});
+    var ws=wb.Sheets[wb.SheetNames[0]];
+    var rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+    if(rows.length<2){showToast('Arquivo vazio ou sem dados','error');return;}
+    // Skip header row, keep only rows with a name in column 0
+    productImportRows=rows.slice(1).filter(function(r){return r[0]&&String(r[0]).trim();});
+    if(!productImportRows.length){showToast('Nenhuma linha valida encontrada (verifique a coluna Nome)','error');return;}
+
+    var existing=new Set(products.map(function(p){return p.name.toLowerCase().trim();}));
+    var seenInFile=new Set();
+
+    document.getElementById('pimport-count').textContent=productImportRows.length+' linha(s) encontrada(s) para importar';
+    var headers=['Nome','Set','Tipo','Idioma','Liga URL','Foto','Obs','Status'];
+    var tableHtml='<table style="width:100%;border-collapse:collapse">';
+    tableHtml+='<thead><tr>'+headers.map(function(h){return '<th style="padding:6px 8px;background:var(--bg2);border-bottom:1px solid var(--border);font-size:11px;text-align:left">'+h+'</th>';}).join('')+'</tr></thead><tbody>';
+    productImportRows.forEach(function(r){
+      var name=String(r[0]||'').trim();
+      var key=name.toLowerCase();
+      var status;
+      if(existing.has(key)||seenInFile.has(key)){status='<span style="color:var(--danger)">Duplicado (sera pulado)</span>';}
+      else{status='<span style="color:var(--success)">Novo</span>';}
+      seenInFile.add(key);
+      var cells=[name,r[1]||'-',normalizeProdType(r[2]),normalizeProdLang(r[3]),r[4]||'-',r[5]||'-',r[6]||'-'];
+      tableHtml+='<tr>'+cells.map(function(c){return '<td style="padding:5px 8px;border-bottom:1px solid var(--border);max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+c+'</td>';}).join('')+'<td style="padding:5px 8px;border-bottom:1px solid var(--border);white-space:nowrap;font-size:11px">'+status+'</td></tr>';
+    });
+    tableHtml+='</tbody></table>';
+    document.getElementById('pimport-table-wrap').innerHTML=tableHtml;
+    document.getElementById('pimport-preview').style.display='block';
+    document.getElementById('pimportBtn').disabled=false;
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function resetProductImport(){
+  productImportRows=[];
+  document.getElementById('pimport-file').value='';
+  document.getElementById('pimport-preview').style.display='none';
+  document.getElementById('pimport-progress').style.display='none';
+  document.getElementById('pimportBtn').disabled=true;
+  document.getElementById('pimportBtn').textContent='Importar tudo';
+}
+
+async function runProductImport(){
+  if(!productImportRows.length)return;
+  var btn=document.getElementById('pimportBtn');
+  btn.disabled=true;btn.textContent='Importando...';
+  document.getElementById('pimport-progress').style.display='block';
+  var prog=document.getElementById('pimport-progress');
+
+  var existing=new Set(products.map(function(p){return p.name.toLowerCase().trim();}));
+  var toInsert=[],skipped=0;
+  productImportRows.forEach(function(r){
+    var name=String(r[0]||'').trim();
+    if(!name)return;
+    var key=name.toLowerCase();
+    if(existing.has(key)){skipped++;return;}
+    existing.add(key); // avoid duplicates within the same file
+    toInsert.push({
+      user_id:currentUser.id,
+      name:name,
+      set_name:String(r[1]||'').trim()||null,
+      product_type:normalizeProdType(r[2]),
+      language:normalizeProdLang(r[3]),
+      liga_url:String(r[4]||'').trim()||null,
+      image_url:String(r[5]||'').trim()||null,
+      notes:String(r[6]||'').trim()||null
+    });
+  });
+
+  var ok=0,fail=0;
+  for(var i=0;i<toInsert.length;i+=50){
+    var batch=toInsert.slice(i,i+50);
+    prog.textContent='Importando '+Math.min(i+50,toInsert.length)+' de '+toInsert.length+'...';
+    var r=await sb.from('products').insert(batch);
+    if(!r.error)ok+=batch.length;else fail+=batch.length;
+  }
+  prog.textContent='Concluido! '+ok+' importado(s), '+skipped+' duplicado(s) pulado(s)'+(fail?', '+fail+' erro(s)':'')+'.';
+  btn.textContent='Concluido!';
+  showToast(ok+' produto(s) importado(s) com sucesso!');
+  await loadProducts();
+  setTimeout(function(){closeModal('productImportModal');resetProductImport();},2000);
 }
 
 async function migrateSuppliers(){
