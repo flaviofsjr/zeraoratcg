@@ -152,6 +152,24 @@ tr:hover td{background:var(--bg2)}
 .vr-item-info{font-size:12px;color:var(--text2);margin-top:2px}
 .vr-item-price{font-weight:700;color:var(--amber-dark);font-size:14px;margin-left:auto;white-space:nowrap}
 @keyframes spin{to{transform:rotate(360deg)}}
+.fichario-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;max-width:620px;margin:0 auto;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px}
+.fichario-slot{aspect-ratio:2.5/3.5;border-radius:8px;position:relative;overflow:hidden;cursor:pointer;background:var(--bg)}
+.fichario-slot.empty{border:2px dashed var(--border2);display:flex;align-items:center;justify-content:center;color:var(--text3);transition:all .15s}
+.fichario-slot.empty:hover{border-color:var(--amber);color:var(--amber-dark);background:var(--amber-bg)}
+.fichario-slot.filled{border:1px solid var(--border)}
+.fichario-slot.filled img{width:100%;height:100%;object-fit:cover;display:block}
+.fichario-slot-info{position:absolute;left:0;right:0;bottom:0;background:linear-gradient(to top,rgba(0,0,0,0.82),rgba(0,0,0,0));color:#fff;padding:14px 6px 6px;font-size:10px;line-height:1.3}
+.fichario-slot-value{font-weight:700;font-size:11px}
+.fichario-slot-actions{position:absolute;top:4px;right:4px;display:none;gap:4px}
+.fichario-slot.filled:hover .fichario-slot-actions{display:flex}
+.fichario-slot-actions button{width:22px;height:22px;border-radius:5px;border:none;background:rgba(0,0,0,0.6);color:#fff;font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.fichario-slot-actions button:hover{background:rgba(0,0,0,0.85)}
+.collection-card{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px 16px;cursor:pointer;display:flex;flex-direction:column;gap:6px;transition:border-color .15s}
+.collection-card:hover{border-color:var(--amber)}
+.collection-card-name{font-weight:700;font-size:14px}
+.collection-card-sub{font-size:12px;color:var(--text2)}
+.collection-card-value{font-size:17px;font-weight:700;color:var(--amber-dark)}
+.collection-card-actions{display:flex;gap:6px;margin-top:4px}
 </style>
 </head>
 <body>
@@ -188,6 +206,7 @@ tr:hover td{background:var(--bg2)}
     <div class="nav-tab" onclick="showPage('cadastros',this)"><i class="ti ti-database"></i> Cadastros</div>
     <div class="nav-tab" onclick="showPage('despesas',this)"><i class="ti ti-receipt"></i> Despesas</div>
     <div class="nav-tab" onclick="showPage('desejos',this)"><i class="ti ti-star"></i> Desejos<span id="wishlistBadge" class="nav-badge" style="display:none">0</span></div>
+    <div class="nav-tab" onclick="showPage('colecao',this)"><i class="ti ti-book-2"></i> Coleção</div>
     <div class="nav-right">
       <span class="nav-user" id="navUser"></span>
       <button class="btn-secondary" onclick="doLogout()" style="padding:6px 12px;font-size:12px">Sair</button>
@@ -452,6 +471,41 @@ tr:hover td{background:var(--bg2)}
             <tr><td colspan="8"><div class="empty-state"><i class="ti ti-star-off"></i>Nenhuma carta na lista de desejos</div></td></tr>
           </tbody>
         </table>
+      </div>
+    </div>
+
+    <!-- COLECAO PESSOAL -->
+    <div class="page" id="page-colecao">
+      <div id="colecaoListView">
+        <div class="section-header">
+          <h3>Coleção pessoal</h3>
+          <button class="btn-primary" style="width:auto" onclick="openNewCollection()"><i class="ti ti-plus"></i> Novo fichário</button>
+        </div>
+        <p style="font-size:12px;color:var(--text2);margin-bottom:14px">Cartas pessoais, fora do estoque comercial e do DRE — só para acompanhar o valor da coleção.</p>
+        <div id="collectionsGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px"></div>
+      </div>
+
+      <div id="colecaoDetailView" style="display:none">
+        <div class="section-header">
+          <div style="display:flex;align-items:center;gap:10px">
+            <button class="btn-secondary" onclick="closeCollectionDetail()"><i class="ti ti-arrow-left"></i></button>
+            <div>
+              <h3 id="ficharioTitle" style="margin-bottom:2px"></h3>
+              <div style="font-size:12px;color:var(--text2)">Valor estimado do fichário: <span id="ficharioTotalValue" style="font-weight:700;color:var(--amber-dark)">R$ 0,00</span></div>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button class="btn-secondary" onclick="editCollection()"><i class="ti ti-edit"></i> Renomear</button>
+            <button class="btn-danger" onclick="deleteCollection()"><i class="ti ti-trash"></i> Excluir fichário</button>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:center;gap:14px;margin-bottom:16px">
+          <button class="btn-secondary" onclick="ficharioPrevPage()"><i class="ti ti-chevron-left"></i></button>
+          <div style="font-size:14px;font-weight:600" id="ficharioPageLabel">Página 1</div>
+          <button class="btn-secondary" onclick="ficharioNextPage()"><i class="ti ti-chevron-right"></i></button>
+          <button class="btn-secondary" style="width:auto" onclick="ficharioAddPage()"><i class="ti ti-plus"></i> Nova página</button>
+        </div>
+        <div class="fichario-grid" id="ficharioGrid"></div>
       </div>
     </div>
 
@@ -1297,6 +1351,86 @@ tr:hover td{background:var(--bg2)}
   </div>
 </div>
 
+<!-- MODAL NOVO/EDITAR FICHARIO -->
+<div class="modal-bg" id="collectionModal">
+  <div class="modal" style="max-width:420px">
+    <h3 id="collectionModalTitle">Novo fichário</h3>
+    <input type="hidden" id="col-id">
+    <div class="form-field"><label>Nome *</label>
+      <input type="text" id="col-name" placeholder="ex: Base Set, Kanto, Ilustrações raras...">
+    </div>
+    <div class="form-field"><label>Descrição</label>
+      <textarea id="col-desc" rows="2" placeholder="Opcional..."></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeModal('collectionModal')">Cancelar</button>
+      <button class="btn-primary" style="width:auto" onclick="saveCollection()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CARTA DO FICHARIO -->
+<div class="modal-bg" id="collectionCardModal">
+  <div class="modal">
+    <h3 id="collectionCardModalTitle">Adicionar carta</h3>
+    <input type="hidden" id="cc-id">
+    <input type="hidden" id="cc-collection-id">
+    <input type="hidden" id="cc-product-id">
+    <input type="hidden" id="cc-img">
+    <div class="modal-grid">
+      <div class="form-field full" style="position:relative"><label>Carta *</label>
+        <input type="text" id="cc-name" placeholder="Digite para buscar no catálogo..." autocomplete="off" oninput="collectionCardAutocomplete(this)">
+        <div id="cc-autocomplete" style="display:none;position:absolute;z-index:100;background:var(--bg);border:1px solid var(--border2);border-radius:var(--radius);width:100%;max-height:200px;overflow-y:auto;box-shadow:0 4px 12px rgba(0,0,0,0.1)"></div>
+      </div>
+      <div class="form-field"><label>Condição</label>
+        <select id="cc-cond">
+          <option value="NM">NM</option>
+          <option value="M">M</option>
+          <option value="LP">LP</option>
+          <option value="MP">MP</option>
+          <option value="HP">HP</option>
+          <option value="D">D</option>
+        </select>
+      </div>
+      <div class="form-field"><label>Idioma</label>
+        <select id="cc-lang">
+          <option value="PT-BR">PT-BR</option>
+          <option value="EN">EN</option>
+          <option value="JP">JP</option>
+          <option value="FR">FR</option>
+          <option value="CH">CH</option>
+        </select>
+      </div>
+      <div class="form-field"><label>Valor estimado (R$)</label>
+        <input type="number" id="cc-value" placeholder="0,00" min="0" step="0.01">
+      </div>
+      <div class="form-field"><label>Página</label>
+        <input type="number" id="cc-page" min="1" step="1">
+      </div>
+      <div class="form-field"><label>Posição no fichário</label>
+        <select id="cc-slot">
+          <option value="1">1 — linha 1, col 1</option>
+          <option value="2">2 — linha 1, col 2</option>
+          <option value="3">3 — linha 1, col 3</option>
+          <option value="4">4 — linha 2, col 1</option>
+          <option value="5">5 — linha 2, col 2</option>
+          <option value="6">6 — linha 2, col 3</option>
+          <option value="7">7 — linha 3, col 1</option>
+          <option value="8">8 — linha 3, col 2</option>
+          <option value="9">9 — linha 3, col 3</option>
+        </select>
+      </div>
+      <div class="form-field full"><label>Observações</label>
+        <textarea id="cc-notes" rows="2" placeholder="Opcional..."></textarea>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeModal('collectionCardModal')">Cancelar</button>
+      <button class="btn-primary" style="width:auto" onclick="saveCollectionCard()">Salvar</button>
+    </div>
+  </div>
+</div>
+
 <!-- LIGHTBOX FOTO -->
 <div id="lightbox" onclick="closeLightbox()" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.85);z-index:500;align-items:center;justify-content:center;cursor:zoom-out">
   <img id="lightboxImg" src="" style="max-width:90vw;max-height:90vh;border-radius:12px;box-shadow:0 8px 40px rgba(0,0,0,0.5)">
@@ -1399,6 +1533,7 @@ function showPage(p,el){
     if(p==='dre')renderDRE();
     if(p==='despesas'){loadExpenses();}
     if(p==='cadastros'){loadSuppliers();loadCustomers();loadProducts();setTimeout(runMigration,1000);}
+    if(p==='colecao'){currentCollectionId=null;document.getElementById('colecaoDetailView').style.display='none';document.getElementById('colecaoListView').style.display='block';loadPersonalCollections().then(renderCollectionsList);}
   }catch(err){console.error('showPage error:',err);}
 }
 
@@ -1823,7 +1958,251 @@ function selectWishlistProduct(id){
 }
 
 function loadAll(){
-  Promise.all([loadPurchases(),loadInventory(),loadSales(),loadProfile(),loadProducts(),loadExpenses(),loadSuppliers(),loadCustomers(),loadWishlist()]).then(function(){renderSales();renderPurchases();renderInventory();loadDashboard();});
+  Promise.all([loadPurchases(),loadInventory(),loadSales(),loadProfile(),loadProducts(),loadExpenses(),loadSuppliers(),loadCustomers(),loadWishlist(),loadPersonalCollections()]).then(function(){renderSales();renderPurchases();renderInventory();loadDashboard();});
+}
+
+// ==================== COLECAO PESSOAL (FICHARIO) ====================
+var personalCollections=[], collectionCards=[], currentCollectionId=null, ficharioCurrentPage=1;
+
+async function loadPersonalCollections(){
+  var r1=await sb.from('personal_collections').select('*').eq('user_id',currentUser.id).order('name');
+  personalCollections=r1.data||[];
+  var r2=await sb.from('personal_collection_cards').select('*').eq('user_id',currentUser.id);
+  collectionCards=r2.data||[];
+}
+
+function collectionValue(collectionId){
+  return collectionCards.filter(function(c){return c.collection_id===collectionId;})
+    .reduce(function(s,c){return s+parseFloat(c.estimated_value||0);},0);
+}
+
+function renderCollectionsList(){
+  var grid=document.getElementById('collectionsGrid');
+  if(!personalCollections.length){
+    grid.innerHTML='<div class="empty-state" style="grid-column:1/-1"><i class="ti ti-book-2"></i>Nenhum fichário ainda — crie o primeiro para começar a listar sua coleção</div>';
+    return;
+  }
+  grid.innerHTML=personalCollections.map(function(col){
+    var qty=collectionCards.filter(function(c){return c.collection_id===col.id;}).length;
+    var val=collectionValue(col.id);
+    return '<div class="collection-card" onclick="openCollection(\''+col.id+'\')">'
+      +'<div class="collection-card-name">'+col.name+'</div>'
+      +'<div class="collection-card-sub">'+qty+' carta(s)'+(col.description?' · '+col.description:'')+'</div>'
+      +'<div class="collection-card-value">'+fmt(val)+'</div>'
+      +'<div class="collection-card-actions">'
+      +'<button class="btn-small" onclick="event.stopPropagation();editCollection(\''+col.id+'\')" title="Renomear"><i class="ti ti-edit"></i></button>'
+      +'<button class="btn-danger" onclick="event.stopPropagation();deleteCollection(\''+col.id+'\')" title="Excluir"><i class="ti ti-trash"></i></button>'
+      +'</div></div>';
+  }).join('');
+}
+
+function openNewCollection(){
+  document.getElementById('collectionModalTitle').textContent='Novo fichário';
+  document.getElementById('col-id').value='';
+  document.getElementById('col-name').value='';
+  document.getElementById('col-desc').value='';
+  openModal('collectionModal');
+}
+
+function editCollection(id){
+  id=id||currentCollectionId;
+  var col=personalCollections.filter(function(x){return x.id===id;})[0];
+  if(!col)return;
+  document.getElementById('collectionModalTitle').textContent='Renomear fichário';
+  document.getElementById('col-id').value=col.id;
+  document.getElementById('col-name').value=col.name;
+  document.getElementById('col-desc').value=col.description||'';
+  openModal('collectionModal');
+}
+
+async function saveCollection(){
+  var name=document.getElementById('col-name').value.trim();
+  if(!name){showToast('Informe o nome do fichário','error');return;}
+  var id=document.getElementById('col-id').value;
+  var payload={user_id:currentUser.id,name:name,description:document.getElementById('col-desc').value||null};
+  var r=id?await sb.from('personal_collections').update(payload).eq('id',id):await sb.from('personal_collections').insert(payload);
+  if(r.error){showToast('Erro ao salvar fichário','error');return;}
+  showToast(id?'Fichário atualizado!':'Fichário criado!');
+  closeModal('collectionModal');
+  await loadPersonalCollections();
+  renderCollectionsList();
+  if(currentCollectionId){document.getElementById('ficharioTitle').textContent=(personalCollections.filter(function(x){return x.id===currentCollectionId;})[0]||{}).name||'';}
+}
+
+async function deleteCollection(id){
+  id=id||currentCollectionId;
+  if(!confirm('Excluir este fichário e todas as cartas dentro dele? Essa acao nao pode ser desfeita.'))return;
+  await sb.from('personal_collections').delete().eq('id',id);
+  showToast('Fichário removido');
+  if(currentCollectionId===id) closeCollectionDetail();
+  await loadPersonalCollections();
+  renderCollectionsList();
+}
+
+function openCollection(id){
+  currentCollectionId=id;
+  ficharioCurrentPage=1;
+  document.getElementById('colecaoListView').style.display='none';
+  document.getElementById('colecaoDetailView').style.display='block';
+  var col=personalCollections.filter(function(x){return x.id===id;})[0];
+  document.getElementById('ficharioTitle').textContent=col?col.name:'';
+  renderFicharioPage();
+}
+
+function closeCollectionDetail(){
+  currentCollectionId=null;
+  document.getElementById('colecaoDetailView').style.display='none';
+  document.getElementById('colecaoListView').style.display='block';
+  renderCollectionsList();
+}
+
+function ficharioMaxPage(){
+  var pages=collectionCards.filter(function(c){return c.collection_id===currentCollectionId;}).map(function(c){return c.page_number;});
+  return pages.length?Math.max.apply(null,pages):1;
+}
+
+function ficharioPrevPage(){
+  if(ficharioCurrentPage>1){ficharioCurrentPage--;renderFicharioPage();}
+}
+function ficharioNextPage(){
+  ficharioCurrentPage++;renderFicharioPage();
+}
+function ficharioAddPage(){
+  ficharioCurrentPage=ficharioMaxPage()+1;renderFicharioPage();
+}
+
+function renderFicharioPage(){
+  document.getElementById('ficharioPageLabel').textContent='Página '+ficharioCurrentPage+' de '+Math.max(ficharioCurrentPage,ficharioMaxPage());
+  document.getElementById('ficharioTotalValue').textContent=fmt(collectionValue(currentCollectionId));
+  var pageCards=collectionCards.filter(function(c){return c.collection_id===currentCollectionId&&c.page_number===ficharioCurrentPage;});
+  var grid=document.getElementById('ficharioGrid');
+  var html='';
+  for(var slot=1;slot<=9;slot++){
+    var card=pageCards.filter(function(c){return c.slot_position===slot;})[0];
+    if(card){
+      var prod=products.filter(function(p){return p.id===card.product_id;})[0];
+      var img=prod&&prod.image_url?'<img src="'+prod.image_url+'" onerror="this.style.display=\'none\'">':'';
+      html+='<div class="fichario-slot filled" onclick="openSlotModal('+ficharioCurrentPage+','+slot+',\''+card.id+'\')">'
+        +img
+        +'<div class="fichario-slot-actions"><button onclick="event.stopPropagation();deleteCollectionCard(\''+card.id+'\')" title="Remover"><i class="ti ti-trash"></i></button></div>'
+        +'<div class="fichario-slot-info">'+(prod?prod.name:card.name||'')+'<div class="fichario-slot-value">'+fmt(card.estimated_value||0)+'</div></div>'
+        +'</div>';
+    }else{
+      html+='<div class="fichario-slot empty" onclick="openSlotModal('+ficharioCurrentPage+','+slot+')"><i class="ti ti-plus" style="font-size:22px"></i></div>';
+    }
+  }
+  grid.innerHTML=html;
+}
+
+function openSlotModal(page,slot,cardId){
+  document.getElementById('cc-collection-id').value=currentCollectionId;
+  document.getElementById('cc-autocomplete').style.display='none';
+  if(cardId){
+    var card=collectionCards.filter(function(x){return x.id===cardId;})[0];
+    if(!card)return;
+    var prod=products.filter(function(p){return p.id===card.product_id;})[0];
+    document.getElementById('collectionCardModalTitle').textContent='Editar carta';
+    document.getElementById('cc-id').value=card.id;
+    document.getElementById('cc-product-id').value=card.product_id||'';
+    document.getElementById('cc-name').value=prod?prod.name:'';
+    document.getElementById('cc-cond').value=card.condition||'NM';
+    document.getElementById('cc-lang').value=card.language||'PT-BR';
+    document.getElementById('cc-value').value=card.estimated_value||'';
+    document.getElementById('cc-page').value=card.page_number;
+    document.getElementById('cc-slot').value=card.slot_position;
+    document.getElementById('cc-notes').value=card.notes||'';
+  }else{
+    document.getElementById('collectionCardModalTitle').textContent='Adicionar carta';
+    document.getElementById('cc-id').value='';
+    document.getElementById('cc-product-id').value='';
+    document.getElementById('cc-name').value='';
+    document.getElementById('cc-cond').value='NM';
+    document.getElementById('cc-lang').value='PT-BR';
+    document.getElementById('cc-value').value='';
+    document.getElementById('cc-page').value=page;
+    document.getElementById('cc-slot').value=slot;
+    document.getElementById('cc-notes').value='';
+  }
+  openModal('collectionCardModal');
+}
+
+function collectionCardAutocomplete(input){
+  var q=input.value.toLowerCase().trim();
+  var dd=document.getElementById('cc-autocomplete');
+  document.getElementById('cc-product-id').value='';
+  if(!q){dd.style.display='none';return;}
+  var matches=products.filter(function(p){return p.name.toLowerCase().indexOf(q)!==-1;}).slice(0,10);
+  if(!matches.length){dd.style.display='none';return;}
+  dd.style.display='block';
+  dd.innerHTML=matches.map(function(p){
+    var img=p.image_url?'<img src="'+p.image_url+'" style="width:28px;height:38px;object-fit:cover;border-radius:3px;margin-right:8px;vertical-align:middle">':'';
+    return '<div onclick="selectCollectionCardProduct(\''+p.id+'\')" style="padding:8px 12px;cursor:pointer;display:flex;align-items:center;border-bottom:1px solid var(--border);font-size:13px" onmouseover="this.style.background=\'var(--bg2)\'" onmouseout="this.style.background=\'\'">'
+      +img+'<div><div style="font-weight:600">'+p.name+'</div>'
+      +(p.set_name?'<div style="font-size:11px;color:var(--text2)">'+p.set_name+'</div>':'')
+      +'</div></div>';
+  }).join('');
+}
+
+function selectCollectionCardProduct(id){
+  var p=products.filter(function(x){return x.id===id;})[0];
+  if(!p)return;
+  document.getElementById('cc-name').value=p.name;
+  document.getElementById('cc-product-id').value=p.id;
+  if(p.language)document.getElementById('cc-lang').value=p.language;
+  document.getElementById('cc-autocomplete').style.display='none';
+}
+
+async function saveCollectionCard(){
+  var productId=document.getElementById('cc-product-id').value;
+  if(!productId){showToast('Selecione uma carta do catálogo (digite e escolha da lista)','error');return;}
+  var page=parseInt(document.getElementById('cc-page').value)||1;
+  var slot=parseInt(document.getElementById('cc-slot').value);
+  var id=document.getElementById('cc-id').value;
+  var collectionId=document.getElementById('cc-collection-id').value;
+
+  var occupant=collectionCards.filter(function(c){
+    return c.collection_id===collectionId&&c.page_number===page&&c.slot_position===slot&&c.id!==id;
+  })[0];
+
+  if(occupant){
+    if(id){
+      // swap: send the occupant to this card's previous position
+      var moving=collectionCards.filter(function(c){return c.id===id;})[0];
+      if(moving){
+        var swapR=await sb.from('personal_collection_cards').update({page_number:moving.page_number,slot_position:moving.slot_position}).eq('id',occupant.id);
+        if(swapR.error){showToast('Erro ao trocar as cartas de posição','error');return;}
+      }
+    }else{
+      showToast('Essa posição já está ocupada — escolha outra ou edite a carta que está lá para movê-la primeiro','error');
+      return;
+    }
+  }
+
+  var payload={
+    user_id:currentUser.id,
+    collection_id:collectionId,
+    product_id:productId,
+    condition:document.getElementById('cc-cond').value,
+    language:document.getElementById('cc-lang').value,
+    estimated_value:parseFloat(document.getElementById('cc-value').value)||0,
+    page_number:page,
+    slot_position:slot,
+    notes:document.getElementById('cc-notes').value||null
+  };
+  var r=id?await sb.from('personal_collection_cards').update(payload).eq('id',id):await sb.from('personal_collection_cards').insert(payload);
+  if(r.error){showToast('Erro ao salvar carta','error');return;}
+  showToast(id?'Carta atualizada!':'Carta adicionada!');
+  closeModal('collectionCardModal');
+  await loadPersonalCollections();
+  renderFicharioPage();
+}
+
+async function deleteCollectionCard(id){
+  if(!confirm('Remover esta carta do fichário?'))return;
+  await sb.from('personal_collection_cards').delete().eq('id',id);
+  showToast('Carta removida');
+  await loadPersonalCollections();
+  renderFicharioPage();
 }
 
 function loadPurchases(){
