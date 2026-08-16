@@ -523,7 +523,7 @@ tr:hover td{background:var(--bg2)}
       <div id="cad-suppliers">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
           <input type="text" id="filterSupplierName" placeholder="Buscar fornecedor..." oninput="renderSuppliers()" style="padding:8px 12px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text);font-size:13px;width:220px">
-          <button class="btn-primary" style="width:auto" onclick="document.getElementById('supplierModal').classList.add('open')"><i class="ti ti-plus"></i> Novo fornecedor</button>
+          <button class="btn-primary" style="width:auto" onclick="openNewSupplier()"><i class="ti ti-plus"></i> Novo fornecedor</button>
         </div>
         <div class="table-wrap">
           <table><thead><tr><th>Nome</th><th>WhatsApp</th><th>Email</th><th>Obs</th><th>Compras</th><th></th></tr></thead>
@@ -550,7 +550,7 @@ tr:hover td{background:var(--bg2)}
             <button class="btn-secondary" style="width:auto;background:#E8B422;color:#2C1A00;border-color:#E8B422;font-weight:700" onclick="openProductPriceReview()"><i class="ti ti-refresh"></i> Revisão em lote</button>
             <button class="btn-secondary" style="width:auto" onclick="openModal('productImportModal')"><i class="ti ti-table-import"></i> Importar Excel</button>
             <button class="btn-secondary" style="width:auto" onclick="migrateProducts()" id="migrateProductsBtn"><i class="ti ti-download"></i> Importar do estoque</button>
-            <button class="btn-primary" style="width:auto" onclick="document.getElementById('productModal').classList.add('open')"><i class="ti ti-plus"></i> Novo produto</button>
+            <button class="btn-primary" style="width:auto" onclick="openNewProduct()"><i class="ti ti-plus"></i> Novo produto</button>
           </div>
         </div>
         <div class="table-wrap">
