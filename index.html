@@ -2241,7 +2241,7 @@ function renderFicharioPage(){
       html+='<div class="fichario-slot filled" onclick="openSlotModal('+ficharioCurrentPage+','+slot+',\''+card.id+'\')">'
         +img
         +'<div class="fichario-slot-actions"><button onclick="event.stopPropagation();deleteCollectionCard(\''+card.id+'\')" title="Remover"><i class="ti ti-trash"></i></button></div>'
-        +'<div class="fichario-slot-info">'+(prod?prod.name:card.name||'')+'<div class="fichario-slot-value">'+fmt(card.estimated_value||0)+'</div></div>'
+        +'<div class="fichario-slot-info">'+(prod?prod.name:card.name||'')+' '+condBadge(card.condition)+'<div class="fichario-slot-value">'+fmt(card.estimated_value||0)+'</div></div>'
         +'</div>';
     }else{
       html+='<div class="fichario-slot empty" onclick="openSlotModal('+ficharioCurrentPage+','+slot+')"><i class="ti ti-plus" style="font-size:22px"></i></div>';
