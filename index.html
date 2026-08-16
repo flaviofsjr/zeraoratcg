@@ -506,7 +506,9 @@ tr:hover td{background:var(--bg2)}
         </div>
         <div style="display:flex;align-items:center;justify-content:center;gap:14px;margin-bottom:16px">
           <button class="btn-secondary" onclick="ficharioPrevPage()"><i class="ti ti-chevron-left"></i></button>
-          <div style="font-size:14px;font-weight:600" id="ficharioPageLabel">Página 1</div>
+          <div style="display:flex;align-items:center;gap:6px;font-size:14px;font-weight:600">
+            Página <input type="number" id="ficharioPageInput" min="1" step="1" value="1" style="width:60px;text-align:center;padding:4px 6px;border:1px solid var(--border2);border-radius:6px;font-weight:600" onchange="ficharioGoToPage(this.value)" onkeydown="if(event.key==='Enter'){this.blur();}"> de <span id="ficharioPageMax">1</span>
+          </div>
           <button class="btn-secondary" onclick="ficharioNextPage()"><i class="ti ti-chevron-right"></i></button>
           <button class="btn-secondary" style="width:auto" onclick="ficharioAddPage()"><i class="ti ti-plus"></i> Nova página</button>
         </div>
@@ -2227,11 +2229,20 @@ function ficharioAddPage(){
   ficharioCurrentPage=ficharioMaxPage()+1;renderFicharioPage();
 }
 
+function ficharioGoToPage(val){
+  var p=parseInt(val,10);
+  if(!p||p<1)p=1;
+  ficharioCurrentPage=p;
+  renderFicharioPage();
+}
+
 function renderFicharioPage(){
   var col=currentCollection();
   var gridSize=col?(col.grid_size||3):3;
   var totalSlots=gridSize*gridSize;
-  document.getElementById('ficharioPageLabel').textContent='Página '+ficharioCurrentPage+' de '+Math.max(ficharioCurrentPage,ficharioMaxPage());
+  var maxPage=Math.max(ficharioCurrentPage,ficharioMaxPage());
+  document.getElementById('ficharioPageInput').value=ficharioCurrentPage;
+  document.getElementById('ficharioPageMax').textContent=maxPage;
   document.getElementById('ficharioTotalValue').textContent=fmt(collectionValue(currentCollectionId));
   var pageCards=collectionCards.filter(function(c){return c.collection_id===currentCollectionId&&c.page_number===ficharioCurrentPage;});
   var grid=document.getElementById('ficharioGrid');
