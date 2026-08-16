@@ -258,7 +258,7 @@ tr:hover td{background:var(--bg2)}
           <button class="btn-secondary" style="width:auto" id="toggleZeroBtn" onclick="toggleZeroStock()"><i class="ti ti-eye-off"></i> Ocultar esgotados</button>
         </div>
       </div>
-      <div id="invSummary" style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:1.25rem">
+      <div id="invSummary" style="display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:1.25rem">
         <div style="background:var(--bg);border:1px solid #a3c77d;border-radius:var(--radius-lg);padding:14px 16px;min-height:90px">
           <div style="font-size:11px;color:var(--success);font-weight:700;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px">A venda</div>
           <div style="font-size:22px;font-weight:700;color:var(--success)" id="inv-sum-avenda-val">R$ 0,00</div>
@@ -279,6 +279,11 @@ tr:hover td{background:var(--bg2)}
           <div style="font-size:22px;font-weight:700;color:#0C447C" id="inv-sum-caminho-val">R$ 0,00</div>
           <div style="font-size:12px;color:var(--text2);margin-top:4px"><span id="inv-sum-caminho-qty">0</span> item(s)</div>
         </div>
+        <div style="background:var(--bg);border:1px solid #C99A7A;border-radius:var(--radius-lg);padding:14px 16px;min-height:90px">
+          <div style="font-size:11px;color:#712B13;font-weight:700;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px">Pokedex</div>
+          <div style="font-size:22px;font-weight:700;color:#712B13" id="inv-sum-pokedex-val">R$ 0,00</div>
+          <div style="font-size:12px;color:var(--text2);margin-top:4px"><span id="inv-sum-pokedex-qty">0</span> item(s)</div>
+        </div>
         <div style="background:var(--bg);border:1px solid var(--amber);border-radius:var(--radius-lg);padding:14px 16px;min-height:90px">
           <div style="font-size:11px;color:var(--amber-dark);font-weight:700;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px">Total geral</div>
           <div style="font-size:22px;font-weight:700;color:var(--amber-dark)" id="inv-sum-total-val">R$ 0,00</div>
@@ -290,7 +295,7 @@ tr:hover td{background:var(--bg2)}
         <select id="filterInvType" onchange="renderInventory()"><option value="">Todos tipos</option><option>Carta Avulsa</option><option>Lacrado</option><option>Acessorio</option><option>Lote</option></select>
         <select id="filterInvLang" onchange="renderInventory()"><option value="">Todos idiomas</option><option>PT-BR</option><option>EN</option><option>JP</option><option>FR</option><option>CH</option></select>
         <select id="filterInvCond" onchange="renderInventory()"><option value="">Todas condicoes</option><option>M</option><option>NM</option><option>LP</option><option>MP</option><option>HP</option><option>D</option></select>
-        <select id="filterInvStatus" onchange="renderInventory()"><option value="">Todos status</option><option>A venda</option><option>Reservado</option><option>Em estoque</option><option>A Caminho</option></select>
+        <select id="filterInvStatus" onchange="renderInventory()"><option value="">Todos status</option><option>A venda</option><option>Reservado</option><option>Em estoque</option><option>A Caminho</option><option>Pokedex</option></select>
         <select id="filterInvSupplier" onchange="renderInventory()"><option value="">Todos fornecedores</option></select>
       </div>
       <div class="table-wrap">
@@ -720,7 +725,7 @@ tr:hover td{background:var(--bg2)}
       <div class="form-field"><label>Custo unitario</label><input type="text" id="inv-edit-cost" readonly style="background:var(--bg2)"></div>
       <div class="form-field"><label>Preco de venda (R$)</label><input type="number" id="inv-edit-price" placeholder="0.00" step="0.01" oninput="updateInvMarginPreview()"></div>
       <div class="form-field"><label>Margem estimada</label><input type="text" id="inv-edit-margin" readonly style="background:var(--bg2)"></div>
-      <div class="form-field"><label>Status</label><select id="inv-edit-status"><option value="A venda">A venda</option><option value="Reservado">Reservado</option><option value="Em estoque">Em estoque</option><option value="A Caminho">A Caminho</option></select></div>
+      <div class="form-field"><label>Status</label><select id="inv-edit-status"><option value="A venda">A venda</option><option value="Reservado">Reservado</option><option value="Em estoque">Em estoque</option><option value="A Caminho">A Caminho</option><option value="Pokedex">Pokedex</option></select></div>
       <div class="form-field"><label>Extras</label><select id="inv-edit-extras"><option value="">Nenhum</option><option>Foil</option><option>Reverse Foil</option><option>Pokeball Foil</option><option>Masterball Foil</option><option>Full Art</option><option>Secret Rare</option><option>Holo</option><option>Shiny</option><option>Promo</option><option>Outro</option></select></div>
       <div class="form-field full"><label>Link Liga Pokemon</label><input type="text" id="inv-edit-liga" placeholder="https://www.ligapokemon.com.br/..."></div>
       <div class="form-field full">
@@ -2774,7 +2779,7 @@ function renderInventory(){
     var mgColor=inv.sale_price>inv.cost_price?'var(--success)':'var(--danger)';
     var prod=inv.product_id?products.filter(function(p){return p.id===inv.product_id;})[0]:null;
     var marketPriceCell=prod&&prod.market_price?fmt(prod.market_price):'<span style="color:var(--text3)">-</span>';
-    var extrasBadge=inv.extras?'<span style="font-size:10px;background:#F3E8FF;color:#6B21A8;padding:1px 6px;border-radius:10px;font-weight:600;margin-left:4px">'+inv.extras+'</span>':''; var ligaLink=inv.liga_url?'<a href="'+inv.liga_url+'" target="_blank" style="font-size:11px;color:var(--blue);margin-left:4px" title="Ver na Liga Pokemon"><i class="ti ti-external-link"></i></a>':''; var statusClass=inv.status==='Reservado'?'badge-mp':inv.status==='Em estoque'?'badge-nosale':inv.status==='A Caminho'?'badge-lp':'badge-nm';
+    var extrasBadge=inv.extras?'<span style="font-size:10px;background:#F3E8FF;color:#6B21A8;padding:1px 6px;border-radius:10px;font-weight:600;margin-left:4px">'+inv.extras+'</span>':''; var ligaLink=inv.liga_url?'<a href="'+inv.liga_url+'" target="_blank" style="font-size:11px;color:var(--blue);margin-left:4px" title="Ver na Liga Pokemon"><i class="ti ti-external-link"></i></a>':''; var statusClass=inv.status==='Reservado'?'badge-mp':inv.status==='Em estoque'?'badge-nosale':inv.status==='A Caminho'?'badge-lp':inv.status==='Pokedex'?'badge-jp':'badge-nm';
     var statusLabel=inv.status||'A venda';
     return '<tr>'
       +'<td>'+imgCell(inv.image_url)+'</td>'
@@ -5194,6 +5199,7 @@ function updateInvSummary(list){
   var reservado=base.filter(function(i){return i.status==='Reservado';});
   var emEstoque=base.filter(function(i){return i.status==='Em estoque';});
   var aCaminho=base.filter(function(i){return i.status==='A Caminho';});
+  var pokedex=base.filter(function(i){return i.status==='Pokedex';});
 
   function sumVal(arr){return arr.reduce(function(a,i){
     var price=i.sale_price>0?i.sale_price:i.cost_price||0;
@@ -5211,8 +5217,10 @@ function updateInvSummary(list){
   document.getElementById('inv-sum-estoque-qty').textContent=sumQty(emEstoque);
   document.getElementById('inv-sum-caminho-val').textContent=fmtV(sumVal(aCaminho));
   document.getElementById('inv-sum-caminho-qty').textContent=sumQty(aCaminho);
-  var total=sumVal(aVenda)+sumVal(reservado)+sumVal(emEstoque)+sumVal(aCaminho);
-  var totalQty=sumQty(aVenda)+sumQty(reservado)+sumQty(emEstoque)+sumQty(aCaminho);
+  document.getElementById('inv-sum-pokedex-val').textContent=fmtV(sumVal(pokedex));
+  document.getElementById('inv-sum-pokedex-qty').textContent=sumQty(pokedex);
+  var total=sumVal(aVenda)+sumVal(reservado)+sumVal(emEstoque)+sumVal(aCaminho)+sumVal(pokedex);
+  var totalQty=sumQty(aVenda)+sumQty(reservado)+sumQty(emEstoque)+sumQty(aCaminho)+sumQty(pokedex);
   document.getElementById('inv-sum-total-val').textContent=fmtV(total);
   document.getElementById('inv-sum-total-qty').textContent=totalQty;
 }
