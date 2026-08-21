@@ -3502,10 +3502,10 @@ function copyBinderText(){
 }
 
 function exportInventory(){
-  var rows=[['Nome','Tipo','Set','Idioma','Condicao','Qtd Total','Qtd Disponivel','Custo Unit.','Preco Venda','Margem']];
+  var rows=[['Nome','Tipo','Set','Idioma','Condicao','Qtd Total','Qtd Disponivel','Custo Unit.','Preco Venda','Margem','Status']];
   inventory.forEach(function(i){
     var mg=i.sale_price>0?((i.sale_price-i.cost_price)/i.sale_price*100).toFixed(1)+'%':'-';
-    rows.push([i.name,i.product_type||'',i.set_name||'',i.language,i.condition,i.quantity_total,i.quantity_available,i.cost_price,i.sale_price,mg]);
+    rows.push([i.name,i.product_type||'',i.set_name||'',i.language,i.condition,i.quantity_total,i.quantity_available,i.cost_price,i.sale_price,mg,i.status||'A venda']);
   });
   exportCSV(rows,'estoque_zeraora.csv');
 }
