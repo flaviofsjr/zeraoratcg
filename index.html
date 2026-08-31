@@ -40,8 +40,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .btn-danger:hover{background:var(--danger-bg)}
 .btn-success{background:transparent;color:var(--success);border:1px solid #B7D69A;border-radius:var(--radius);padding:5px 10px;font-size:12px;cursor:pointer}
 .btn-success:hover{background:#EAF3DE}
-.modal-wide{max-width:980px}
-.mp-table{width:100%;border-collapse:collapse}
+.modal.modal-wide{max-width:1600px;width:98vw}
+.mp-table{width:100%;border-collapse:collapse;table-layout:fixed}
 .mp-table th{text-align:left;padding:4px 6px;color:var(--text2);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:0.3px}
 .mp-table td{padding:3px 4px;vertical-align:middle}
 .mp-table input,.mp-table select{width:100%;padding:6px 7px;border:1px solid var(--border2);border-radius:6px;background:var(--bg);color:var(--text);font-size:12px}
@@ -89,7 +89,7 @@ tr:hover td{background:var(--bg2)}
 .badge-sale{background:#EAF3DE;color:#27500A}.badge-nosale{background:#F1EFE8;color:#5F5E5A}
 .badge-carta{background:#EBF5FF;color:#1a56db}.badge-lacrado{background:#EEEDFE;color:#3C3489}
 .badge-acessorio{background:#FAEEDA;color:#633806}.badge-lote{background:#F1EFE8;color:#444}
-.modal-bg{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:200;align-items:flex-start;justify-content:center;padding:2rem 1rem;overflow-y:auto}
+.modal-bg{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:200;align-items:flex-start;justify-content:center;padding:1.5rem 0.5rem;overflow-y:auto}
 .modal-bg.open{display:flex}
 .modal{background:var(--bg);border-radius:var(--radius-lg);border:1px solid var(--border);padding:1.75rem;width:100%;max-width:540px;display:flex;flex-direction:column;gap:1rem;margin:auto;box-shadow:0 8px 32px rgba(0,0,0,0.15)}
 .modal h3{font-size:17px;font-weight:600}
@@ -691,20 +691,20 @@ tr:hover td{background:var(--bg2)}
       <input type="checkbox" id="mp-p-is-trade" style="width:16px;height:16px;accent-color:var(--amber)">
       <label for="mp-p-is-trade" style="margin:0;font-weight:600;cursor:pointer">&#x1F504; Esta leva e uma troca (nao saiu dinheiro)</label>
     </div>
-    <div style="overflow-x:auto">
+    <div class="mp-table-wrap" style="overflow-x:auto">
       <table class="mp-table">
         <thead><tr>
-          <th style="min-width:44px">Foto</th>
-          <th style="min-width:170px">Nome * (busca no cadastro)</th>
-          <th style="min-width:110px">Tipo</th>
-          <th style="min-width:80px">Cond.</th>
-          <th style="min-width:90px">Idioma</th>
-          <th style="min-width:130px">Set / Expansao</th>
-          <th style="min-width:60px">Qtd</th>
-          <th style="min-width:100px">Total pago (R$) *</th>
-          <th style="min-width:100px">Venda sug. (R$)</th>
-          <th style="min-width:100px">Extras</th>
-          <th></th>
+          <th style="width:4%">Foto</th>
+          <th style="width:18%">Nome * (busca no cadastro)</th>
+          <th style="width:11%">Tipo</th>
+          <th style="width:7%">Cond.</th>
+          <th style="width:8%">Idioma</th>
+          <th style="width:12%">Set / Expansao</th>
+          <th style="width:6%">Qtd</th>
+          <th style="width:9%">Total pago (R$) *</th>
+          <th style="width:9%">Venda sug. (R$)</th>
+          <th style="width:9%">Extras</th>
+          <th style="width:7%"></th>
         </tr></thead>
         <tbody id="mpPurchaseRows"></tbody>
       </table>
@@ -806,11 +806,11 @@ tr:hover td{background:var(--bg2)}
     <div style="overflow-x:auto">
       <table class="mp-table">
         <thead><tr>
-          <th style="min-width:220px">Item do estoque *</th>
-          <th style="min-width:60px">Qtd</th>
-          <th style="min-width:100px">Preco venda (R$) *</th>
-          <th style="min-width:100px">Custo unit. (R$)</th>
-          <th></th>
+          <th style="width:46%">Item do estoque *</th>
+          <th style="width:12%">Qtd</th>
+          <th style="width:20%">Preco venda (R$) *</th>
+          <th style="width:15%">Custo unit. (R$)</th>
+          <th style="width:7%"></th>
         </tr></thead>
         <tbody id="mpSaleRows"></tbody>
       </table>
@@ -2582,21 +2582,21 @@ function addMpPurchaseRow(){
   tr.setAttribute('data-row-id',rid);
   tr.innerHTML=
     '<td><img class="mp-thumb" id="mp-thumb-'+rid+'" style="display:none;width:32px;height:42px;object-fit:cover;border-radius:4px" onerror="this.style.display=\'none\'"></td>'+
-    '<td style="position:relative">'+
+    '<td data-label="Nome" style="position:relative">'+
       '<input type="text" class="mp-name" placeholder="Digite para buscar produto..." autocomplete="off" oninput="mpPurchaseAutocomplete('+rid+',this)">'+
       '<input type="hidden" class="mp-product-id">'+
       '<input type="hidden" class="mp-liga">'+
       '<input type="hidden" class="mp-img">'+
       '<div class="mp-p-ac" id="mp-p-ac-'+rid+'" style="display:none;position:absolute;z-index:30;background:var(--bg);border:1px solid var(--border2);border-radius:var(--radius);width:260px;max-height:200px;overflow-y:auto;box-shadow:0 4px 12px rgba(0,0,0,0.1)"></div>'+
     '</td>'+
-    '<td><select class="mp-type"><option value="Carta Avulsa">Carta Avulsa</option><option value="Lacrado">Lacrado</option><option value="Acessorio">Acessorio</option><option value="Lote">Lote / Bulk</option></select></td>'+
-    '<td><select class="mp-cond"><option value="NM">NM</option><option value="M">M</option><option value="LP">LP</option><option value="MP">MP</option><option value="HP">HP</option><option value="D">D</option><option value="N/A">N/A</option></select></td>'+
-    '<td><select class="mp-lang"><option value="PT-BR">PT-BR</option><option value="EN">EN</option><option value="JP">JP</option><option value="FR">FR</option><option value="CH">CH</option><option value="N/A">N/A</option></select></td>'+
-    '<td><input type="text" class="mp-set" placeholder="ex: Prismatic Evolutions"></td>'+
-    '<td><input type="number" class="mp-qty" value="1" min="1" oninput="renderMpPurchaseSummary()"></td>'+
-    '<td><input type="number" class="mp-amount" placeholder="0.00" step="0.01" min="0" oninput="renderMpPurchaseSummary()"></td>'+
-    '<td><input type="number" class="mp-saleprice" placeholder="0.00" step="0.01" min="0"></td>'+
-    '<td><select class="mp-extras"><option value="">Nenhum</option><option>Foil</option><option>Reverse Foil</option><option>Pokeball Foil</option><option>Masterball Foil</option><option>Full Art</option><option>Secret Rare</option><option>Holo</option><option>Shiny</option><option>Promo</option><option>Outro</option></select></td>'+
+    '<td data-label="Tipo"><select class="mp-type"><option value="Carta Avulsa">Carta Avulsa</option><option value="Lacrado">Lacrado</option><option value="Acessorio">Acessorio</option><option value="Lote">Lote / Bulk</option></select></td>'+
+    '<td data-label="Cond."><select class="mp-cond"><option value="NM">NM</option><option value="M">M</option><option value="LP">LP</option><option value="MP">MP</option><option value="HP">HP</option><option value="D">D</option><option value="N/A">N/A</option></select></td>'+
+    '<td data-label="Idioma"><select class="mp-lang"><option value="PT-BR">PT-BR</option><option value="EN">EN</option><option value="JP">JP</option><option value="FR">FR</option><option value="CH">CH</option><option value="N/A">N/A</option></select></td>'+
+    '<td data-label="Set/Exp."><input type="text" class="mp-set" placeholder="ex: Prismatic Evolutions"></td>'+
+    '<td data-label="Qtd"><input type="number" class="mp-qty" value="1" min="1" oninput="renderMpPurchaseSummary()"></td>'+
+    '<td data-label="Total pago"><input type="number" class="mp-amount" placeholder="0.00" step="0.01" min="0" oninput="renderMpPurchaseSummary()"></td>'+
+    '<td data-label="Venda sug."><input type="number" class="mp-saleprice" placeholder="0.00" step="0.01" min="0"></td>'+
+    '<td data-label="Extras"><select class="mp-extras"><option value="">Nenhum</option><option>Foil</option><option>Reverse Foil</option><option>Pokeball Foil</option><option>Masterball Foil</option><option>Full Art</option><option>Secret Rare</option><option>Holo</option><option>Shiny</option><option>Promo</option><option>Outro</option></select></td>'+
     '<td><button class="mp-rm" onclick="removeMpPurchaseRow(this)" title="Remover linha"><i class="ti ti-trash"></i></button></td>';
   document.getElementById('mpPurchaseRows').appendChild(tr);
 }
