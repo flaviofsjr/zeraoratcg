@@ -759,6 +759,30 @@ tr:hover td{background:var(--bg2)}
   </div>
 </div>
 
+<!-- MODAL DIVIDIR ESTOQUE -->
+<div class="modal-bg" id="splitInvModal">
+  <div class="modal">
+    <h3>Dividir item do estoque</h3>
+    <input type="hidden" id="split-inv-id">
+    <div style="background:var(--bg2);border-radius:var(--radius);padding:10px 12px;font-size:13px;margin-bottom:10px">
+      <strong id="split-inv-name"></strong>
+      <div style="color:var(--text2);margin-top:2px" id="split-inv-info"></div>
+    </div>
+    <p style="font-size:12px;color:var(--text2);margin:-2px 0 10px">Use isso quando parte das unidades desta linha na verdade tem uma condicao (ou idioma) diferente. As unidades separadas viram uma linha nova; o restante fica na linha atual.</p>
+    <div class="modal-grid">
+      <div class="form-field"><label>Quantidade a separar *</label><input type="number" id="split-qty" min="1" step="1" oninput="updateSplitPreview()"></div>
+      <div class="form-field"><label>Nova condicao *</label><select id="split-cond"><option value="M">M</option><option value="NM">NM</option><option value="SP">SP</option><option value="MP">MP</option><option value="HP">HP</option><option value="D">D</option></select></div>
+      <div class="form-field"><label>Idioma</label><select id="split-lang"><option value="PT-BR">PT-BR</option><option value="EN">EN</option><option value="JP">JP</option><option value="FR">FR</option><option value="CH">CH</option></select></div>
+      <div class="form-field"><label>Preco de venda dos separados (R$)</label><input type="number" id="split-price" step="0.01" placeholder="Manter o preco atual"></div>
+    </div>
+    <div id="split-preview" style="font-size:12px;color:var(--text2);margin:4px 0 10px"></div>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeModal('splitInvModal')">Cancelar</button>
+      <button class="btn-primary" style="width:auto" id="splitInvSaveBtn" onclick="saveSplitInv()">Dividir</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL VENDA -->
 <div class="modal-bg" id="saleModal">
   <div class="modal">
@@ -2867,6 +2891,7 @@ function renderInventory(){
       +'<td><span class="badge '+statusClass+'">'+statusLabel+'</span></td>'
       +'<td><div class="actions-cell">'
       +'<button class="btn-small" onclick="openInvEdit(\''+inv.id+'\')" title="Editar"><i class="ti ti-tag"></i></button>'
+      +'<button class="btn-small" onclick="openSplitInv(\''+inv.id+'\')" title="Dividir estoque (ex: separar por condicao diferente)"><i class="ti ti-arrows-split"></i></button>'
       +'<button class="btn-small" onclick="openPriceHistory(\''+inv.id+'\')" title="Historico"><i class="ti ti-chart-line"></i></button>'
       +'</div></td>'
       +'</tr>';
@@ -3123,6 +3148,95 @@ function saveInvPrice(){
     closeModal('invEditModal');
     loadInventory();
   });
+}
+
+function openSplitInv(id){
+  var inv=inventory.filter(function(x){return x.id===id;})[0];
+  if(!inv)return;
+  var avail=inv.quantity_available||0;
+  if(avail<1){showToast('Nao ha unidades disponiveis para dividir','error');return;}
+  document.getElementById('split-inv-id').value=id;
+  document.getElementById('split-inv-name').textContent=inv.name;
+  document.getElementById('split-inv-info').textContent=(inv.condition||'-')+' \u2022 '+(inv.language||'-')+' \u2022 '+avail+' disponivel(is)';
+  var qtyInput=document.getElementById('split-qty');
+  qtyInput.value=1;qtyInput.max=avail;qtyInput.min=1;
+  document.getElementById('split-cond').value=inv.condition||'NM';
+  document.getElementById('split-lang').value=inv.language||'PT-BR';
+  var priceInput=document.getElementById('split-price');
+  priceInput.value='';
+  priceInput.placeholder='Manter '+fmt(inv.sale_price||0);
+  updateSplitPreview();
+  openModal('splitInvModal');
+}
+
+function updateSplitPreview(){
+  var id=document.getElementById('split-inv-id').value;
+  var inv=inventory.filter(function(x){return x.id===id;})[0];
+  var previewEl=document.getElementById('split-preview');
+  if(!inv||!previewEl)return;
+  var qty=parseInt(document.getElementById('split-qty').value)||0;
+  var avail=inv.quantity_available||0;
+  if(qty>0&&qty<=avail){
+    var rest=avail-qty;
+    previewEl.textContent='Ficam '+rest+' na condicao atual ('+(inv.condition||'-')+') e '+qty+' vao para uma nova linha de estoque.';
+  } else {
+    previewEl.textContent='Informe uma quantidade entre 1 e '+avail+'.';
+  }
+}
+
+async function saveSplitInv(){
+  var id=document.getElementById('split-inv-id').value;
+  var inv=inventory.filter(function(x){return x.id===id;})[0];
+  if(!inv){showToast('Item nao encontrado','error');return;}
+  var avail=inv.quantity_available||0;
+  var qty=parseInt(document.getElementById('split-qty').value)||0;
+  if(qty<1||qty>avail){showToast('Quantidade invalida. Informe entre 1 e '+avail,'error');return;}
+  var newCond=document.getElementById('split-cond').value;
+  var newLang=document.getElementById('split-lang').value||inv.language;
+  var newPriceRaw=document.getElementById('split-price').value;
+  var newPrice=newPriceRaw!==''?parseFloat(newPriceRaw)||0:(inv.sale_price||0);
+
+  var btn=document.getElementById('splitInvSaveBtn');
+  if(btn){btn.disabled=true;btn.textContent='Dividindo...';}
+
+  var newAvail=avail-qty;
+  var newTotal=(inv.quantity_total||avail)-qty;
+
+  var r1=await sb.from('inventory').update({quantity_available:newAvail,quantity_total:newTotal}).eq('id',id);
+  if(r1.error){
+    showToast('Erro ao atualizar o item original','error');
+    if(btn){btn.disabled=false;btn.textContent='Dividir';}
+    return;
+  }
+
+  var newPayload={
+    user_id:currentUser.id,
+    purchase_id:inv.purchase_id||null,
+    name:inv.name,
+    product_type:inv.product_type,
+    set_name:inv.set_name||null,
+    language:newLang,
+    condition:newCond,
+    quantity_total:qty,
+    quantity_available:qty,
+    cost_price:inv.cost_price||0,
+    sale_price:newPrice,
+    extras:inv.extras||null,
+    liga_url:inv.liga_url||null,
+    image_url:inv.image_url||null,
+    notes:inv.notes||null,
+    status:inv.status||'A venda'
+  };
+  var r2=await sb.from('inventory').insert(newPayload);
+  if(r2.error){
+    showToast('Estoque original atualizado, mas houve erro ao criar a nova linha','error');
+    closeModal('splitInvModal');
+    loadAll();
+    return;
+  }
+  showToast(qty+' unidade(s) separada(s) para a condicao '+newCond);
+  closeModal('splitInvModal');
+  loadAll();
 }
 
 function openSaleModal(){
