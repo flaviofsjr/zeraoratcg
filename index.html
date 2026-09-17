@@ -2462,10 +2462,10 @@ function langBadge(l){
 
 function langFlag(l){
   if(!l||l==='N/A')return '<span style="color:var(--text3)">N/A</span>';
-  var flags={'PT-BR':'🇧🇷','EN':'🇺🇸','JP':'🇯🇵','FR':'🇫🇷','CH':'🇨🇳'};
-  var flag=flags[l];
-  if(!flag)return langBadge(l);
-  return '<span title="'+l+'" style="font-size:16px;line-height:1">'+flag+'</span>';
+  var codes={'PT-BR':'br','EN':'us','JP':'jp','FR':'fr','CH':'cn'};
+  var code=codes[l];
+  if(!code)return langBadge(l);
+  return '<img src="https://flagcdn.com/24x18/'+code+'.png" srcset="https://flagcdn.com/48x36/'+code+'.png 2x" alt="'+l+'" title="'+l+'" loading="lazy" style="width:22px;height:16px;object-fit:cover;border-radius:3px;box-shadow:0 0 0 1px rgba(0,0,0,0.15);vertical-align:middle">';
 }
 
 function imgCell(url){
