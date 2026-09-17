@@ -164,6 +164,27 @@ function typeBadge(t){
 }
 function fmt(v){return 'R$ '+(parseFloat(v)||0).toFixed(2).replace('.',',');}
 
+function mergeIdenticalItems(items){
+  var map={},order=[];
+  for(var idx=0;idx<items.length;idx++){
+    var i=items[idx];
+    var key=[(i.name||'').toLowerCase(),(i.set_name||'').toLowerCase(),(i.condition||''),(i.language||''),(i.product_type||''),(i.extras||'').toLowerCase(),(i.sale_price||0)].join('|');
+    if(!map[key]){
+      var merged={};
+      for(var k in i){merged[k]=i[k];}
+      map[key]=merged;
+      order.push(key);
+    } else {
+      map[key].quantity_available=(map[key].quantity_available||0)+(i.quantity_available||0);
+      if(!map[key].liga_url&&i.liga_url)map[key].liga_url=i.liga_url;
+      if(!map[key].image_url&&i.image_url)map[key].image_url=i.image_url;
+    }
+  }
+  var out=[];
+  for(var j=0;j<order.length;j++)out.push(map[order[j]]);
+  return out;
+}
+
 function filterItems(){
   var nameF=(document.getElementById('filterName').value||'').toLowerCase();
   var typeF=document.getElementById('filterType').value;
@@ -177,12 +198,13 @@ function filterItems(){
     if(condF&&i.condition!==condF)return false;
     return true;
   });
-  filtered.sort(function(a,b){
+  var merged=mergeIdenticalItems(filtered);
+  merged.sort(function(a,b){
     if(sortF==='price_asc')return (a.sale_price||0)-(b.sale_price||0);
     if(sortF==='price_desc')return (b.sale_price||0)-(a.sale_price||0);
     return (a.name||'').localeCompare(b.name||'');
   });
-  renderItems(filtered);
+  renderItems(merged);
 }
 
 function renderItems(items){

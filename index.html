@@ -4019,8 +4019,30 @@ function renderDRE(){
 }
 
 
+function mergeIdenticalItems(items){
+  var map={},order=[];
+  for(var idx=0;idx<items.length;idx++){
+    var i=items[idx];
+    var key=[(i.name||'').toLowerCase(),(i.set_name||'').toLowerCase(),(i.condition||''),(i.language||''),(i.product_type||''),(i.extras||'').toLowerCase(),(i.sale_price||0)].join('|');
+    if(!map[key]){
+      var merged={};
+      for(var k in i){merged[k]=i[k];}
+      map[key]=merged;
+      order.push(key);
+    } else {
+      map[key].quantity_available=(map[key].quantity_available||0)+(i.quantity_available||0);
+      if(!map[key].liga_url&&i.liga_url)map[key].liga_url=i.liga_url;
+      if(!map[key].image_url&&i.image_url)map[key].image_url=i.image_url;
+    }
+  }
+  var out=[];
+  for(var j=0;j<order.length;j++)out.push(map[order[j]]);
+  return out;
+}
+
 function loadBinder(){
   var forSale=inventory.filter(function(i){return (i.quantity_available||0)>0&&i.sale_price>0&&(i.status||'A venda')==='A venda';});
+  forSale=mergeIdenticalItems(forSale);
   var grid=document.getElementById('binderGrid');
   if(!forSale.length){grid.innerHTML='<div class="empty-state" style="grid-column:1/-1"><i class="ti ti-package"></i>Nenhum item disponivel com preco definido</div>';return;}
   grid.innerHTML=forSale.map(function(i){
