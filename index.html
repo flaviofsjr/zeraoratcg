@@ -3581,7 +3581,7 @@ function updateBulkSalesBar(){
 }
 
 async function bulkCancelSales(){
-  var ids=Array.prototype.slice.call(selectedSaleIds);
+  var ids=Array.from(selectedSaleIds);
   if(!ids.length)return;
   if(!confirm('Cancelar '+ids.length+' venda(s) selecionada(s)? O(s) item(ns) volta(m) ao estoque.'))return;
   var btn=document.getElementById('bulkCancelBtn');
@@ -3616,7 +3616,7 @@ function openBulkEditSalesModal(){
 }
 
 async function saveBulkEditSales(){
-  var ids=Array.prototype.slice.call(selectedSaleIds);
+  var ids=Array.from(selectedSaleIds);
   if(!ids.length){closeModal('bulkEditSalesModal');return;}
   var payload={};
   var buyer=document.getElementById('be-buyer').value.trim();
