@@ -322,9 +322,15 @@ tr:hover td{background:var(--bg2)}
         <input type="month" id="filterSaleMonth" onchange="renderSales()">
         <select id="filterPlatform" onchange="renderSales()"><option value="">Todas plataformas</option></select>
       </div>
+      <div id="bulkSalesBar" style="display:none;align-items:center;gap:10px;background:var(--amber-bg);border:1px solid var(--amber);border-radius:var(--radius);padding:8px 14px;margin-bottom:10px;flex-wrap:wrap">
+        <span style="font-size:13px;font-weight:600"><span id="bulkSalesCount">0</span> venda(s) selecionada(s)</span>
+        <button class="btn-secondary" style="width:auto" onclick="openBulkEditSalesModal()"><i class="ti ti-edit"></i> Editar selecionadas</button>
+        <button class="btn-danger" style="width:auto" id="bulkCancelBtn" onclick="bulkCancelSales()"><i class="ti ti-trash"></i> Cancelar selecionadas</button>
+        <button class="btn-small" style="width:auto;margin-left:auto" onclick="clearSalesSelection()">Limpar selecao</button>
+      </div>
       <div class="table-wrap">
-        <table><thead><tr><th>Foto</th><th onclick="sortTable('sal','card_name')" style="cursor:pointer;user-select:none">Item ↕</th><th onclick="sortTable('sal','quantity')" style="cursor:pointer;user-select:none">Qtd ↕</th><th onclick="sortTable('sal','platform')" style="cursor:pointer;user-select:none">Plataforma ↕</th><th onclick="sortTable('sal','buyer')" style="cursor:pointer;user-select:none">Comprador ↕</th><th onclick="sortTable('sal','sale_price')" style="cursor:pointer;user-select:none">Venda ↕</th><th onclick="sortTable('sal','cost_price')" style="cursor:pointer;user-select:none">Custo ↕</th><th onclick="sortTable('sal','lucro')" style="cursor:pointer;user-select:none">Lucro ↕</th><th>Margem</th><th onclick="sortTable('sal','sale_date')" style="cursor:pointer;user-select:none">Data ↕</th><th>Pago</th><th>Entregue</th><th></th></tr></thead>
-        <tbody id="salesTable"><tr><td colspan="13"><div class="empty-state"><i class="ti ti-receipt-off"></i>Nenhuma venda registrada</div></td></tr></tbody></table>
+        <table><thead><tr><th style="width:26px"><input type="checkbox" id="selectAllSales" onchange="toggleSelectAllSales(this)"></th><th>Foto</th><th onclick="sortTable('sal','card_name')" style="cursor:pointer;user-select:none">Item ↕</th><th onclick="sortTable('sal','quantity')" style="cursor:pointer;user-select:none">Qtd ↕</th><th onclick="sortTable('sal','platform')" style="cursor:pointer;user-select:none">Plataforma ↕</th><th onclick="sortTable('sal','buyer')" style="cursor:pointer;user-select:none">Comprador ↕</th><th onclick="sortTable('sal','sale_price')" style="cursor:pointer;user-select:none">Venda ↕</th><th onclick="sortTable('sal','cost_price')" style="cursor:pointer;user-select:none">Custo ↕</th><th onclick="sortTable('sal','lucro')" style="cursor:pointer;user-select:none">Lucro ↕</th><th>Margem</th><th onclick="sortTable('sal','sale_date')" style="cursor:pointer;user-select:none">Data ↕</th><th>Pago</th><th>Entregue</th><th></th></tr></thead>
+        <tbody id="salesTable"><tr><td colspan="14"><div class="empty-state"><i class="ti ti-receipt-off"></i>Nenhuma venda registrada</div></td></tr></tbody></table>
       </div>
     </div>
 
@@ -986,6 +992,36 @@ tr:hover td{background:var(--bg2)}
   </div>
 </div>
 
+<div class="modal-bg" id="bulkEditSalesModal">
+  <div class="modal">
+    <h3>Editar <span id="bulkEditCount">0</span> venda(s) selecionada(s)</h3>
+    <p style="font-size:12px;color:var(--text2);margin-top:-6px">Deixe um campo em branco (ou "Nao alterar") para manter o valor atual daquela venda.</p>
+    <div class="modal-grid">
+      <div class="form-field"><label>Comprador</label><input type="text" id="be-buyer" placeholder="Nao alterar"></div>
+      <div class="form-field"><label>Plataforma</label><input type="text" id="be-platform" placeholder="Nao alterar"></div>
+      <div class="form-field"><label>Data</label><input type="date" id="be-date"></div>
+      <div class="form-field"><label>Pago</label>
+        <select id="be-paid">
+          <option value="">Nao alterar</option>
+          <option value="true">Marcar como pago</option>
+          <option value="false">Desmarcar pago</option>
+        </select>
+      </div>
+      <div class="form-field"><label>Entregue</label>
+        <select id="be-delivered">
+          <option value="">Nao alterar</option>
+          <option value="true">Marcar como entregue</option>
+          <option value="false">Desmarcar entregue</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeModal('bulkEditSalesModal')">Cancelar</button>
+      <button class="btn-primary" style="width:auto" id="bulkEditSaveBtn" onclick="saveBulkEditSales()">Salvar alteracoes</button>
+    </div>
+  </div>
+</div>
+
 
 <!-- MODAL VENDA RAPIDA -->
 <div class="modal-bg" id="vendaRapidaModal">
@@ -1570,6 +1606,7 @@ var SUPA_URL='https://cpvmidouwpfvugelffza.supabase.co';
 var SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNwdm1pZG91d3BmdnVnZWxmZnphIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0OTkxNDIsImV4cCI6MjA5NzA3NTE0Mn0.haj8uqCjzMxqlhajkcaDMpbrzyMjUogoX4A6k4QgTNg';
 var sb=supabase.createClient(SUPA_URL,SUPA_KEY);
 var currentUser=null,isRegister=false,purchases=[],inventory=[],sales=[],drePeriod='all';
+var selectedSaleIds=new Set();
 var suppliers=[], customers=[], products=[], wishlist=[];
 
 var LOGO_B64='https://i.ibb.co/Vc194DR8/dba84186-71fe-471a-87d3-5e2c89832ab3.png';
@@ -2856,7 +2893,7 @@ function renderSales(){
     return salSortAsc?(va>vb?1:-1):(va<vb?1:-1);
   });}
   var tb=document.getElementById('salesTable');
-  if(!filtered.length){tb.innerHTML='<tr><td colspan="13"><div class="empty-state"><i class="ti ti-receipt-off"></i>Nenhuma venda encontrada</div></td></tr>';return;}
+  if(!filtered.length){tb.innerHTML='<tr><td colspan="14"><div class="empty-state"><i class="ti ti-receipt-off"></i>Nenhuma venda encontrada</div></td></tr>';updateBulkSalesBar();return;}
   tb.innerHTML=filtered.map(function(s){
     var ts=parseFloat(s.sale_price||0)*s.quantity;
     var tc=parseFloat(s.cost_price||0)*s.quantity;
@@ -2870,8 +2907,10 @@ function renderSales(){
     var imgHtml=imgUrl?'<img src="'+imgUrl+'" class="inv-img" style="cursor:zoom-in" onclick="openLightbox(event,\''+imgUrl+'\')">'    :'<div class="inv-img-placeholder"><i class="ti ti-photo-off"></i></div>';
     var paidBtn='<button onclick="toggleSaleField(\''+s.id+'\',\'paid\',' +(s.paid?'false':'true')+')" style="font-size:18px;background:none;border:none;cursor:pointer" title="'+(s.paid?'Pago':'Marcar pago')+'">'+(s.paid?'✅':'⬜')+'</button>';
     var delivBtn='<button onclick="toggleSaleField(\''+s.id+'\',\'delivered\',' +(s.delivered?'false':'true')+')" style="font-size:18px;background:none;border:none;cursor:pointer" title="'+(s.delivered?'Entregue':'Marcar entregue')+'">'+(s.delivered?'✅':'⬜')+'</button>';
-    return '<tr style="opacity:'+(s.delivered?'0.6':'1')+'"><td>'+imgHtml+'</td><td style="font-weight:600">'+s.card_name+'</td><td>'+s.quantity+'</td><td>'+(s.platform||'-')+'</td><td>'+(s.buyer||'-')+'</td><td style="font-weight:600">'+fmt(ts)+'</td><td>'+fmt(tc)+'</td><td class="'+(p>=0?'profit-pos':'profit-neg')+'" style="font-weight:600">'+fmt(p)+'</td><td style="color:'+(p>=0?'var(--success)':'var(--danger)')+'">'+mg+'</td><td>'+s.sale_date+'</td><td style="text-align:center">'+paidBtn+'</td><td style="text-align:center">'+delivBtn+'</td><td><div class="actions-cell"><button class="btn-small" onclick="editSale(\''+s.id+'\')" title="Editar"><i class="ti ti-edit"></i></button><button class="btn-danger" onclick="deleteSale(\''+s.id+'\')" title="Excluir"><i class="ti ti-trash"></i></button></div></td></tr>';
+    var selBox='<input type="checkbox" class="sale-select-box" value="'+s.id+'" '+(selectedSaleIds.has(s.id)?'checked':'')+' onchange="toggleSaleSelect(\''+s.id+'\',this.checked)">';
+    return '<tr style="opacity:'+(s.delivered?'0.6':'1')+'"><td>'+selBox+'</td><td>'+imgHtml+'</td><td style="font-weight:600">'+s.card_name+'</td><td>'+s.quantity+'</td><td>'+(s.platform||'-')+'</td><td>'+(s.buyer||'-')+'</td><td style="font-weight:600">'+fmt(ts)+'</td><td>'+fmt(tc)+'</td><td class="'+(p>=0?'profit-pos':'profit-neg')+'" style="font-weight:600">'+fmt(p)+'</td><td style="color:'+(p>=0?'var(--success)':'var(--danger)')+'">'+mg+'</td><td>'+s.sale_date+'</td><td style="text-align:center">'+paidBtn+'</td><td style="text-align:center">'+delivBtn+'</td><td><div class="actions-cell"><button class="btn-small" onclick="editSale(\''+s.id+'\')" title="Editar"><i class="ti ti-edit"></i></button><button class="btn-danger" onclick="deleteSale(\''+s.id+'\')" title="Excluir"><i class="ti ti-trash"></i></button></div></td></tr>';
   }).join('');
+  updateBulkSalesBar();
 }
 
 function loadDashboard(){
@@ -3502,6 +3541,107 @@ function deleteSale(id){
     }
     showToast('Venda removida');loadAll();
   });
+}
+
+function toggleSaleSelect(id,checked){
+  if(checked)selectedSaleIds.add(id);else selectedSaleIds.delete(id);
+  updateBulkSalesBar();
+}
+
+function toggleSelectAllSales(checkbox){
+  var boxes=document.querySelectorAll('.sale-select-box');
+  boxes.forEach(function(b){
+    b.checked=checkbox.checked;
+    if(checkbox.checked)selectedSaleIds.add(b.value);else selectedSaleIds.delete(b.value);
+  });
+  updateBulkSalesBar();
+}
+
+function clearSalesSelection(){
+  selectedSaleIds.clear();
+  document.querySelectorAll('.sale-select-box').forEach(function(b){b.checked=false;});
+  var selAll=document.getElementById('selectAllSales');
+  if(selAll){selAll.checked=false;selAll.indeterminate=false;}
+  updateBulkSalesBar();
+}
+
+function updateBulkSalesBar(){
+  var bar=document.getElementById('bulkSalesBar');
+  if(!bar)return;
+  var count=selectedSaleIds.size;
+  bar.style.display=count>0?'flex':'none';
+  var countEl=document.getElementById('bulkSalesCount');
+  if(countEl)countEl.textContent=count;
+  var boxes=document.querySelectorAll('.sale-select-box');
+  var selAll=document.getElementById('selectAllSales');
+  if(selAll){
+    selAll.checked=boxes.length>0&&count===boxes.length;
+    selAll.indeterminate=count>0&&count<boxes.length;
+  }
+}
+
+async function bulkCancelSales(){
+  var ids=Array.prototype.slice.call(selectedSaleIds);
+  if(!ids.length)return;
+  if(!confirm('Cancelar '+ids.length+' venda(s) selecionada(s)? O(s) item(ns) volta(m) ao estoque.'))return;
+  var btn=document.getElementById('bulkCancelBtn');
+  if(btn){btn.disabled=true;btn.innerHTML='<i class="ti ti-loader-2"></i> Cancelando...';}
+  for(var i=0;i<ids.length;i++){
+    var id=ids[i];
+    var sale=sales.filter(function(x){return x.id===id;})[0];
+    await sb.from('sales').delete().eq('id',id);
+    if(sale&&sale.inventory_id){
+      var inv=inventory.filter(function(x){return x.id===sale.inventory_id;})[0];
+      if(inv){
+        var newQty=(inv.quantity_available||0)+(sale.quantity||1);
+        await sb.from('inventory').update({quantity_available:newQty}).eq('id',sale.inventory_id);
+        inv.quantity_available=newQty;
+      }
+    }
+  }
+  selectedSaleIds.clear();
+  showToast(ids.length+' venda(s) canceladas e estoque restaurado');
+  loadAll();
+}
+
+function openBulkEditSalesModal(){
+  if(!selectedSaleIds.size){showToast('Selecione ao menos uma venda','error');return;}
+  document.getElementById('bulkEditCount').textContent=selectedSaleIds.size;
+  document.getElementById('be-buyer').value='';
+  document.getElementById('be-platform').value='';
+  document.getElementById('be-date').value='';
+  document.getElementById('be-paid').value='';
+  document.getElementById('be-delivered').value='';
+  openModal('bulkEditSalesModal');
+}
+
+async function saveBulkEditSales(){
+  var ids=Array.prototype.slice.call(selectedSaleIds);
+  if(!ids.length){closeModal('bulkEditSalesModal');return;}
+  var payload={};
+  var buyer=document.getElementById('be-buyer').value.trim();
+  var platform=document.getElementById('be-platform').value.trim();
+  var date=document.getElementById('be-date').value;
+  var paid=document.getElementById('be-paid').value;
+  var delivered=document.getElementById('be-delivered').value;
+  if(buyer)payload.buyer=buyer;
+  if(platform)payload.platform=platform;
+  if(date)payload.sale_date=date;
+  if(paid!=='')payload.paid=(paid==='true');
+  if(delivered!=='')payload.delivered=(delivered==='true');
+  if(!Object.keys(payload).length){showToast('Preencha ao menos um campo para alterar','error');return;}
+  var btn=document.getElementById('bulkEditSaveBtn');
+  if(btn){btn.disabled=true;btn.textContent='Salvando...';}
+  var r=await sb.from('sales').update(payload).in('id',ids);
+  if(r.error){
+    showToast('Erro ao salvar alteracoes','error');
+    if(btn){btn.disabled=false;btn.textContent='Salvar alteracoes';}
+    return;
+  }
+  showToast(ids.length+' venda(s) atualizada(s)');
+  closeModal('bulkEditSalesModal');
+  selectedSaleIds.clear();
+  loadAll();
 }
 
 function setDrePeriod(period,el){
