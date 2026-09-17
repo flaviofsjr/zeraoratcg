@@ -783,6 +783,30 @@ tr:hover td{background:var(--bg2)}
   </div>
 </div>
 
+<!-- MODAL DIVIDIR COMPRA -->
+<div class="modal-bg" id="splitPurchaseModal">
+  <div class="modal">
+    <h3>Dividir compra</h3>
+    <input type="hidden" id="sp-purchase-id">
+    <div style="background:var(--bg2);border-radius:var(--radius);padding:10px 12px;font-size:13px;margin-bottom:10px">
+      <strong id="sp-name"></strong>
+      <div style="color:var(--text2);margin-top:2px" id="sp-info"></div>
+    </div>
+    <p style="font-size:12px;color:var(--text2);margin:-2px 0 10px">Use isso quando parte das unidades desta compra chegou (ou foi conferida) numa condicao ou idioma diferente do informado. O sistema cria uma nova compra so com essas unidades, recalculando o custo proporcionalmente, e ajusta o estoque vinculado automaticamente.</p>
+    <div class="modal-grid">
+      <div class="form-field"><label>Quantidade a separar *</label><input type="number" id="sp-qty" min="1" step="1" oninput="updateSplitPurchasePreview()"></div>
+      <div class="form-field"><label>Nova condicao *</label><select id="sp-cond"><option value="M">M</option><option value="NM">NM</option><option value="SP">SP</option><option value="MP">MP</option><option value="HP">HP</option><option value="D">D</option></select></div>
+      <div class="form-field"><label>Idioma</label><select id="sp-lang"><option value="PT-BR">PT-BR</option><option value="EN">EN</option><option value="JP">JP</option><option value="FR">FR</option><option value="CH">CH</option></select></div>
+      <div class="form-field"><label>Preco de venda dos separados (R$)</label><input type="number" id="sp-price" step="0.01" placeholder="Manter o preco atual"></div>
+    </div>
+    <div id="sp-preview" style="font-size:12px;color:var(--text2);margin:4px 0 10px"></div>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeModal('splitPurchaseModal')">Cancelar</button>
+      <button class="btn-primary" style="width:auto" id="splitPurchaseSaveBtn" onclick="saveSplitPurchase()">Dividir</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL VENDA -->
 <div class="modal-bg" id="saleModal">
   <div class="modal">
@@ -2553,7 +2577,7 @@ function renderPurchases(){
   tb.innerHTML=purList.map(function(p){
     var costUnit=p.quantity>0?(parseFloat(p.total_amount||0)/p.quantity):0;
     var jaNoEstoque=inventory.some(function(i){return i.purchase_id===p.id;});
-    var pExtrasBadge=p.extras?'<span style="font-size:10px;background:#F3E8FF;color:#6B21A8;padding:1px 6px;border-radius:10px;font-weight:600;margin-left:4px">'+p.extras+'</span>':''; var purImg=p.image_url?'<img src="'+p.image_url+'" class="inv-img" style="cursor:zoom-in" onclick="openLightbox(event,\''+p.image_url+'\')" onerror="this.style.display=\'none\'">':'<div class="inv-img-placeholder"><i class="ti ti-photo-off"></i></div>'; return '<tr><td>'+purImg+'</td><td style="font-weight:600">'+p.description+pExtrasBadge+'</td><td>'+typeBadge(p.product_type)+'</td><td>'+langBadge(p.language)+'</td><td>'+condBadge(p.condition)+'</td><td style="text-align:center">'+p.quantity+'</td><td>'+(p.supplier||'-')+'</td><td style="font-weight:600;color:var(--amber-dark)" title="Carta: '+fmt(p.total_amount)+' + Frete: '+fmt(p.shipping_cost||0)+'">'+fmt(parseFloat(p.total_amount||0)+parseFloat(p.shipping_cost||0))+'</td>'+'<td><span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:10px;background:'+(p.status==='Pendente'?'#FFF3E0':p.status==='Cancelado'?'#FFEBEE':'#EAF3DE')+';color:'+(p.status==='Pendente'?'#E65100':p.status==='Cancelado'?'#B71C1C':'#27500A')+'">'+(p.status||'Recebido')+'</span></td>'+'<td>'+p.purchase_date+'</td><td><div class="actions-cell">'+(p.status==='Pendente'&&!jaNoEstoque?'<button class="btn-small" style="color:#0C447C;border-color:#6FA8DC" onclick="marcarACaminho(\''+p.id+'\')" title="Marcar como A Caminho - ja pago, aguardando chegada"><i class="ti ti-truck-delivery"></i></button>':'')+(p.status==='Pendente'?'<button class="btn-success" onclick="efetivarCompra(\''+p.id+'\')" title="Efetivar - marcar como recebido e adicionar ao estoque"><i class="ti ti-check"></i></button>':'')+'<button class="btn-small" onclick="editPurchase(\''+p.id+'\')" title="Editar"><i class="ti ti-edit"></i></button><button class="btn-small" onclick="duplicatePurchase(\''+p.id+'\')" title="Duplicar"><i class="ti ti-copy"></i></button><button class="btn-danger" onclick="deletePurchase(\''+p.id+'\')"><i class="ti ti-trash"></i></button></div></td></tr>';
+    var pExtrasBadge=p.extras?'<span style="font-size:10px;background:#F3E8FF;color:#6B21A8;padding:1px 6px;border-radius:10px;font-weight:600;margin-left:4px">'+p.extras+'</span>':''; var purImg=p.image_url?'<img src="'+p.image_url+'" class="inv-img" style="cursor:zoom-in" onclick="openLightbox(event,\''+p.image_url+'\')" onerror="this.style.display=\'none\'">':'<div class="inv-img-placeholder"><i class="ti ti-photo-off"></i></div>'; return '<tr><td>'+purImg+'</td><td style="font-weight:600">'+p.description+pExtrasBadge+'</td><td>'+typeBadge(p.product_type)+'</td><td>'+langBadge(p.language)+'</td><td>'+condBadge(p.condition)+'</td><td style="text-align:center">'+p.quantity+'</td><td>'+(p.supplier||'-')+'</td><td style="font-weight:600;color:var(--amber-dark)" title="Carta: '+fmt(p.total_amount)+' + Frete: '+fmt(p.shipping_cost||0)+'">'+fmt(parseFloat(p.total_amount||0)+parseFloat(p.shipping_cost||0))+'</td>'+'<td><span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:10px;background:'+(p.status==='Pendente'?'#FFF3E0':p.status==='Cancelado'?'#FFEBEE':'#EAF3DE')+';color:'+(p.status==='Pendente'?'#E65100':p.status==='Cancelado'?'#B71C1C':'#27500A')+'">'+(p.status||'Recebido')+'</span></td>'+'<td>'+p.purchase_date+'</td><td><div class="actions-cell">'+(p.status==='Pendente'&&!jaNoEstoque?'<button class="btn-small" style="color:#0C447C;border-color:#6FA8DC" onclick="marcarACaminho(\''+p.id+'\')" title="Marcar como A Caminho - ja pago, aguardando chegada"><i class="ti ti-truck-delivery"></i></button>':'')+(p.status==='Pendente'?'<button class="btn-success" onclick="efetivarCompra(\''+p.id+'\')" title="Efetivar - marcar como recebido e adicionar ao estoque"><i class="ti ti-check"></i></button>':'')+'<button class="btn-small" onclick="editPurchase(\''+p.id+'\')" title="Editar"><i class="ti ti-edit"></i></button>'+(p.quantity>1&&p.status!=='Cancelado'?'<button class="btn-small" onclick="openSplitPurchase(\''+p.id+'\')" title="Dividir compra (ex: parte veio em condicao/idioma diferente)"><i class="ti ti-arrows-split"></i></button>':'')+'<button class="btn-small" onclick="duplicatePurchase(\''+p.id+'\')" title="Duplicar"><i class="ti ti-copy"></i></button><button class="btn-danger" onclick="deletePurchase(\''+p.id+'\')"><i class="ti ti-trash"></i></button></div></td></tr>';
   }).join('');
 }
 
@@ -2891,7 +2915,7 @@ function renderInventory(){
       +'<td><span class="badge '+statusClass+'">'+statusLabel+'</span></td>'
       +'<td><div class="actions-cell">'
       +'<button class="btn-small" onclick="openInvEdit(\''+inv.id+'\')" title="Editar"><i class="ti ti-tag"></i></button>'
-      +'<button class="btn-small" onclick="openSplitInv(\''+inv.id+'\')" title="Dividir estoque (ex: separar por condicao diferente)"><i class="ti ti-arrows-split"></i></button>'
+      +(inv.purchase_id?'':'<button class="btn-small" onclick="openSplitInv(\''+inv.id+'\')" title="Dividir estoque (item sem compra vinculada)"><i class="ti ti-arrows-split"></i></button>')
       +'<button class="btn-small" onclick="openPriceHistory(\''+inv.id+'\')" title="Historico"><i class="ti ti-chart-line"></i></button>'
       +'</div></td>'
       +'</tr>';
@@ -3236,6 +3260,156 @@ async function saveSplitInv(){
   }
   showToast(qty+' unidade(s) separada(s) para a condicao '+newCond);
   closeModal('splitInvModal');
+  loadAll();
+}
+
+function getSplitPurchaseMax(p,existingInv){
+  if(!p)return 0;
+  var byInv=existingInv?(existingInv.quantity_available||0):p.quantity;
+  return Math.max(0,Math.min(byInv,p.quantity-1));
+}
+
+function openSplitPurchase(id){
+  var p=purchases.filter(function(x){return x.id===id;})[0];
+  if(!p)return;
+  if(p.quantity<=1){showToast('Esta compra tem apenas 1 unidade, nao ha o que dividir','error');return;}
+  var existingInv=inventory.filter(function(i){return i.purchase_id===p.id;})[0];
+  var maxSplit=getSplitPurchaseMax(p,existingInv);
+  if(maxSplit<1){
+    showToast('Nao ha unidades disponiveis no estoque para dividir esta compra (provavelmente ja foram todas vendidas)','error');
+    return;
+  }
+  document.getElementById('sp-purchase-id').value=id;
+  document.getElementById('sp-name').textContent=p.description;
+  var infoParts=[(p.condition||'-'),(p.language||'-'),p.quantity+' comprada(s)'];
+  if(existingInv)infoParts.push((existingInv.quantity_available||0)+' disponivel(is) no estoque');
+  document.getElementById('sp-info').textContent=infoParts.join(' \u2022 ');
+  var qtyInput=document.getElementById('sp-qty');
+  qtyInput.value=1;qtyInput.min=1;qtyInput.max=maxSplit;
+  document.getElementById('sp-cond').value=p.condition||'NM';
+  document.getElementById('sp-lang').value=p.language||'PT-BR';
+  var priceInput=document.getElementById('sp-price');
+  priceInput.value='';
+  priceInput.placeholder='Manter '+fmt(p.sale_price||0);
+  updateSplitPurchasePreview();
+  openModal('splitPurchaseModal');
+}
+
+function updateSplitPurchasePreview(){
+  var id=document.getElementById('sp-purchase-id').value;
+  var p=purchases.filter(function(x){return x.id===id;})[0];
+  var previewEl=document.getElementById('sp-preview');
+  if(!p||!previewEl)return;
+  var existingInv=inventory.filter(function(i){return i.purchase_id===p.id;})[0];
+  var maxSplit=getSplitPurchaseMax(p,existingInv);
+  var qty=parseInt(document.getElementById('sp-qty').value)||0;
+  if(qty>0&&qty<=maxSplit){
+    var rest=p.quantity-qty;
+    var msg='Ficam '+rest+' na compra original ('+(p.condition||'-')+')'+(existingInv?' e no estoque atual':'')+', e '+qty+' viram uma nova compra'+(existingInv?' + nova linha de estoque':'')+'.';
+    previewEl.textContent=msg;
+  } else {
+    previewEl.textContent='Informe uma quantidade entre 1 e '+maxSplit+'.';
+  }
+}
+
+async function saveSplitPurchase(){
+  var id=document.getElementById('sp-purchase-id').value;
+  var p=purchases.filter(function(x){return x.id===id;})[0];
+  if(!p){showToast('Compra nao encontrada','error');return;}
+  var existingInv=inventory.filter(function(i){return i.purchase_id===p.id;})[0];
+  var maxSplit=getSplitPurchaseMax(p,existingInv);
+  var qty=parseInt(document.getElementById('sp-qty').value)||0;
+  if(qty<1||qty>maxSplit){showToast('Quantidade invalida. Informe entre 1 e '+maxSplit,'error');return;}
+  var newCond=document.getElementById('sp-cond').value;
+  var newLang=document.getElementById('sp-lang').value||p.language;
+  var newPriceRaw=document.getElementById('sp-price').value;
+  var newSalePrice=newPriceRaw!==''?(parseFloat(newPriceRaw)||0):(p.sale_price||0);
+
+  var btn=document.getElementById('splitPurchaseSaveBtn');
+  if(btn){btn.disabled=true;btn.textContent='Dividindo...';}
+
+  var origQty=p.quantity-qty;
+  var unitTotal=(parseFloat(p.total_amount)||0)/p.quantity;
+  var unitShip=(parseFloat(p.shipping_cost)||0)/p.quantity;
+  var newTotalAmount=Math.round(unitTotal*qty*100)/100;
+  var newShipping=Math.round(unitShip*qty*100)/100;
+  var origTotalAmount=Math.round(((parseFloat(p.total_amount)||0)-newTotalAmount)*100)/100;
+  var origShipping=Math.round(((parseFloat(p.shipping_cost)||0)-newShipping)*100)/100;
+
+  var r1=await sb.from('purchases').update({quantity:origQty,total_amount:origTotalAmount,shipping_cost:origShipping}).eq('id',p.id);
+  if(r1.error){
+    showToast('Erro ao atualizar a compra original','error');
+    if(btn){btn.disabled=false;btn.textContent='Dividir';}
+    return;
+  }
+
+  var newPurchasePayload={
+    user_id:currentUser.id,
+    description:p.description,
+    product_type:p.product_type,
+    condition:newCond,
+    language:newLang,
+    quantity:qty,
+    set_name:p.set_name||null,
+    supplier:p.supplier,
+    supplier_id:p.supplier_id||null,
+    product_id:p.product_id||null,
+    total_amount:newTotalAmount,
+    purchase_date:p.purchase_date,
+    sale_price:newSalePrice,
+    notes:(p.notes?p.notes+' ':'')+'(dividido da compra original)',
+    image_url:p.image_url||null,
+    extras:p.extras||null,
+    liga_url:p.liga_url||null,
+    is_trade:!!p.is_trade,
+    status:p.status,
+    shipping_cost:newShipping
+  };
+  var r2=await sb.from('purchases').insert(newPurchasePayload).select();
+  if(r2.error||!r2.data||!r2.data[0]){
+    showToast('Compra original atualizada, mas houve erro ao criar a nova compra','error');
+    closeModal('splitPurchaseModal');loadAll();
+    return;
+  }
+  var newPurchaseId=r2.data[0].id;
+
+  if(existingInv){
+    var newInvAvail=(existingInv.quantity_available||0)-qty;
+    var newInvTotal=(existingInv.quantity_total||p.quantity)-qty;
+    var r3=await sb.from('inventory').update({quantity_available:newInvAvail,quantity_total:newInvTotal}).eq('id',existingInv.id);
+    if(r3.error){
+      showToast('Compras divididas, mas houve erro ao atualizar o estoque original','error');
+      closeModal('splitPurchaseModal');loadAll();
+      return;
+    }
+    var newInvPayload={
+      user_id:currentUser.id,
+      purchase_id:newPurchaseId,
+      name:existingInv.name,
+      product_type:existingInv.product_type,
+      set_name:existingInv.set_name||null,
+      language:newLang,
+      condition:newCond,
+      quantity_total:qty,
+      quantity_available:qty,
+      cost_price:existingInv.cost_price||0,
+      sale_price:newSalePrice,
+      extras:existingInv.extras||null,
+      liga_url:existingInv.liga_url||null,
+      image_url:existingInv.image_url||null,
+      notes:existingInv.notes||null,
+      status:existingInv.status||'A venda'
+    };
+    var r4=await sb.from('inventory').insert(newInvPayload);
+    if(r4.error){
+      showToast('Compras e estoque original atualizados, mas houve erro ao criar a nova linha de estoque','error');
+      closeModal('splitPurchaseModal');loadAll();
+      return;
+    }
+  }
+
+  showToast(qty+' unidade(s) dividida(s) para uma nova compra ('+newCond+')');
+  closeModal('splitPurchaseModal');
   loadAll();
 }
 
