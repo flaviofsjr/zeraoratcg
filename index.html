@@ -295,7 +295,7 @@ tr:hover td{background:var(--bg2)}
         <input type="text" id="filterInvName" placeholder="Buscar por carta, fornecedor, set, condição..." oninput="renderInventory()" style="width:190px">
         <select id="filterInvType" onchange="renderInventory()"><option value="">Todos tipos</option><option>Carta Avulsa</option><option>Lacrado</option><option>Acessorio</option><option>Lote</option></select>
         <select id="filterInvLang" onchange="renderInventory()"><option value="">Todos idiomas</option><option>PT-BR</option><option>EN</option><option>JP</option><option>FR</option><option>CH</option></select>
-        <select id="filterInvCond" onchange="renderInventory()"><option value="">Todas condicoes</option><option>M</option><option>NM</option><option>LP</option><option>MP</option><option>HP</option><option>D</option></select>
+        <select id="filterInvCond" onchange="renderInventory()"><option value="">Todas condicoes</option><option>M</option><option>NM</option><option>SP</option><option>MP</option><option>HP</option><option>D</option></select>
         <select id="filterInvStatus" onchange="renderInventory()"><option value="">Todos status</option><option>A venda</option><option>Reservado</option><option>Em estoque</option><option>A Caminho</option><option>Pokedex</option></select>
         <select id="filterInvSupplier" onchange="renderInventory()"><option value="">Todos fornecedores</option></select>
       </div>
@@ -597,7 +597,7 @@ tr:hover td{background:var(--bg2)}
       <div class="form-field"><label>Condicao</label>
         <select id="p-cond">
           <option value="M">M - Mint</option><option value="NM">NM - Near Mint</option>
-          <option value="LP">LP - Lightly Played</option>
+          <option value="SP">SP - Slightly Played</option>
           <option value="MP">MP - Moderately Played</option>
           <option value="HP">HP - Heavily Played</option>
           <option value="D">D - Damaged</option>
@@ -816,6 +816,19 @@ tr:hover td{background:var(--bg2)}
       </table>
     </div>
     <button class="btn-secondary" style="width:auto" onclick="addMpSaleRow()"><i class="ti ti-plus"></i> Adicionar linha</button>
+    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:10px 12px;display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin-top:8px">
+      <div class="form-field" style="max-width:170px">
+        <label>Total negociado (R$)</label>
+        <input type="number" id="mp-s-discount-target" placeholder="ex: 270,00" step="0.01" min="0">
+      </div>
+      <div style="font-size:12px;color:var(--text2);padding-bottom:9px">ou</div>
+      <div class="form-field" style="max-width:130px">
+        <label>Desconto (%)</label>
+        <input type="number" id="mp-s-discount-pct" placeholder="ex: 12" step="0.1" min="0" max="100">
+      </div>
+      <button class="btn-secondary" style="width:auto" onclick="applyMpSaleDiscount()"><i class="ti ti-percentage"></i> Aplicar desconto proporcional</button>
+      <button class="btn-small" style="width:auto" onclick="resetMpSaleDiscount()"><i class="ti ti-arrow-back-up"></i> Restaurar precos</button>
+    </div>
     <div class="mp-summary" id="mpSaleSummary"></div>
     <div class="modal-actions">
       <button class="btn-secondary" onclick="closeModal('mpSaleModal')">Cancelar</button>
@@ -888,7 +901,7 @@ tr:hover td{background:var(--bg2)}
         <select id="ep-type"><option value="Carta Avulsa">Carta Avulsa</option><option value="Lacrado">Lacrado</option><option value="Acessorio">Acessorio</option><option value="Lote">Lote / Bulk</option></select>
       </div>
       <div class="form-field"><label>Condicao</label>
-        <select id="ep-cond"><option value="M">M - Mint</option><option value="NM">NM - Near Mint</option><option value="LP">LP - Lightly Played</option><option value="MP">MP - Moderately Played</option><option value="HP">HP - Heavily Played</option><option value="D">D - Damaged</option><option value="N/A">N/A</option></select>
+        <select id="ep-cond"><option value="M">M - Mint</option><option value="NM">NM - Near Mint</option><option value="SP">SP - Slightly Played</option><option value="MP">MP - Moderately Played</option><option value="HP">HP - Heavily Played</option><option value="D">D - Damaged</option><option value="N/A">N/A</option></select>
       </div>
       <div class="form-field"><label>Idioma</label>
         <select id="ep-lang"><option value="PT-BR">PT-BR</option><option value="EN">Ingles</option><option value="JP">Japones</option><option value="FR">Frances</option><option value="CH">Chines</option><option value="N/A">N/A</option></select>
@@ -1390,7 +1403,7 @@ tr:hover td{background:var(--bg2)}
         <select id="w-cond">
           <option value="NM">NM</option>
           <option value="M">M</option>
-          <option value="LP">LP</option>
+          <option value="SP">SP</option>
           <option value="MP">MP</option>
           <option value="HP">HP</option>
           <option value="D">D</option>
@@ -1493,7 +1506,7 @@ tr:hover td{background:var(--bg2)}
         <select id="cc-cond">
           <option value="NM">NM</option>
           <option value="M">M</option>
-          <option value="LP">LP</option>
+          <option value="SP">SP</option>
           <option value="MP">MP</option>
           <option value="HP">HP</option>
           <option value="D">D</option>
@@ -2438,13 +2451,21 @@ function typeBadge(t){
 }
 function condBadge(c){
   if(!c||c==='N/A')return '<span style="color:var(--text3)">N/A</span>';
-  var m={M:'badge-nm',NM:'badge-nm',LP:'badge-lp',MP:'badge-mp',HP:'badge-hp',D:'badge-hp'};
+  var m={M:'badge-nm',NM:'badge-nm',SP:'badge-lp',MP:'badge-mp',HP:'badge-hp',D:'badge-hp'};
   return '<span class="badge '+(m[c]||'badge-nm')+'">'+c+'</span>';
 }
 function langBadge(l){
   if(!l||l==='N/A')return '<span style="color:var(--text3)">N/A</span>';
   var m={'PT-BR':'badge-ptbr','EN':'badge-en','JP':'badge-jp','FR':'badge-fr','CH':'badge-ch'};
   return '<span class="badge '+(m[l]||'badge-ptbr')+'">'+l+'</span>';
+}
+
+function langFlag(l){
+  if(!l||l==='N/A')return '<span style="color:var(--text3)">N/A</span>';
+  var flags={'PT-BR':'🇧🇷','EN':'🇺🇸','JP':'🇯🇵','FR':'🇫🇷','CH':'🇨🇳'};
+  var flag=flags[l];
+  if(!flag)return langBadge(l);
+  return '<span title="'+l+'" style="font-size:16px;line-height:1">'+flag+'</span>';
 }
 
 function imgCell(url){
@@ -2590,7 +2611,7 @@ function addMpPurchaseRow(){
       '<div class="mp-p-ac" id="mp-p-ac-'+rid+'" style="display:none;position:absolute;z-index:30;background:var(--bg);border:1px solid var(--border2);border-radius:var(--radius);width:260px;max-height:200px;overflow-y:auto;box-shadow:0 4px 12px rgba(0,0,0,0.1)"></div>'+
     '</td>'+
     '<td data-label="Tipo"><select class="mp-type"><option value="Carta Avulsa">Carta Avulsa</option><option value="Lacrado">Lacrado</option><option value="Acessorio">Acessorio</option><option value="Lote">Lote / Bulk</option></select></td>'+
-    '<td data-label="Cond."><select class="mp-cond"><option value="NM">NM</option><option value="M">M</option><option value="LP">LP</option><option value="MP">MP</option><option value="HP">HP</option><option value="D">D</option><option value="N/A">N/A</option></select></td>'+
+    '<td data-label="Cond."><select class="mp-cond"><option value="NM">NM</option><option value="M">M</option><option value="SP">SP</option><option value="MP">MP</option><option value="HP">HP</option><option value="D">D</option><option value="N/A">N/A</option></select></td>'+
     '<td data-label="Idioma"><select class="mp-lang"><option value="PT-BR">PT-BR</option><option value="EN">EN</option><option value="JP">JP</option><option value="FR">FR</option><option value="CH">CH</option><option value="N/A">N/A</option></select></td>'+
     '<td data-label="Set/Exp."><input type="text" class="mp-set" placeholder="ex: Prismatic Evolutions"></td>'+
     '<td data-label="Qtd"><input type="number" class="mp-qty" value="1" min="1" oninput="renderMpPurchaseSummary()"></td>'+
@@ -3165,6 +3186,8 @@ function openMpSaleModal(){
   document.getElementById('mp-s-platform').value='';
   document.getElementById('mp-s-date').value=new Date().toISOString().split('T')[0];
   document.getElementById('mp-s-is-trade').checked=false;
+  document.getElementById('mp-s-discount-target').value='';
+  document.getElementById('mp-s-discount-pct').value='';
   addMpSaleRow();addMpSaleRow();addMpSaleRow();
   renderMpSaleSummary();
   openModal('mpSaleModal');
@@ -3183,7 +3206,7 @@ function addMpSaleRow(){
       '<div class="mp-s-avail" style="font-size:11px;color:var(--text2);margin-top:2px"></div>'+
     '</td>'+
     '<td><input type="number" class="mp-s-qty" value="1" min="1" oninput="renderMpSaleSummary()"></td>'+
-    '<td><input type="number" class="mp-s-price" placeholder="0.00" step="0.01" oninput="renderMpSaleSummary()"></td>'+
+    '<td><input type="number" class="mp-s-price" placeholder="0.00" step="0.01" oninput="onMpSalePriceInput(this)"></td>'+
     '<td><input type="number" class="mp-s-cost" placeholder="0.00" step="0.01" readonly style="background:var(--bg2)"></td>'+
     '<td><button class="mp-rm" onclick="removeMpSaleRow(this)" title="Remover linha"><i class="ti ti-trash"></i></button></td>';
   document.getElementById('mpSaleRows').appendChild(tr);
@@ -3232,6 +3255,7 @@ function selectMpSaleItem(rid,invId){
   tr.querySelector('.mp-s-invid').value=invId;
   tr.querySelector('.mp-s-search').value=inv.name;
   tr.querySelector('.mp-s-price').value=inv.sale_price||'';
+  tr.querySelector('.mp-s-price').dataset.basePrice=inv.sale_price||'';
   tr.querySelector('.mp-s-cost').value=inv.cost_price||0;
   tr.querySelector('.mp-s-avail').textContent=inv.quantity_available+' disponivel(is)';
   document.getElementById('mp-s-sugg-'+rid).style.display='none';
@@ -3250,6 +3274,98 @@ function renderMpSaleSummary(){
   var el=document.getElementById('mpSaleSummary');
   if(!validRows){el.innerHTML='Busque e selecione ao menos um item do estoque.';return;}
   el.innerHTML='<b>'+validRows+'</b> item(ns) validos &bull; <b>'+totalQty+'</b> unidade(s) &bull; Total: <b>'+fmt(totalValue)+'</b>';
+}
+
+function onMpSalePriceInput(el){
+  el.dataset.basePrice=el.value;
+  renderMpSaleSummary();
+}
+
+function applyMpSaleDiscount(){
+  var rows=Array.prototype.slice.call(document.querySelectorAll('#mpSaleRows tr'));
+  var validRows=rows.filter(function(tr){
+    var invId=tr.querySelector('.mp-s-invid').value;
+    var qty=parseInt(tr.querySelector('.mp-s-qty').value)||0;
+    return invId&&qty>0;
+  });
+  if(!validRows.length){showToast('Selecione ao menos um item do estoque antes de aplicar o desconto','error');return;}
+
+  validRows.forEach(function(tr){
+    var priceInput=tr.querySelector('.mp-s-price');
+    if(priceInput.dataset.basePrice===undefined||priceInput.dataset.basePrice===''){
+      priceInput.dataset.basePrice=priceInput.value||'0';
+    }
+  });
+
+  var currentTotal=validRows.reduce(function(a,tr){
+    var base=parseFloat(tr.querySelector('.mp-s-price').dataset.basePrice)||0;
+    var qty=parseInt(tr.querySelector('.mp-s-qty').value)||0;
+    return a+base*qty;
+  },0);
+
+  var targetInput=document.getElementById('mp-s-discount-target');
+  var pctInput=document.getElementById('mp-s-discount-pct');
+  var targetVal=parseFloat(targetInput.value);
+  var pctVal=parseFloat(pctInput.value);
+  var ratio;
+
+  if(!isNaN(targetVal)&&targetInput.value!==''){
+    if(currentTotal<=0){showToast('Preencha os precos dos itens antes de definir um total negociado','error');return;}
+    ratio=targetVal/currentTotal;
+    pctInput.value=(100-ratio*100).toFixed(2);
+  } else if(!isNaN(pctVal)&&pctInput.value!==''){
+    ratio=1-(pctVal/100);
+    targetInput.value=(currentTotal*ratio).toFixed(2);
+  } else {
+    showToast('Informe o total negociado ou o percentual de desconto','error');
+    return;
+  }
+  if(ratio<0)ratio=0;
+
+  var newTotal=0;
+  validRows.forEach(function(tr){
+    var base=parseFloat(tr.querySelector('.mp-s-price').dataset.basePrice)||0;
+    var qty=parseInt(tr.querySelector('.mp-s-qty').value)||0;
+    var newPrice=Math.round(base*ratio*100)/100;
+    tr.querySelector('.mp-s-price').value=newPrice.toFixed(2);
+    newTotal+=newPrice*qty;
+  });
+
+  if(!isNaN(targetVal)&&targetVal>0){
+    var diffCents=Math.round((targetVal-newTotal)*100);
+    if(diffCents!==0){
+      var sorted=validRows.slice().sort(function(a,b){
+        var qa=parseInt(a.querySelector('.mp-s-qty').value)||1;
+        var qb=parseInt(b.querySelector('.mp-s-qty').value)||1;
+        var pa=parseFloat(a.querySelector('.mp-s-price').value)||0;
+        var pb=parseFloat(b.querySelector('.mp-s-price').value)||0;
+        return (pb*qb)-(pa*qa);
+      });
+      var target=sorted[0];
+      var qty=parseInt(target.querySelector('.mp-s-qty').value)||1;
+      var priceInput=target.querySelector('.mp-s-price');
+      var cur=parseFloat(priceInput.value)||0;
+      var adj=Math.round(diffCents/qty)/100;
+      priceInput.value=Math.max(0,cur+adj).toFixed(2);
+    }
+  }
+
+  renderMpSaleSummary();
+  showToast('Desconto de '+pctInput.value+'% aplicado a '+validRows.length+' item(ns)');
+}
+
+function resetMpSaleDiscount(){
+  var rows=document.querySelectorAll('#mpSaleRows tr');
+  rows.forEach(function(tr){
+    var priceInput=tr.querySelector('.mp-s-price');
+    if(priceInput.dataset.basePrice!==undefined&&priceInput.dataset.basePrice!==''){
+      priceInput.value=priceInput.dataset.basePrice;
+    }
+  });
+  document.getElementById('mp-s-discount-target').value='';
+  document.getElementById('mp-s-discount-pct').value='';
+  renderMpSaleSummary();
+  showToast('Precos originais restaurados');
 }
 
 async function saveMpSales(){
@@ -3485,7 +3601,7 @@ function loadBinder(){
     return '<div class="card-item">'
       +'<div class="card-item-img">'+img+'</div>'
       +'<div class="card-item-name">'+i.name+'</div>'
-      +'<div class="card-item-sub">'+typeBadge(i.product_type)+' '+condBadge(i.condition)+' '+langBadge(i.language)+'</div>'
+      +'<div class="card-item-sub">'+typeBadge(i.product_type)+' '+condBadge(i.condition)+' '+langFlag(i.language)+'</div>'
       +'<div class="card-item-price">'+fmt(i.sale_price)+'</div>'
       +'<div style="font-size:11px;color:var(--text3)">'+i.quantity_available+' disponivel(is)</div>'
       +'</div>';

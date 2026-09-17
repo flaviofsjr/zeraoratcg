@@ -41,6 +41,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .badge-carta{background:#EBF5FF;color:#1a56db}.badge-lacrado{background:#EEEDFE;color:#3C3489}
 .badge-acessorio{background:#FAEEDA;color:#633806}.badge-lote{background:#F1EFE8;color:#444}
 .badge-extra{background:#F3E8FF;color:#6B21A8}
+.lang-flag{display:inline-flex;align-items:center;justify-content:center;font-size:16px;line-height:1;padding:1px 4px;border-radius:6px;background:var(--bg2)}
 .card-price{font-size:17px;font-weight:700;color:var(--amber-dark)}
 .card-qty{font-size:11px;color:var(--text3)}
 .card-wa{background:var(--amber);color:#2C1A00;border:none;border-radius:var(--radius);padding:7px;font-size:12px;font-weight:600;cursor:pointer;width:100%;text-align:center;text-decoration:none;display:block;margin-top:4px}
@@ -85,8 +86,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <div class="filters">
       <input type="text" id="filterName" placeholder="Buscar item..." oninput="filterItems()" style="width:200px">
       <select id="filterType" onchange="filterItems()"><option value="">Todos tipos</option><option>Carta Avulsa</option><option>Lacrado</option><option>Acessorio</option><option>Lote</option></select>
-      <select id="filterLang" onchange="filterItems()"><option value="">Todos idiomas</option><option>PT-BR</option><option>EN</option><option>JP</option></select>
-      <select id="filterCond" onchange="filterItems()"><option value="">Todas condicoes</option><option>M</option><option>NM</option><option>LP</option><option>MP</option><option>HP</option><option>D</option></select>
+      <select id="filterLang" onchange="filterItems()"><option value="">Todos idiomas</option><option value="PT-BR">🇧🇷 PT-BR</option><option value="EN">🇺🇸 EN</option><option value="JP">🇯🇵 JP</option><option value="FR">🇫🇷 FR</option><option value="CH">🇨🇳 CH</option></select>
+      <select id="filterCond" onchange="filterItems()"><option value="">Todas condicoes</option><option>M</option><option>NM</option><option>SP</option><option>MP</option><option>HP</option><option>D</option></select>
       <select id="filterSort" onchange="filterItems()">
         <option value="name">Nome A-Z</option>
         <option value="price_asc">Menor preco</option>
@@ -147,13 +148,15 @@ function updateStats(){
 
 function condBadge(c){
   if(!c||c==='N/A')return '';
-  var m={M:'badge-nm',NM:'badge-nm',LP:'badge-lp',MP:'badge-mp',HP:'badge-hp',D:'badge-hp'};
+  var m={M:'badge-nm',NM:'badge-nm',SP:'badge-lp',MP:'badge-mp',HP:'badge-hp',D:'badge-hp'};
   return '<span class="badge '+(m[c]||'badge-nm')+'">'+c+'</span>';
 }
 function langBadge(l){
   if(!l||l==='N/A')return '';
-  var m={'PT-BR':'badge-ptbr','EN':'badge-en','JP':'badge-jp'};
-  return '<span class="badge '+(m[l]||'badge-ptbr')+'">'+l+'</span>';
+  var flags={'PT-BR':'🇧🇷','EN':'🇺🇸','JP':'🇯🇵','FR':'🇫🇷','CH':'🇨🇳'};
+  var flag=flags[l];
+  if(!flag)return '<span class="badge badge-ptbr">'+l+'</span>';
+  return '<span class="lang-flag" title="'+l+'">'+flag+'</span>';
 }
 function typeBadge(t){
   var m={'Carta Avulsa':'badge-carta','Lacrado':'badge-lacrado','Acessorio':'badge-acessorio','Lote':'badge-lote'};
