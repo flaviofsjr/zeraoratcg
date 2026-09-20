@@ -5340,14 +5340,14 @@ function renderPdResults(){
   var existing=pdExistingNames();
   var box=document.getElementById('pd-results');
   box.innerHTML=pdSearchResults.map(function(card){
-    var already=pdAlreadyInCatalog(card,existing);
+    var maybeDup=pdAlreadyInCatalog(card,existing);
     var img=card.image?'<img src="'+card.image+'/low.webp" style="width:32px;height:44px;object-fit:cover;border-radius:3px;margin-right:10px">':'';
     return '<div class="suggest-item">'
-      +'<label style="display:flex;align-items:center;flex:1;cursor:'+(already?'default':'pointer')+';opacity:'+(already?'0.5':'1')+'">'
-      +'<input type="checkbox" style="margin-right:10px" '+(already?'disabled':'')+' onchange="togglePdCard(\''+card.id+'\',this.checked)">'
+      +'<label style="display:flex;align-items:center;flex:1;cursor:pointer">'
+      +'<input type="checkbox" style="margin-right:10px" onchange="togglePdCard(\''+card.id+'\',this.checked)">'
       +img
       +'<span class="suggest-item-info"><span class="suggest-item-name">'+pdBriefLabel(card)+'</span>'
-      +'<span class="suggest-item-sub">'+(already?'já está no seu catálogo':'ID: '+card.id)+'</span></span>'
+      +'<span class="suggest-item-sub">'+(maybeDup?'⚠ possível duplicata (número igual já existe, confira o set) — ID: '+card.id:'ID: '+card.id)+'</span></span>'
       +'</label></div>';
   }).join('');
 }
@@ -5392,7 +5392,6 @@ async function importSelectedPdCards(){
   var btn=document.getElementById('pd-import-btn');
   btn.disabled=true;
 
-  var existing=pdExistingNames();
   var toInsert=[];
   var skipped=0;
   var failed=0;
@@ -5400,7 +5399,6 @@ async function importSelectedPdCards(){
   for(var i=0;i<selected.length;i++){
     btn.textContent='Importando ('+(i+1)+'/'+selected.length+')...';
     var brief=selected[i];
-    if(pdAlreadyInCatalog(brief,existing)){skipped++;continue;}
     try{
       var card=await pdFetchCardDetail(brief.id);
       var localIdStr=String(card.localId);
