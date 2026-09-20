@@ -5106,8 +5106,16 @@ async function deleteCustomer(id){
 
 // ---- PRODUCTS ----
 async function loadProducts(){
-  var r=await sb.from('products').select('*').eq('user_id',currentUser.id).order('name');
-  products=r.data||[];
+  var all=[],from=0,pageSize=1000;
+  while(true){
+    var r=await sb.from('products').select('*').eq('user_id',currentUser.id).order('name').range(from,from+pageSize-1);
+    if(r.error){console.error('Erro ao carregar produtos:',r.error);break;}
+    var chunk=r.data||[];
+    all=all.concat(chunk);
+    if(chunk.length<pageSize)break;
+    from+=pageSize;
+  }
+  products=all;
   if(activeCadTab==='products') renderProducts();
 }
 
@@ -5173,7 +5181,7 @@ async function saveProduct(){
     notes:document.getElementById('prod-notes').value||null
   };
   var r=id?await sb.from('products').update(payload).eq('id',id):await sb.from('products').insert(payload);
-  if(r.error){showToast('Erro ao salvar','error');return;}
+  if(r.error){console.error('Erro ao salvar produto:',r.error);showToast('Erro ao salvar: '+(r.error.message||r.error.code||'ver console'),'error');return;}
   showToast(id?'Produto atualizado!':'Produto criado!');
   closeModal('productModal');
   await loadProducts();
@@ -5415,6 +5423,7 @@ async function importSelectedPdCards(){
         liga_url:'https://www.ligapokemon.com.br/?view=cards/search&card='+encodeURIComponent(displayName)
       });
     }catch(err){
+      console.error('Erro ao importar carta',brief,err);
       failed++;
     }
   }
@@ -5429,7 +5438,7 @@ async function importSelectedPdCards(){
   for(var j=0;j<toInsert.length;j+=50){
     var batch=toInsert.slice(j,j+50);
     var r=await sb.from('products').insert(batch);
-    if(!r.error)ok+=batch.length;
+    if(!r.error)ok+=batch.length;else console.error('Erro ao importar lote de produtos:',r.error);
   }
   var msg=ok+' carta(s) importada(s)';
   if(skipped)msg+=', '+skipped+' já existiam';
