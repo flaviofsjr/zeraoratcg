@@ -299,9 +299,14 @@ tr:hover td{background:var(--bg2)}
         <select id="filterInvStatus" onchange="renderInventory()"><option value="">Todos status</option><option>A venda</option><option>Reservado</option><option>Em estoque</option><option>A Caminho</option><option>Pokedex</option></select>
         <select id="filterInvSupplier" onchange="renderInventory()"><option value="">Todos fornecedores</option></select>
       </div>
+      <div id="bulkInvBar" style="display:none;align-items:center;gap:10px;background:var(--amber-bg);border:1px solid var(--amber);border-radius:var(--radius);padding:8px 14px;margin-bottom:10px;flex-wrap:wrap">
+        <span style="font-size:13px;font-weight:600"><span id="bulkInvCount">0</span> item(ns) selecionado(s)</span>
+        <button class="btn-secondary" style="width:auto" onclick="openBulkEditInventoryModal()"><i class="ti ti-edit"></i> Editar selecionados</button>
+        <button class="btn-small" style="width:auto;margin-left:auto" onclick="clearInvSelection()">Limpar selecao</button>
+      </div>
       <div class="table-wrap">
-        <table><thead><tr><th>Foto</th><th onclick="sortTable('inv','name')" style="cursor:pointer;user-select:none">Nome ↕</th><th onclick="sortTable('inv','product_type')" style="cursor:pointer;user-select:none">Tipo ↕</th><th onclick="sortTable('inv','set_name')" style="cursor:pointer;user-select:none">Set ↕</th><th onclick="sortTable('inv','language')" style="cursor:pointer;user-select:none">Idioma ↕</th><th onclick="sortTable('inv','condition')" style="cursor:pointer;user-select:none">Cond. ↕</th><th onclick="sortTable('inv','quantity_available')" style="cursor:pointer;user-select:none">Disponivel ↕</th><th onclick="sortTable('inv','quantity_total')" style="cursor:pointer;user-select:none">Total ↕</th><th onclick="sortTable('inv','cost_price')" style="cursor:pointer;user-select:none">Custo ↕</th><th onclick="sortTable('inv','sale_price')" style="cursor:pointer;user-select:none">Preco venda ↕</th><th>Margem</th><th>Preço Mercado</th><th onclick="sortTable('inv','status')" style="cursor:pointer;user-select:none">Status ↕</th><th></th></tr></thead>
-        <tbody id="inventoryTable"><tr><td colspan="13"><div class="empty-state"><i class="ti ti-package"></i>Estoque vazio — registre compras para popular</div></td></tr></tbody></table>
+        <table><thead><tr><th style="width:26px"><input type="checkbox" id="selectAllInv" onchange="toggleSelectAllInv(this)"></th><th>Foto</th><th onclick="sortTable('inv','name')" style="cursor:pointer;user-select:none">Nome ↕</th><th onclick="sortTable('inv','product_type')" style="cursor:pointer;user-select:none">Tipo ↕</th><th onclick="sortTable('inv','set_name')" style="cursor:pointer;user-select:none">Set ↕</th><th onclick="sortTable('inv','language')" style="cursor:pointer;user-select:none">Idioma ↕</th><th onclick="sortTable('inv','condition')" style="cursor:pointer;user-select:none">Cond. ↕</th><th onclick="sortTable('inv','quantity_available')" style="cursor:pointer;user-select:none">Disponivel ↕</th><th onclick="sortTable('inv','quantity_total')" style="cursor:pointer;user-select:none">Total ↕</th><th onclick="sortTable('inv','cost_price')" style="cursor:pointer;user-select:none">Custo ↕</th><th onclick="sortTable('inv','sale_price')" style="cursor:pointer;user-select:none">Preco venda ↕</th><th>Margem</th><th>Preço Mercado</th><th onclick="sortTable('inv','status')" style="cursor:pointer;user-select:none">Status ↕</th><th></th></tr></thead>
+        <tbody id="inventoryTable"><tr><td colspan="14"><div class="empty-state"><i class="ti ti-package"></i>Estoque vazio — registre compras para popular</div></td></tr></tbody></table>
       </div>
     </div>
 
@@ -1070,6 +1075,29 @@ tr:hover td{background:var(--bg2)}
   </div>
 </div>
 
+<div class="modal-bg" id="bulkEditInventoryModal">
+  <div class="modal">
+    <h3>Editar <span id="bulkEditInvCount">0</span> item(ns) do estoque</h3>
+    <p style="font-size:12px;color:var(--text2);margin-top:-6px">Deixe em "Nao alterar" para manter o valor atual daquele item.</p>
+    <div class="modal-grid">
+      <div class="form-field"><label>Status</label>
+        <select id="bei-status">
+          <option value="">Nao alterar</option>
+          <option value="A venda">A venda</option>
+          <option value="Reservado">Reservado</option>
+          <option value="Em estoque">Em estoque</option>
+          <option value="A Caminho">A Caminho</option>
+          <option value="Pokedex">Pokedex</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeModal('bulkEditInventoryModal')">Cancelar</button>
+      <button class="btn-primary" style="width:auto" id="bulkEditInvSaveBtn" onclick="saveBulkEditInventory()">Salvar alteracoes</button>
+    </div>
+  </div>
+</div>
+
 
 <!-- MODAL VENDA RAPIDA -->
 <div class="modal-bg" id="vendaRapidaModal">
@@ -1655,6 +1683,7 @@ var SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZ
 var sb=supabase.createClient(SUPA_URL,SUPA_KEY);
 var currentUser=null,isRegister=false,purchases=[],inventory=[],sales=[],drePeriod='all';
 var selectedSaleIds=new Set();
+var selectedInvIds=new Set();
 var suppliers=[], customers=[], products=[], wishlist=[];
 
 var LOGO_B64='https://i.ibb.co/Vc194DR8/dba84186-71fe-471a-87d3-5e2c89832ab3.png';
@@ -2889,7 +2918,7 @@ function renderInventory(){
   if(invSortField){filtered.sort(function(a,b){var va=a[invSortField]||'';var vb=b[invSortField]||'';if(typeof va==='number'||typeof vb==='number'){va=parseFloat(va)||0;vb=parseFloat(vb)||0;}else{va=String(va).toLowerCase();vb=String(vb).toLowerCase();}return invSortAsc?(va>vb?1:-1):(va<vb?1:-1);});}
   var tb=document.getElementById('inventoryTable');
   updateInvSummary(filtered);
-  if(!filtered.length){tb.innerHTML='<tr><td colspan="13"><div class="empty-state"><i class="ti ti-package"></i>Nenhum item encontrado</div></td></tr>';return;}
+  if(!filtered.length){tb.innerHTML='<tr><td colspan="14"><div class="empty-state"><i class="ti ti-package"></i>Nenhum item encontrado</div></td></tr>';updateBulkInvBar();return;}
   tb.innerHTML=filtered.map(function(inv){
     var avail=inv.quantity_available||0;
     var qtyClass=avail===0?'zero':avail<=2?'low':'';
@@ -2900,6 +2929,7 @@ function renderInventory(){
     var extrasBadge=inv.extras?'<span style="font-size:10px;background:#F3E8FF;color:#6B21A8;padding:1px 6px;border-radius:10px;font-weight:600;margin-left:4px">'+inv.extras+'</span>':''; var ligaLink=inv.liga_url?'<a href="'+inv.liga_url+'" target="_blank" style="font-size:11px;color:var(--blue);margin-left:4px" title="Ver na Liga Pokemon"><i class="ti ti-external-link"></i></a>':''; var statusClass=inv.status==='Reservado'?'badge-mp':inv.status==='Em estoque'?'badge-nosale':inv.status==='A Caminho'?'badge-lp':inv.status==='Pokedex'?'badge-jp':'badge-nm';
     var statusLabel=inv.status||'A venda';
     return '<tr>'
+      +'<td><input type="checkbox" class="inv-select-box" value="'+inv.id+'" '+(selectedInvIds.has(inv.id)?'checked':'')+' onchange="toggleInvSelect(\''+inv.id+'\',this.checked)"></td>'
       +'<td>'+imgCell(inv.image_url)+'</td>'
       +'<td style="font-weight:600">'+inv.name+extrasBadge+ligaLink+'</td>'
       +'<td>'+typeBadge(inv.product_type)+'</td>'
@@ -3929,6 +3959,72 @@ async function saveBulkEditSales(){
   showToast(ids.length+' venda(s) atualizada(s)');
   closeModal('bulkEditSalesModal');
   selectedSaleIds.clear();
+  loadAll();
+}
+
+function toggleInvSelect(id,checked){
+  if(checked)selectedInvIds.add(id);else selectedInvIds.delete(id);
+  updateBulkInvBar();
+}
+
+function toggleSelectAllInv(checkbox){
+  var boxes=document.querySelectorAll('.inv-select-box');
+  boxes.forEach(function(b){
+    b.checked=checkbox.checked;
+    if(checkbox.checked)selectedInvIds.add(b.value);else selectedInvIds.delete(b.value);
+  });
+  updateBulkInvBar();
+}
+
+function clearInvSelection(){
+  selectedInvIds.clear();
+  document.querySelectorAll('.inv-select-box').forEach(function(b){b.checked=false;});
+  var selAll=document.getElementById('selectAllInv');
+  if(selAll){selAll.checked=false;selAll.indeterminate=false;}
+  updateBulkInvBar();
+}
+
+function updateBulkInvBar(){
+  var bar=document.getElementById('bulkInvBar');
+  if(!bar)return;
+  var count=selectedInvIds.size;
+  bar.style.display=count>0?'flex':'none';
+  var countEl=document.getElementById('bulkInvCount');
+  if(countEl)countEl.textContent=count;
+  var boxes=document.querySelectorAll('.inv-select-box');
+  var selAll=document.getElementById('selectAllInv');
+  if(selAll){
+    selAll.checked=boxes.length>0&&count===boxes.length;
+    selAll.indeterminate=count>0&&count<boxes.length;
+  }
+}
+
+function openBulkEditInventoryModal(){
+  if(!selectedInvIds.size){showToast('Selecione ao menos um item','error');return;}
+  document.getElementById('bulkEditInvCount').textContent=selectedInvIds.size;
+  document.getElementById('bei-status').value='';
+  openModal('bulkEditInventoryModal');
+}
+
+async function saveBulkEditInventory(){
+  var ids=Array.from(selectedInvIds);
+  if(!ids.length){closeModal('bulkEditInventoryModal');return;}
+  var payload={};
+  var status=document.getElementById('bei-status').value;
+  if(status)payload.status=status;
+  if(!Object.keys(payload).length){showToast('Selecione um status para alterar','error');return;}
+  var btn=document.getElementById('bulkEditInvSaveBtn');
+  if(btn){btn.disabled=true;btn.textContent='Salvando...';}
+  var r=await sb.from('inventory').update(payload).in('id',ids);
+  if(r.error){
+    console.error('Erro ao salvar alteracoes em lote do estoque:',r.error);
+    showToast('Erro ao salvar alteracoes','error');
+    if(btn){btn.disabled=false;btn.textContent='Salvar alteracoes';}
+    return;
+  }
+  showToast(ids.length+' item(ns) atualizado(s)');
+  closeModal('bulkEditInventoryModal');
+  selectedInvIds.clear();
   loadAll();
 }
 
