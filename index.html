@@ -225,6 +225,24 @@ tr:hover td{background:var(--bg2)}
         <div class="metric"><div class="metric-label">Lucro bruto</div><div class="metric-value" id="m-profit">-</div></div>
         <div class="metric"><div class="metric-label">Margem</div><div class="metric-value" id="m-margin">-</div></div>
       </div>
+      <div class="section-header">
+        <h3>Evolução do estoque</h3>
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+          <select id="seMetric" onchange="renderStockEvolution()">
+            <option value="cost">Valor a custo</option>
+            <option value="sale">Valor a preço de venda</option>
+            <option value="units">Unidades</option>
+          </select>
+          <label style="font-size:12px;color:var(--text2);display:flex;gap:5px;align-items:center;cursor:pointer"><input type="checkbox" id="seIncludePokedex" onchange="renderStockEvolution()"> Incluir Pokédex</label>
+        </div>
+      </div>
+      <div class="table-wrap" style="padding:16px;margin-bottom:1.5rem">
+        <div id="seSummary" style="display:flex;gap:22px;flex-wrap:wrap;font-size:12px;color:var(--text2);margin-bottom:12px"></div>
+        <div style="position:relative;height:280px"><canvas id="stockEvoChart"></canvas></div>
+        <div id="seNote" style="font-size:11px;color:var(--text3);margin-top:8px;line-height:1.5"></div>
+        <table style="margin-top:14px"><thead><tr><th>Mês</th><th>Saldo inicial</th><th>Entradas</th><th>Saídas</th><th>Saldo final</th></tr></thead>
+        <tbody id="seMonthly"></tbody></table>
+      </div>
       <div class="section-header"><h3>Maiores vendas</h3></div>
       <div class="table-wrap">
         <table><thead><tr><th>Item</th><th>Qtd</th><th>Venda</th><th>Custo</th><th>Lucro</th><th>Plataforma</th><th>Data</th></tr></thead>
@@ -1765,6 +1783,7 @@ function showPage(p,el){
   if(el)el.classList.add('active');
   try{
     if(p==='binder'){loadBinder();updateProfileUI();}
+    if(p==='dashboard')renderStockEvolution();
     if(p==='dre')renderDRE();
     if(p==='despesas'){loadExpenses();}
     if(p==='cadastros'){loadSuppliers();loadCustomers();loadProducts();setTimeout(runMigration,1000);}
@@ -2193,7 +2212,7 @@ function selectWishlistProduct(id){
 }
 
 function loadAll(){
-  Promise.all([loadPurchases(),loadInventory(),loadSales(),loadProfile(),loadProducts(),loadExpenses(),loadSuppliers(),loadCustomers(),loadWishlist(),loadPersonalCollections()]).then(function(){renderSales();renderPurchases();renderInventory();loadDashboard();});
+  Promise.all([loadPurchases(),loadInventory(),loadSales(),loadProfile(),loadProducts(),loadExpenses(),loadSuppliers(),loadCustomers(),loadWishlist(),loadPersonalCollections(),loadStockSnapshots()]).then(function(){renderSales();renderPurchases();renderInventory();loadDashboard();renderStockEvolution();saveDailySnapshot();});
 }
 
 // ==================== COLECAO PESSOAL (FICHARIO) ====================
@@ -2990,6 +3009,160 @@ function renderSales(){
     return '<tr style="opacity:'+(s.delivered?'0.6':'1')+'"><td>'+selBox+'</td><td>'+imgHtml+'</td><td style="font-weight:600">'+s.card_name+'</td><td>'+s.quantity+'</td><td>'+(s.platform||'-')+'</td><td>'+(s.buyer||'-')+'</td><td style="font-weight:600">'+fmt(ts)+'</td><td>'+fmt(tc)+'</td><td class="'+(p>=0?'profit-pos':'profit-neg')+'" style="font-weight:600">'+fmt(p)+'</td><td style="color:'+(p>=0?'var(--success)':'var(--danger)')+'">'+mg+'</td><td>'+s.sale_date+'</td><td style="text-align:center">'+paidBtn+'</td><td style="text-align:center">'+delivBtn+'</td><td><div class="actions-cell"><button class="btn-small" onclick="editSale(\''+s.id+'\')" title="Editar"><i class="ti ti-edit"></i></button><button class="btn-danger" onclick="deleteSale(\''+s.id+'\')" title="Excluir"><i class="ti ti-trash"></i></button></div></td></tr>';
   }).join('');
   updateBulkSalesBar();
+}
+
+// ============================================================
+// EVOLUCAO DO ESTOQUE (reconstrucao + fotos diarias)
+// ============================================================
+var stockSnapshots=[], stockSnapshotsAvailable=false, stockEvoChart=null;
+
+function seToday(){
+  var d=new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function seAddDay(ds){
+  var p=ds.split('-');var d=new Date(parseInt(p[0]),parseInt(p[1])-1,parseInt(p[2])+1);
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function seFmt(v,metric){
+  return metric==='units'?String(Math.round(v)):fmt(v);
+}
+
+function loadStockSnapshots(){
+  return sb.from('inventory_snapshots').select('*').eq('user_id',currentUser.id).order('snapshot_date').then(function(r){
+    if(r.error){stockSnapshotsAvailable=false;stockSnapshots=[];console.warn('inventory_snapshots indisponivel:',r.error.message);return;}
+    stockSnapshotsAvailable=true;stockSnapshots=r.data||[];
+  },function(err){stockSnapshotsAvailable=false;stockSnapshots=[];console.warn('inventory_snapshots erro:',err);});
+}
+
+// Foto do estoque de hoje. Regrava ao longo do dia, entao fica o ultimo estado do dia.
+function saveDailySnapshot(){
+  if(!stockSnapshotsAvailable||!currentUser)return;
+  var byStatus={}, units=0, cost=0, sale=0;
+  inventory.forEach(function(i){
+    var q=i.quantity_available||0; if(q<=0)return;
+    var st=i.status||'A venda';
+    var c=q*parseFloat(i.cost_price||0), s=q*parseFloat(i.sale_price||0);
+    if(!byStatus[st])byStatus[st]={units:0,cost:0,sale:0};
+    byStatus[st].units+=q;byStatus[st].cost+=c;byStatus[st].sale+=s;
+    units+=q;cost+=c;sale+=s;
+  });
+  Object.keys(byStatus).forEach(function(k){byStatus[k].cost=Math.round(byStatus[k].cost*100)/100;byStatus[k].sale=Math.round(byStatus[k].sale*100)/100;});
+  var row={user_id:currentUser.id,snapshot_date:seToday(),units:units,cost_value:Math.round(cost*100)/100,sale_value:Math.round(sale*100)/100,by_status:byStatus};
+  sb.from('inventory_snapshots').upsert(row,{onConflict:'user_id,snapshot_date'}).then(function(r){
+    if(r.error){console.warn('Erro ao salvar foto do estoque:',r.error.message);return;}
+    stockSnapshots=stockSnapshots.filter(function(s){return s.snapshot_date!==row.snapshot_date;});
+    stockSnapshots.push(row);
+    stockSnapshots.sort(function(a,b){return a.snapshot_date<b.snapshot_date?-1:1;});
+    renderStockEvolution();
+  });
+}
+
+function snapshotValue(s,metric,includePokedex){
+  var v=metric==='units'?(s.units||0):metric==='sale'?parseFloat(s.sale_value||0):parseFloat(s.cost_value||0);
+  if(!includePokedex&&s.by_status&&s.by_status.Pokedex){
+    var p=s.by_status.Pokedex;
+    v-=metric==='units'?(p.units||0):metric==='sale'?(p.sale||0):(p.cost||0);
+  }
+  return v;
+}
+
+function renderStockEvolution(){
+  var canvas=document.getElementById('stockEvoChart');
+  if(!canvas||typeof Chart==='undefined')return;
+  var metric=(document.getElementById('seMetric')||{}).value||'cost';
+  var includePokedex=!!(document.getElementById('seIncludePokedex')||{}).checked;
+
+  var purById={}; purchases.forEach(function(p){purById[p.id]=p;});
+  var invById={}; inventory.forEach(function(i){invById[i.id]=i;});
+  function val(q,c,s){return metric==='units'?q:metric==='sale'?q*s:q*c;}
+
+  // Entradas: cada linha de estoque na data da compra de origem (ou data de criacao)
+  // Saidas: cada venda/troca na data da venda, valorizada pelo mesmo custo do item
+  var byDay={};
+  function add(date,key,v){if(!date)return;if(!byDay[date])byDay[date]={in:0,out:0};byDay[date][key]+=v;}
+  inventory.forEach(function(i){
+    if(!includePokedex&&i.status==='Pokedex')return;
+    var pur=purById[i.purchase_id];
+    var date=(pur&&pur.purchase_date)||(i.created_at||'').slice(0,10);
+    add(date,'in',val(i.quantity_total||0,parseFloat(i.cost_price||0),parseFloat(i.sale_price||0)));
+  });
+  sales.forEach(function(s){
+    var inv=invById[s.inventory_id];
+    if(inv&&!includePokedex&&inv.status==='Pokedex')return;
+    var c=inv?parseFloat(inv.cost_price||0):parseFloat(s.cost_price||0);
+    var sp=inv?parseFloat(inv.sale_price||0):parseFloat(s.sale_price||0);
+    add(s.sale_date,'out',val(s.quantity||0,c,sp));
+  });
+
+  var actual=inventory.reduce(function(a,i){
+    if(!includePokedex&&i.status==='Pokedex')return a;
+    return a+val(i.quantity_available||0,parseFloat(i.cost_price||0),parseFloat(i.sale_price||0));
+  },0);
+
+  var days=Object.keys(byDay).sort();
+  var today=seToday();
+  if(!days.length){
+    document.getElementById('seSummary').innerHTML='';
+    document.getElementById('seNote').textContent='Sem movimentacoes para montar o grafico.';
+    document.getElementById('seMonthly').innerHTML='';
+    if(stockEvoChart){stockEvoChart.destroy();stockEvoChart=null;}
+    return;
+  }
+
+  var snapMap={}; stockSnapshots.forEach(function(s){snapMap[s.snapshot_date]=s;});
+  var labels=[], recon=[], snaps=[], months={}, monthOrder=[];
+  var bal=0, d=days[0], end=days[days.length-1]>today?days[days.length-1]:today;
+  while(d<=end){
+    var m=d.slice(0,7);
+    if(!months[m]){months[m]={open:bal,in:0,out:0};monthOrder.push(m);}
+    var ev=byDay[d];
+    if(ev){bal+=ev.in-ev.out;months[m].in+=ev.in;months[m].out+=ev.out;}
+    months[m].close=bal;
+    labels.push(d.slice(8,10)+'/'+d.slice(5,7)+'/'+d.slice(2,4));
+    recon.push(Math.round(bal*100)/100);
+    if(snapMap[d])snaps.push(Math.round(snapshotValue(snapMap[d],metric,includePokedex)*100)/100);
+    else if(d===today)snaps.push(Math.round(actual*100)/100);
+    else snaps.push(null);
+    d=seAddDay(d);
+  }
+
+  var diff=actual-bal;
+  document.getElementById('seSummary').innerHTML=
+    '<div>Estoque real hoje: <b style="color:var(--text)">'+seFmt(actual,metric)+'</b></div>'+
+    '<div>Reconstruído pelas movimentações: <b style="color:var(--text)">'+seFmt(bal,metric)+'</b></div>'+
+    '<div>Diferença não rastreada: <b style="color:'+(Math.abs(diff)<0.01?'var(--success)':'var(--danger)')+'">'+(diff>0?'+':'')+seFmt(diff,metric)+'</b></div>';
+
+  var note='A linha é reconstruída a partir das entradas no estoque e das vendas/trocas. A diferença não rastreada vem de ajustes manuais de quantidade, exclusões e vendas editadas, que não deixam registro.';
+  if(!stockSnapshotsAvailable)note+=' As fotos diárias estão desativadas: crie a tabela inventory_snapshots no Supabase para começar a registrá-las.';
+  else note+=' Os pontos são fotos reais do estoque, registradas uma vez por dia quando o app é aberto.';
+  if(metric==='sale')note+=' Valor a preço de venda usa o preço atual de cada item em todas as datas.';
+  document.getElementById('seNote').textContent=note;
+
+  document.getElementById('seMonthly').innerHTML=monthOrder.slice().reverse().map(function(m){
+    var x=months[m];var nm=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'][parseInt(m.slice(5,7))-1]+'/'+m.slice(2,4);
+    return '<tr><td style="font-weight:600">'+nm+'</td><td>'+seFmt(x.open,metric)+'</td><td style="color:var(--success)">+'+seFmt(x.in,metric)+'</td><td style="color:var(--danger)">-'+seFmt(x.out,metric)+'</td><td style="font-weight:600">'+seFmt(x.close,metric)+'</td></tr>';
+  }).join('');
+
+  if(stockEvoChart){stockEvoChart.destroy();stockEvoChart=null;}
+  stockEvoChart=new Chart(canvas,{
+    type:'line',
+    data:{labels:labels,datasets:[
+      {label:'Reconstruído',data:recon,borderColor:'#E8B422',backgroundColor:'rgba(232,180,34,0.12)',borderWidth:2,pointRadius:0,pointHoverRadius:4,tension:0,fill:true,stepped:true},
+      {label:'Foto real',data:snaps,borderColor:'#1a56db',backgroundColor:'#1a56db',showLine:false,pointRadius:4,pointHoverRadius:6}
+    ]},
+    options:{
+      responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
+      plugins:{
+        legend:{display:true,labels:{boxWidth:10,font:{size:11}}},
+        tooltip:{filter:function(ctx){return ctx.parsed.y!==null;},callbacks:{label:function(ctx){return ctx.dataset.label+': '+seFmt(ctx.parsed.y,metric);}}}
+      },
+      scales:{
+        x:{grid:{display:false},ticks:{color:'#888',font:{size:11},maxTicksLimit:12,autoSkip:true}},
+        y:{beginAtZero:true,grid:{color:'rgba(0,0,0,0.05)'},ticks:{color:'#888',font:{size:11},callback:function(v){return metric==='units'?v:'R$ '+Number(v).toLocaleString('pt-BR');}}}
+      }
+    }
+  });
 }
 
 function loadDashboard(){
