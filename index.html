@@ -2721,6 +2721,7 @@ var mpPurchaseRowCounter=0;
 function openMpPurchaseModal(){
   document.getElementById('mpPurchaseRows').innerHTML='';
   mpPurchaseRowCounter=0;
+  mpCatalogPicks={};mpRemoteResults={};
   document.getElementById('mp-p-supplier').value='';
   document.getElementById('mp-p-date').value=new Date().toISOString().split('T')[0];
   document.getElementById('mp-p-status').value='Recebido';
@@ -2743,6 +2744,7 @@ function addMpPurchaseRow(){
       '<input type="hidden" class="mp-product-id">'+
       '<input type="hidden" class="mp-liga">'+
       '<input type="hidden" class="mp-img">'+
+      '<div id="mp-cat-flag-'+rid+'" style="display:none;font-size:10px;color:#1F6FA8;margin-top:2px"></div>'+
       '<div class="mp-p-ac" id="mp-p-ac-'+rid+'" style="display:none;position:absolute;z-index:30;background:var(--bg);border:1px solid var(--border2);border-radius:var(--radius);width:260px;max-height:200px;overflow-y:auto;box-shadow:0 4px 12px rgba(0,0,0,0.1)"></div>'+
     '</td>'+
     '<td data-label="Tipo"><select class="mp-type"><option value="Carta Avulsa">Carta Avulsa</option><option value="Lacrado">Lacrado</option><option value="Acessorio">Acessorio</option><option value="Lote">Lote / Bulk</option></select></td>'+
@@ -2763,19 +2765,21 @@ function mpPurchaseAutocomplete(rid,input){
   var tr=document.querySelector('#mpPurchaseRows tr[data-row-id="'+rid+'"]');
   // Name no longer matches a specific product once edited freely; clear the link
   if(tr){tr.querySelector('.mp-product-id').value='';tr.querySelector('.mp-liga').value='';tr.querySelector('.mp-img').value='';}
+  setMpCatalogPick(rid,null);
   var thumb=document.getElementById('mp-thumb-'+rid);
   if(thumb)thumb.style.display='none';
+  var remoteHtml=mpCatalogSearch(rid,input.value.trim());
   if(!q){dd.style.display='none';return;}
   var matches=products.filter(function(p){return p.name.toLowerCase().indexOf(q)!==-1;}).slice(0,10);
-  if(!matches.length){dd.style.display='none';return;}
+  if(!matches.length&&!remoteHtml){dd.style.display='none';return;}
   dd.style.display='block';
-  dd.innerHTML=matches.map(function(p){
+  dd.innerHTML=(matches.length?acSection('No seu cadastro'):'')+matches.map(function(p){
     var img=p.image_url?'<img src="'+p.image_url+'" style="width:26px;height:36px;object-fit:cover;border-radius:3px;margin-right:8px;vertical-align:middle">':'';
     return '<div onclick="mpSelectProduct('+rid+',\''+p.id+'\')" style="padding:7px 10px;cursor:pointer;display:flex;align-items:center;border-bottom:1px solid var(--border);font-size:12px" onmouseover="this.style.background=\'var(--bg2)\'" onmouseout="this.style.background=\'\'">'
       +img+'<div><div style="font-weight:600">'+p.name+'</div>'
       +(p.set_name?'<div style="font-size:10px;color:var(--text2)">'+p.set_name+'</div>':'')
       +'</div></div>';
-  }).join('');
+  }).join('')+remoteHtml;
 }
 
 function mpSelectProduct(rid,productId){
@@ -2785,6 +2789,7 @@ function mpSelectProduct(rid,productId){
   if(!tr)return;
   tr.querySelector('.mp-name').value=p.name;
   tr.querySelector('.mp-product-id').value=p.id;
+  setMpCatalogPick(rid,null);
   tr.querySelector('.mp-liga').value=p.liga_url||'';
   tr.querySelector('.mp-img').value=p.image_url||'';
   if(p.set_name)tr.querySelector('.mp-set').value=p.set_name;
@@ -2835,7 +2840,10 @@ async function saveMpPurchases(){
     var qty=parseInt(tr.querySelector('.mp-qty').value)||0;
     var amt=parseFloat(tr.querySelector('.mp-amount').value);
     if(!name||qty<=0)return;
+    var rid=tr.getAttribute('data-row-id');
+    var pid=tr.querySelector('.mp-product-id').value||null;
     items.push({
+      _pick:(!pid&&mpCatalogPicks[rid])?mpCatalogPicks[rid]:null,
       description:name,
       product_type:tr.querySelector('.mp-type').value,
       condition:tr.querySelector('.mp-cond').value,
@@ -2857,6 +2865,27 @@ async function saveMpPurchases(){
   var btn=document.getElementById('mpPurchaseSaveBtn');
   btn.textContent='Salvando...';btn.disabled=true;
   var ok=0,fail=0;
+
+  // Cartas escolhidas do banco publico: cadastra o produto antes de gravar a compra
+  for(var k=0;k<items.length;k++){
+    var itp=items[k];
+    if(!itp._pick)continue;
+    btn.textContent='Cadastrando produtos ('+(k+1)+'/'+items.length+')...';
+    try{
+      var prod=await ensureProductFromCatalog(itp._pick,itp.language);
+      itp.product_id=prod.id;
+      itp.description=prod.name;
+      if(prod.image_url)itp.image_url=prod.image_url;
+      if(!itp.liga_url&&prod.liga_url)itp.liga_url=prod.liga_url;
+    }catch(errProd){
+      console.error('Erro ao cadastrar produto do banco publico:',errProd);
+      showToast('Não foi possível cadastrar "'+itp.description+'": '+(errProd&&errProd.message?errProd.message:'veja o console')+'. Nenhuma compra foi gravada.','error');
+      btn.textContent='Registrar compras';btn.disabled=false;
+      await loadProducts();
+      return;
+    }
+  }
+  btn.textContent='Salvando...';
 
   for(var i=0;i<items.length;i++){
     var it=items[i];
@@ -2883,7 +2912,7 @@ async function saveMpPurchases(){
       status:pStatus,
       shipping_cost:rowShipping
     };
-    var pr=await sb.from('purchases').insert(purchasePayload);
+    var pr=await sb.from('purchases').insert(purchasePayload).select();
     if(pr.error){fail++;continue;}
     ok++;
     if(pStatus!=='Pendente'&&pStatus!=='Cancelado'){
@@ -6097,9 +6126,44 @@ async function runMigration(){
 // INTEGRATION - Autocomplete + Select population
 // ============================================================
 
-// Mapeia o idioma do app para o idioma da TCGdex
-var APP_TO_TCGDEX_LANG={'PT-BR':'pt-br','EN':'en','JP':'ja','FR':'fr','CH':'zh-cn'};
+// ---- BUSCA NO BANCO PUBLICO DE CARTAS (usada em Registrar compra e Compra multipla) ----
+// Idiomas da TCGdex consultados para cada idioma do app. PT-BR e EN buscam nos dois
+// (a cobertura em pt-br da TCGdex e parcial); o primeiro da lista tem prioridade.
+var APP_TO_TCGDEX_LANGS={'PT-BR':['pt-br','en'],'EN':['en','pt-br'],'FR':['fr','en'],'JP':['ja'],'CH':['zh-cn']};
 var pCatalogPick=null, pRemoteResults=[], pRemoteSeq=0, pRemoteTimer=null;
+var mpCatalogPicks={}, mpRemoteResults={}, mpRemoteSeq={}, mpRemoteTimers={};
+
+function catalogIdFromKey(key){
+  var i=key?key.indexOf(':'):-1;
+  return i>=0?key.slice(i+1):'';
+}
+// Ja existe produto dessa carta (mesmo ID TCGdex) no idioma do app?
+function findProductForCatalogId(tcgId,appLang){
+  return products.filter(function(p){return p.catalog_key&&catalogIdFromKey(p.catalog_key)===tcgId&&p.language===appLang;})[0]||null;
+}
+
+async function searchCatalogLangs(name,langs,setName){
+  var calls=langs.map(function(lang){
+    var url=SUPA_URL+'/functions/v1/pokemon-tcg-proxy?lang='+encodeURIComponent(lang)+'&name='+encodeURIComponent(name)+(setName?'&set='+encodeURIComponent(setName):'');
+    return fetch(url,{headers:{'Authorization':'Bearer '+SUPA_KEY}}).then(function(resp){
+      if(!resp.ok)throw new Error('HTTP '+resp.status);
+      return resp.json();
+    }).then(function(json){
+      return (Array.isArray(json)?json:(json.data||[])).map(function(c){return {card:c,lang:lang};});
+    }).catch(function(err){console.warn('Busca TCGdex falhou em '+lang+':',err);return null;});
+  });
+  var perLang=await Promise.all(calls);
+  if(perLang.every(function(x){return x===null;}))throw new Error('Busca indisponivel');
+  var seen={},out=[];
+  perLang.forEach(function(list){
+    (list||[]).forEach(function(item){
+      if(seen[item.card.id])return; // mesma carta nos dois idiomas: fica a do idioma prioritario
+      seen[item.card.id]=true;
+      out.push(item);
+    });
+  });
+  return out;
+}
 
 function setCatalogPick(row,loadingMsg){
   pCatalogPick=row||null;
@@ -6111,17 +6175,81 @@ function setCatalogPick(row,loadingMsg){
   hint.style.display=pCatalogPick?'block':'none';
 }
 
-function acItemHtml(onclick,img,title,sub){
-  return '<div onclick="'+onclick+'" style="padding:8px 12px;cursor:pointer;display:flex;align-items:center;border-bottom:1px solid var(--border);font-size:13px" onmouseover="this.style.background=\'var(--bg2)\'" onmouseout="this.style.background=\'\'">'
-    +img+'<div><div style="font-weight:600">'+title+'</div>'+(sub?'<div style="font-size:11px;color:var(--text2)">'+sub+'</div>':'')+'</div></div>';
+function acItemHtml(onclick,img,title,sub,small){
+  var fs=small?'12px':'13px';
+  return '<div onclick="'+onclick+'" style="padding:'+(small?'7px 10px':'8px 12px')+';cursor:pointer;display:flex;align-items:center;border-bottom:1px solid var(--border);font-size:'+fs+'" onmouseover="this.style.background=\'var(--bg2)\'" onmouseout="this.style.background=\'\'">'
+    +img+'<div><div style="font-weight:600">'+title+'</div>'+(sub?'<div style="font-size:'+(small?'10px':'11px')+';color:var(--text2)">'+sub+'</div>':'')+'</div></div>';
 }
-function acImg(url){
-  return url?'<img src="'+url+'" loading="lazy" style="width:28px;height:38px;object-fit:cover;border-radius:3px;margin-right:8px;vertical-align:middle;flex-shrink:0">':'<div style="width:28px;height:38px;margin-right:8px;flex-shrink:0"></div>';
+function acImg(url,small){
+  var w=small?26:28,h=small?36:38;
+  return url?'<img src="'+url+'" loading="lazy" style="width:'+w+'px;height:'+h+'px;object-fit:cover;border-radius:3px;margin-right:8px;vertical-align:middle;flex-shrink:0">':'<div style="width:'+w+'px;height:'+h+'px;margin-right:8px;flex-shrink:0"></div>';
 }
 function acSection(label){
   return '<div style="padding:5px 12px;font-size:11px;font-weight:600;color:var(--text2);background:var(--bg2);border-bottom:1px solid var(--border)">'+label+'</div>';
 }
+function acNote(msg){
+  return '<div style="padding:8px 12px;font-size:12px;color:var(--text2)">'+msg+'</div>';
+}
+function catalogLangsLabel(langs){
+  return langs.map(function(l){return l.toUpperCase();}).join(' + ');
+}
 
+// Monta a secao "Banco publico" so com as cartas que ainda nao estao no cadastro
+function renderCatalogResultsHtml(results,appLang,langs,pickCall,small){
+  var head=acSection('Banco público de cartas ('+catalogLangsLabel(langs)+')');
+  if(!results.length)return head+acNote('Nenhuma carta encontrada. Tente o nome como está impresso na carta (em português ou inglês) ou deixe o Set em branco.');
+  var fresh=[];
+  results.forEach(function(item,i){if(!findProductForCatalogId(item.card.id,appLang))fresh.push(i);});
+  if(!fresh.length)return head+acNote('As cartas encontradas já estão no seu cadastro.');
+  return head+fresh.map(function(i){
+    var c=results[i].card;
+    return acItemHtml(pickCall(i),acImg(c.image?c.image+'/low.webp':'',small),c.name+' ('+c.localId+')',results[i].lang.toUpperCase()+'  ·  nova no cadastro  ·  ID '+c.id,small);
+  }).join('');
+}
+
+// Baixa dados + imagem (Storage) da carta escolhida e devolve a linha do catalogo
+async function loadCatalogCard(item){
+  var res=await callTcgdexCache({action:'import',lang:item.lang,ids:[item.card.id]});
+  var r=(res.results||[])[0];
+  if(!r||!r.row)throw new Error(r&&r.error?r.error:'carta não encontrada');
+  return r.row;
+}
+function catalogDisplayName(c){
+  return c.name+' ('+pdCardNumberLabel(c.local_id,c.set_total)+')';
+}
+function ligaSearchUrl(name){
+  return 'https://www.ligapokemon.com.br/?view=cards/search&card='+encodeURIComponent(name);
+}
+
+// Cria o produto a partir da carta do catalogo (ou reaproveita se ja existir, em qualquer idioma de origem)
+async function ensureProductFromCatalog(c,appLang){
+  var tcgId=catalogIdFromKey(c.catalog_key);
+  var existing=findProductForCatalogId(tcgId,appLang);
+  if(existing)return existing;
+  var check=await sb.from('products').select('*').eq('user_id',currentUser.id).eq('language',appLang).like('catalog_key','%:'+tcgId).limit(5);
+  var hit=(check.data||[]).filter(function(p){return catalogIdFromKey(p.catalog_key)===tcgId;})[0];
+  if(hit)return hit;
+  var displayName=catalogDisplayName(c);
+  var payload={
+    user_id:currentUser.id,
+    name:displayName,
+    set_name:c.set_name||null,
+    product_type:'Carta Avulsa',
+    language:appLang,
+    image_url:c.image_url||null,
+    liga_url:ligaSearchUrl(displayName),
+    catalog_key:c.catalog_key,
+    rarity:c.rarity||null,
+    card_number:c.local_id||null
+  };
+  var r=await sb.from('products').insert(payload).select();
+  if(r.error)throw r.error;
+  var prod=r.data[0];
+  products.push(prod);
+  return prod;
+}
+
+// ---- Registrar compra (modal simples) ----
 function productAutocomplete(input, dropdownId, hiddenId, nameId){
   // Digitar invalida a selecao anterior (evita gravar a compra no produto errado)
   var hidden=document.getElementById(hiddenId);
@@ -6147,13 +6275,25 @@ function productAutocomplete(input, dropdownId, hiddenId, nameId){
   }
 
   var type=document.getElementById('p-type').value;
-  var tcgLang=APP_TO_TCGDEX_LANG[document.getElementById('p-lang').value];
-  var canSearchRemote=type==='Carta Avulsa'&&tcgLang&&q.length>=3;
-  if(canSearchRemote){
-    html+='<div id="p-remote-section">'+acSection('Banco público de cartas ('+tcgLang.toUpperCase()+')')
-      +'<div style="padding:8px 12px;font-size:12px;color:var(--text2)">Buscando...</div></div>';
+  var appLang=document.getElementById('p-lang').value;
+  var langs=APP_TO_TCGDEX_LANGS[appLang];
+  if(type==='Carta Avulsa'&&langs&&q.length>=3){
+    html+='<div id="p-remote-section">'+acSection('Banco público de cartas ('+catalogLangsLabel(langs)+')')+acNote('Buscando...')+'</div>';
     var seq=pRemoteSeq, typed=input.value.trim();
-    pRemoteTimer=setTimeout(function(){searchCatalogForPurchase(typed,tcgLang,seq);},450);
+    pRemoteTimer=setTimeout(async function(){
+      var setName=(document.getElementById('p-set').value||'').trim();
+      try{
+        var results=(await searchCatalogLangs(typed,langs,setName)).slice(0,10);
+        if(seq!==pRemoteSeq)return;
+        pRemoteResults=results;
+        var box=document.getElementById('p-remote-section');
+        if(box)box.innerHTML=renderCatalogResultsHtml(results,appLang,langs,function(i){return 'pickCatalogCard('+i+')';},false);
+      }catch(err){
+        if(seq!==pRemoteSeq)return;
+        var box2=document.getElementById('p-remote-section');
+        if(box2)box2.innerHTML=acSection('Banco público de cartas')+acNote('Não foi possível buscar agora. Você pode continuar digitando o nome livremente.');
+      }
+    },450);
   }
 
   if(!html){ dd.style.display='none'; return; }
@@ -6161,68 +6301,20 @@ function productAutocomplete(input, dropdownId, hiddenId, nameId){
   dd.style.display='block';
 }
 
-async function searchCatalogForPurchase(name,tcgLang,seq){
-  var setName=(document.getElementById('p-set').value||'').trim();
-  var box=document.getElementById('p-remote-section');
-  try{
-    var url=SUPA_URL+'/functions/v1/pokemon-tcg-proxy?lang='+encodeURIComponent(tcgLang)+'&name='+encodeURIComponent(name)+(setName?'&set='+encodeURIComponent(setName):'');
-    var resp=await fetch(url,{headers:{'Authorization':'Bearer '+SUPA_KEY}});
-    if(!resp.ok)throw new Error('HTTP '+resp.status);
-    var json=await resp.json();
-    if(seq!==pRemoteSeq)return; // usuario continuou digitando
-    var list=(Array.isArray(json)?json:(json.data||[])).slice(0,8);
-    pRemoteResults=list.map(function(c){return {card:c,lang:tcgLang};});
-    box=document.getElementById('p-remote-section');
-    if(!box)return;
-    if(!list.length){
-      box.innerHTML=acSection('Banco público de cartas ('+tcgLang.toUpperCase()+')')
-        +'<div style="padding:8px 12px;font-size:12px;color:var(--text2)">Nenhuma carta encontrada nesse idioma. Tente o nome como está impresso na carta, ou preencha o Set para refinar.</div>';
-      return;
-    }
-    var appLang=document.getElementById('p-lang').value;
-    var fresh=[];
-    list.forEach(function(c,i){
-      var key=tcgLang+':'+c.id;
-      var exists=products.some(function(p){return p.catalog_key===key&&p.language===appLang;});
-      if(!exists)fresh.push({c:c,i:i});
-    });
-    if(!fresh.length){
-      box.innerHTML=acSection('Banco público de cartas ('+tcgLang.toUpperCase()+')')
-        +'<div style="padding:8px 12px;font-size:12px;color:var(--text2)">As cartas encontradas já estão no seu cadastro (lista acima).</div>';
-      return;
-    }
-    box.innerHTML=acSection('Banco público de cartas ('+tcgLang.toUpperCase()+')')
-      +fresh.map(function(x){
-        var c=x.c;
-        return acItemHtml('pickCatalogCard('+x.i+')',acImg(c.image?c.image+'/low.webp':''),c.name+' ('+c.localId+')','Nova no cadastro  ·  ID '+c.id);
-      }).join('');
-  }catch(err){
-    if(seq!==pRemoteSeq)return;
-    console.error('Erro na busca do banco publico:',err);
-    box=document.getElementById('p-remote-section');
-    if(box)box.innerHTML=acSection('Banco público de cartas')
-      +'<div style="padding:8px 12px;font-size:12px;color:var(--text2)">Não foi possível buscar agora. Você pode continuar digitando o nome livremente.</div>';
-  }
-}
-
 async function pickCatalogCard(i){
   var item=pRemoteResults[i];
   if(!item)return;
   var dd=document.getElementById('p-autocomplete');
-  var nameEl=document.getElementById('p-name');
   dd.style.display='none';
   setCatalogPick(null,'Carregando dados e imagem da carta...');
   try{
-    var res=await callTcgdexCache({action:'import',lang:item.lang,ids:[item.card.id]});
-    var r=(res.results||[])[0];
-    if(!r||!r.row)throw new Error(r&&r.error?r.error:'carta não encontrada');
-    var c=r.row;
-    var displayName=c.name+' ('+pdCardNumberLabel(c.local_id,c.set_total)+')';
-    nameEl.value=displayName;
+    var c=await loadCatalogCard(item);
+    var displayName=catalogDisplayName(c);
+    document.getElementById('p-name').value=displayName;
     document.getElementById('p-product-id').value='';
     document.getElementById('p-type').value='Carta Avulsa';
     if(c.set_name)document.getElementById('p-set').value=c.set_name;
-    document.getElementById('p-liga').value='https://www.ligapokemon.com.br/?view=cards/search&card='+encodeURIComponent(displayName);
+    document.getElementById('p-liga').value=ligaSearchUrl(displayName);
     document.getElementById('p-img-b64').value='';
     document.getElementById('p-img-file').value='';
     document.getElementById('p-img-url').value=c.image_url||'';
@@ -6236,30 +6328,72 @@ async function pickCatalogCard(i){
   }
 }
 
-// Cria o produto a partir da carta do catalogo (ou reaproveita se ja existir)
-async function ensureProductFromCatalog(c,appLang){
-  var existing=products.filter(function(p){return p.catalog_key===c.catalog_key&&p.language===appLang;})[0];
-  if(existing)return existing;
-  var check=await sb.from('products').select('*').eq('user_id',currentUser.id).eq('catalog_key',c.catalog_key).eq('language',appLang).limit(1);
-  if(check.data&&check.data.length)return check.data[0];
-  var displayName=c.name+' ('+pdCardNumberLabel(c.local_id,c.set_total)+')';
-  var payload={
-    user_id:currentUser.id,
-    name:displayName,
-    set_name:c.set_name||null,
-    product_type:'Carta Avulsa',
-    language:appLang,
-    image_url:c.image_url||null,
-    liga_url:'https://www.ligapokemon.com.br/?view=cards/search&card='+encodeURIComponent(displayName),
-    catalog_key:c.catalog_key,
-    rarity:c.rarity||null,
-    card_number:c.local_id||null
-  };
-  var r=await sb.from('products').insert(payload).select();
-  if(r.error)throw r.error;
-  var prod=r.data[0];
-  products.push(prod);
-  return prod;
+// ---- Compra multipla (por linha) ----
+function setMpCatalogPick(rid,row,loadingMsg){
+  if(row)mpCatalogPicks[rid]=row;else delete mpCatalogPicks[rid];
+  var flag=document.getElementById('mp-cat-flag-'+rid);
+  if(!flag)return;
+  if(loadingMsg){flag.textContent=loadingMsg;flag.style.display='block';return;}
+  flag.textContent='+ entra no cadastro ao registrar';
+  flag.style.display=row?'block':'none';
+}
+
+// Agenda a busca no banco publico para a linha e devolve o HTML provisorio ("Buscando...")
+function mpCatalogSearch(rid,typed){
+  var tr=document.querySelector('#mpPurchaseRows tr[data-row-id="'+rid+'"]');
+  if(!tr)return '';
+  var type=tr.querySelector('.mp-type').value;
+  var appLang=tr.querySelector('.mp-lang').value;
+  var langs=APP_TO_TCGDEX_LANGS[appLang];
+  if(mpRemoteTimers[rid]){clearTimeout(mpRemoteTimers[rid]);delete mpRemoteTimers[rid];}
+  mpRemoteSeq[rid]=(mpRemoteSeq[rid]||0)+1;
+  mpRemoteResults[rid]=[];
+  if(type!=='Carta Avulsa'||!langs||typed.length<3)return '';
+  var seq=mpRemoteSeq[rid];
+  var setName=(tr.querySelector('.mp-set').value||'').trim();
+  mpRemoteTimers[rid]=setTimeout(async function(){
+    try{
+      var results=(await searchCatalogLangs(typed,langs,setName)).slice(0,10);
+      if(seq!==mpRemoteSeq[rid])return;
+      mpRemoteResults[rid]=results;
+      var box=document.getElementById('mp-remote-'+rid);
+      if(box)box.innerHTML=renderCatalogResultsHtml(results,appLang,langs,function(i){return 'mpPickCatalogCard('+rid+','+i+')';},true);
+    }catch(err){
+      if(seq!==mpRemoteSeq[rid])return;
+      var box2=document.getElementById('mp-remote-'+rid);
+      if(box2)box2.innerHTML=acSection('Banco público de cartas')+acNote('Não foi possível buscar agora.');
+    }
+  },450);
+  return '<div id="mp-remote-'+rid+'">'+acSection('Banco público de cartas ('+catalogLangsLabel(langs)+')')+acNote('Buscando...')+'</div>';
+}
+
+async function mpPickCatalogCard(rid,i){
+  var item=(mpRemoteResults[rid]||[])[i];
+  var tr=document.querySelector('#mpPurchaseRows tr[data-row-id="'+rid+'"]');
+  if(!item||!tr)return;
+  document.getElementById('mp-p-ac-'+rid).style.display='none';
+  setMpCatalogPick(rid,null,'Carregando carta...');
+  try{
+    var c=await loadCatalogCard(item);
+    var displayName=catalogDisplayName(c);
+    tr.querySelector('.mp-name').value=displayName;
+    tr.querySelector('.mp-product-id').value='';
+    tr.querySelector('.mp-type').value='Carta Avulsa';
+    if(c.set_name)tr.querySelector('.mp-set').value=c.set_name;
+    tr.querySelector('.mp-liga').value=ligaSearchUrl(displayName);
+    tr.querySelector('.mp-img').value=c.image_url||'';
+    var thumb=document.getElementById('mp-thumb-'+rid);
+    if(thumb){
+      if(c.image_url){thumb.src=c.image_url;thumb.style.display='block';}
+      else{thumb.style.display='none';}
+    }
+    setMpCatalogPick(rid,c);
+    renderMpPurchaseSummary();
+  }catch(err){
+    console.error('Erro ao carregar carta do banco publico:',err);
+    setMpCatalogPick(rid,null);
+    showToast('Não foi possível carregar a carta: '+err.message,'error');
+  }
 }
 
 function selectProduct(id){
