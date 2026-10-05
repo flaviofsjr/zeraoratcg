@@ -614,7 +614,8 @@ tr:hover td{background:var(--bg2)}
           <div id="p-autocomplete" style="display:none;position:absolute;z-index:100;background:var(--bg);border:1px solid var(--border2);border-radius:var(--radius);width:100%;max-height:200px;overflow-y:auto;box-shadow:0 4px 12px rgba(0,0,0,0.1)"></div>
         </div>
         <input type="hidden" id="p-product-id">
-        <div style="font-size:11px;color:var(--text2);margin-top:4px">Selecione do cadastro ou digite livremente. <a href="#" onclick="showCadTabAndOpen()" style="color:var(--amber)">+ Cadastrar novo produto</a></div>
+        <div id="p-catalog-hint" style="display:none;font-size:11px;color:#1F6FA8;margin-top:4px"><i class="ti ti-database-import"></i> <span id="p-catalog-hint-text"></span></div>
+        <div style="font-size:11px;color:var(--text2);margin-top:4px">Selecione do cadastro, do banco público de cartas (busca pelo idioma escolhido abaixo) ou digite livremente. <a href="#" onclick="showCadTabAndOpen()" style="color:var(--amber)">+ Cadastrar novo produto</a></div>
       </div>
       <div class="form-field"><label>Tipo de produto</label>
         <select id="p-type">
@@ -3203,6 +3204,22 @@ function savePurchase(){
   if(amt===null){showToast('Informe o valor pago (pode ser 0 para doacoes)','error');return;}
   amt=amt||0;
   var btn=document.getElementById('purchaseSaveBtn');
+  if(pCatalogPick&&!document.getElementById('p-product-id').value){
+    btn.textContent='Cadastrando produto...';btn.disabled=true;
+    ensureProductFromCatalog(pCatalogPick,document.getElementById('p-lang').value).then(function(prod){
+      document.getElementById('p-product-id').value=prod.id;
+      document.getElementById('p-name').value=prod.name;
+      if(prod.image_url){document.getElementById('p-img-url').value=prod.image_url;document.getElementById('p-img-b64').value='';}
+      setCatalogPick(null);
+      btn.textContent='Registrar compra';btn.disabled=false;
+      savePurchase();
+    }).catch(function(err){
+      console.error('Erro ao cadastrar produto do banco publico:',err);
+      showToast('Não foi possível cadastrar o produto: '+(err&&err.message?err.message:'veja o console'),'error');
+      btn.textContent='Registrar compra';btn.disabled=false;
+    });
+    return;
+  }
   btn.textContent='Salvando...';btn.disabled=true;
   var imgB64=document.getElementById('p-img-b64').value||document.getElementById('p-img-url').value||null;
   var salePrice=parseFloat(document.getElementById('p-saleprice').value)||0;
@@ -3309,6 +3326,9 @@ function resetPurchaseForm(){
   document.getElementById('p-lang').value='PT-BR';
   document.getElementById('p-img-preview').style.display='none';
   document.getElementById('p-img-file').value='';
+  document.getElementById('p-product-id').value='';
+  document.getElementById('p-img-url').value='';
+  setCatalogPick(null);
 }
 
 function openInvEdit(id){
@@ -3975,6 +3995,8 @@ function duplicatePurchase(id){
   if(!p)return;
   // Pre-fill the purchase modal as if registering a new one
   document.getElementById('p-name').value=p.description||'';
+  document.getElementById('p-product-id').value=p.product_id||'';
+  setCatalogPick(null);
   document.getElementById('p-type').value=p.product_type||'Carta Avulsa';
   document.getElementById('p-cond').value=p.condition||'NM';
   document.getElementById('p-lang').value=p.language||'PT-BR';
@@ -6075,22 +6097,169 @@ async function runMigration(){
 // INTEGRATION - Autocomplete + Select population
 // ============================================================
 
+// Mapeia o idioma do app para o idioma da TCGdex
+var APP_TO_TCGDEX_LANG={'PT-BR':'pt-br','EN':'en','JP':'ja','FR':'fr','CH':'zh-cn'};
+var pCatalogPick=null, pRemoteResults=[], pRemoteSeq=0, pRemoteTimer=null;
+
+function setCatalogPick(row,loadingMsg){
+  pCatalogPick=row||null;
+  var hint=document.getElementById('p-catalog-hint');
+  var txt=document.getElementById('p-catalog-hint-text');
+  if(!hint||!txt)return;
+  if(loadingMsg){txt.textContent=loadingMsg;hint.style.display='block';return;}
+  txt.textContent='Carta do banco público: vai entrar no cadastro de produtos automaticamente ao registrar a compra.';
+  hint.style.display=pCatalogPick?'block':'none';
+}
+
+function acItemHtml(onclick,img,title,sub){
+  return '<div onclick="'+onclick+'" style="padding:8px 12px;cursor:pointer;display:flex;align-items:center;border-bottom:1px solid var(--border);font-size:13px" onmouseover="this.style.background=\'var(--bg2)\'" onmouseout="this.style.background=\'\'">'
+    +img+'<div><div style="font-weight:600">'+title+'</div>'+(sub?'<div style="font-size:11px;color:var(--text2)">'+sub+'</div>':'')+'</div></div>';
+}
+function acImg(url){
+  return url?'<img src="'+url+'" loading="lazy" style="width:28px;height:38px;object-fit:cover;border-radius:3px;margin-right:8px;vertical-align:middle;flex-shrink:0">':'<div style="width:28px;height:38px;margin-right:8px;flex-shrink:0"></div>';
+}
+function acSection(label){
+  return '<div style="padding:5px 12px;font-size:11px;font-weight:600;color:var(--text2);background:var(--bg2);border-bottom:1px solid var(--border)">'+label+'</div>';
+}
+
 function productAutocomplete(input, dropdownId, hiddenId, nameId){
+  // Digitar invalida a selecao anterior (evita gravar a compra no produto errado)
+  var hidden=document.getElementById(hiddenId);
+  if(hidden)hidden.value='';
+  setCatalogPick(null);
+
   var q = input.value.toLowerCase().trim();
   var dd = document.getElementById(dropdownId);
+  if(pRemoteTimer){clearTimeout(pRemoteTimer);pRemoteTimer=null;}
+  pRemoteSeq++;
+  pRemoteResults=[];
   if(!q){ dd.style.display='none'; return; }
   var matches = products.filter(function(p){
     return p.name.toLowerCase().indexOf(q) !== -1;
   }).slice(0, 10);
-  if(!matches.length){ dd.style.display='none'; return; }
-  dd.style.display = 'block';
-  dd.innerHTML = matches.map(function(p){
-    var img = p.image_url ? '<img src="'+p.image_url+'" style="width:28px;height:38px;object-fit:cover;border-radius:3px;margin-right:8px;vertical-align:middle">' : '';
-    return '<div onclick="selectProduct(\''+p.id+'\')" style="padding:8px 12px;cursor:pointer;display:flex;align-items:center;border-bottom:1px solid var(--border);font-size:13px" onmouseover="this.style.background=\'var(--bg2)\'" onmouseout="this.style.background=\'\'">'
-      + img + '<div><div style="font-weight:600">'+p.name+'</div>'
-      + (p.set_name?'<div style="font-size:11px;color:var(--text2)">'+p.set_name+'</div>':'')
-      + '</div></div>';
-  }).join('');
+
+  var html='';
+  if(matches.length){
+    html+=acSection('No seu cadastro');
+    html+=matches.map(function(p){
+      return acItemHtml("selectProduct('"+p.id+"')",acImg(p.image_url),p.name,p.set_name||'');
+    }).join('');
+  }
+
+  var type=document.getElementById('p-type').value;
+  var tcgLang=APP_TO_TCGDEX_LANG[document.getElementById('p-lang').value];
+  var canSearchRemote=type==='Carta Avulsa'&&tcgLang&&q.length>=3;
+  if(canSearchRemote){
+    html+='<div id="p-remote-section">'+acSection('Banco público de cartas ('+tcgLang.toUpperCase()+')')
+      +'<div style="padding:8px 12px;font-size:12px;color:var(--text2)">Buscando...</div></div>';
+    var seq=pRemoteSeq, typed=input.value.trim();
+    pRemoteTimer=setTimeout(function(){searchCatalogForPurchase(typed,tcgLang,seq);},450);
+  }
+
+  if(!html){ dd.style.display='none'; return; }
+  dd.innerHTML=html;
+  dd.style.display='block';
+}
+
+async function searchCatalogForPurchase(name,tcgLang,seq){
+  var setName=(document.getElementById('p-set').value||'').trim();
+  var box=document.getElementById('p-remote-section');
+  try{
+    var url=SUPA_URL+'/functions/v1/pokemon-tcg-proxy?lang='+encodeURIComponent(tcgLang)+'&name='+encodeURIComponent(name)+(setName?'&set='+encodeURIComponent(setName):'');
+    var resp=await fetch(url,{headers:{'Authorization':'Bearer '+SUPA_KEY}});
+    if(!resp.ok)throw new Error('HTTP '+resp.status);
+    var json=await resp.json();
+    if(seq!==pRemoteSeq)return; // usuario continuou digitando
+    var list=(Array.isArray(json)?json:(json.data||[])).slice(0,8);
+    pRemoteResults=list.map(function(c){return {card:c,lang:tcgLang};});
+    box=document.getElementById('p-remote-section');
+    if(!box)return;
+    if(!list.length){
+      box.innerHTML=acSection('Banco público de cartas ('+tcgLang.toUpperCase()+')')
+        +'<div style="padding:8px 12px;font-size:12px;color:var(--text2)">Nenhuma carta encontrada nesse idioma. Tente o nome como está impresso na carta, ou preencha o Set para refinar.</div>';
+      return;
+    }
+    var appLang=document.getElementById('p-lang').value;
+    var fresh=[];
+    list.forEach(function(c,i){
+      var key=tcgLang+':'+c.id;
+      var exists=products.some(function(p){return p.catalog_key===key&&p.language===appLang;});
+      if(!exists)fresh.push({c:c,i:i});
+    });
+    if(!fresh.length){
+      box.innerHTML=acSection('Banco público de cartas ('+tcgLang.toUpperCase()+')')
+        +'<div style="padding:8px 12px;font-size:12px;color:var(--text2)">As cartas encontradas já estão no seu cadastro (lista acima).</div>';
+      return;
+    }
+    box.innerHTML=acSection('Banco público de cartas ('+tcgLang.toUpperCase()+')')
+      +fresh.map(function(x){
+        var c=x.c;
+        return acItemHtml('pickCatalogCard('+x.i+')',acImg(c.image?c.image+'/low.webp':''),c.name+' ('+c.localId+')','Nova no cadastro  ·  ID '+c.id);
+      }).join('');
+  }catch(err){
+    if(seq!==pRemoteSeq)return;
+    console.error('Erro na busca do banco publico:',err);
+    box=document.getElementById('p-remote-section');
+    if(box)box.innerHTML=acSection('Banco público de cartas')
+      +'<div style="padding:8px 12px;font-size:12px;color:var(--text2)">Não foi possível buscar agora. Você pode continuar digitando o nome livremente.</div>';
+  }
+}
+
+async function pickCatalogCard(i){
+  var item=pRemoteResults[i];
+  if(!item)return;
+  var dd=document.getElementById('p-autocomplete');
+  var nameEl=document.getElementById('p-name');
+  dd.style.display='none';
+  setCatalogPick(null,'Carregando dados e imagem da carta...');
+  try{
+    var res=await callTcgdexCache({action:'import',lang:item.lang,ids:[item.card.id]});
+    var r=(res.results||[])[0];
+    if(!r||!r.row)throw new Error(r&&r.error?r.error:'carta não encontrada');
+    var c=r.row;
+    var displayName=c.name+' ('+pdCardNumberLabel(c.local_id,c.set_total)+')';
+    nameEl.value=displayName;
+    document.getElementById('p-product-id').value='';
+    document.getElementById('p-type').value='Carta Avulsa';
+    if(c.set_name)document.getElementById('p-set').value=c.set_name;
+    document.getElementById('p-liga').value='https://www.ligapokemon.com.br/?view=cards/search&card='+encodeURIComponent(displayName);
+    document.getElementById('p-img-b64').value='';
+    document.getElementById('p-img-file').value='';
+    document.getElementById('p-img-url').value=c.image_url||'';
+    var prev=document.getElementById('p-img-preview');
+    if(c.image_url){prev.src=c.image_url;prev.style.display='block';}else{prev.style.display='none';}
+    setCatalogPick(c);
+  }catch(err){
+    console.error('Erro ao carregar carta do banco publico:',err);
+    setCatalogPick(null);
+    showToast('Não foi possível carregar a carta: '+err.message,'error');
+  }
+}
+
+// Cria o produto a partir da carta do catalogo (ou reaproveita se ja existir)
+async function ensureProductFromCatalog(c,appLang){
+  var existing=products.filter(function(p){return p.catalog_key===c.catalog_key&&p.language===appLang;})[0];
+  if(existing)return existing;
+  var check=await sb.from('products').select('*').eq('user_id',currentUser.id).eq('catalog_key',c.catalog_key).eq('language',appLang).limit(1);
+  if(check.data&&check.data.length)return check.data[0];
+  var displayName=c.name+' ('+pdCardNumberLabel(c.local_id,c.set_total)+')';
+  var payload={
+    user_id:currentUser.id,
+    name:displayName,
+    set_name:c.set_name||null,
+    product_type:'Carta Avulsa',
+    language:appLang,
+    image_url:c.image_url||null,
+    liga_url:'https://www.ligapokemon.com.br/?view=cards/search&card='+encodeURIComponent(displayName),
+    catalog_key:c.catalog_key,
+    rarity:c.rarity||null,
+    card_number:c.local_id||null
+  };
+  var r=await sb.from('products').insert(payload).select();
+  if(r.error)throw r.error;
+  var prod=r.data[0];
+  products.push(prod);
+  return prod;
 }
 
 function selectProduct(id){
@@ -6102,6 +6271,7 @@ function selectProduct(id){
   if(nameEl) nameEl.value = p.name;
   if(hiddenEl) hiddenEl.value = p.id;
   if(ddEl) ddEl.style.display = 'none';
+  setCatalogPick(null);
   // Auto-fill related fields
   if(p.set_name){ var setEl=document.getElementById('p-set'); if(setEl) setEl.value=p.set_name; }
   if(p.product_type){ var typeEl=document.getElementById('p-type'); if(typeEl) typeEl.value=p.product_type; }
