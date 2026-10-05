@@ -5665,6 +5665,17 @@ async function pdFetchCardDetail(id){
   return await resp.json();
 }
 
+// Monta "063/094": a TCGdex manda o numero como texto ("063"), mas o total do set como numero (94),
+// o que perde o zero a esquerda. Completa o total com zeros ate ter o mesmo tamanho do numero da carta.
+function pdCardNumberLabel(localId,setTotal){
+  var num=localId!=null?String(localId):'';
+  var total=setTotal?String(setTotal):'';
+  if(total&&/^\d+$/.test(num)&&num.length>total.length){
+    while(total.length<num.length)total='0'+total;
+  }
+  return num+(total?'/'+total:'');
+}
+
 async function importSelectedPdCards(){
   var lang=document.getElementById('pd-import-lang').value;
   var selected=pdSearchResults.filter(function(c){return pdSelectedIds[c.id];});
@@ -5702,7 +5713,7 @@ async function importSelectedPdCards(){
     var k=c.catalog_key+'|'+lang;
     if(existingKeys[k]){skipped++;return;}
     existingKeys[k]=true;
-    var displayName=c.name+' ('+c.local_id+(c.set_total?'/'+c.set_total:'')+')';
+    var displayName=c.name+' ('+pdCardNumberLabel(c.local_id,c.set_total)+')';
     toInsert.push({
       user_id:currentUser.id,
       name:displayName,
