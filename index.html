@@ -584,6 +584,7 @@ tr:hover td{background:var(--bg2)}
           <input type="text" id="filterProductName" placeholder="Buscar produto..." oninput="renderProducts()" style="padding:8px 12px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text);font-size:13px;width:220px">
           <div style="display:flex;gap:8px">
             <button class="btn-secondary" style="width:auto;background:#1F6FA8;color:#fff;border-color:#1F6FA8;font-weight:700" onclick="openPublicDbImport()"><i class="ti ti-database-import"></i> Importar do banco público</button>
+            <button class="btn-secondary" style="width:auto" id="syncCatalogBtn" onclick="syncCatalogImages()" title="Copia para o seu Storage as imagens que ainda vêm da TCGdex e atualiza só as cartas que mudaram"><i class="ti ti-cloud-download"></i> Atualizar catálogo</button>
             <button class="btn-secondary" style="width:auto;background:#E8B422;color:#2C1A00;border-color:#E8B422;font-weight:700" onclick="openProductPriceReview()"><i class="ti ti-refresh"></i> Revisão em lote</button>
             <button class="btn-secondary" style="width:auto" onclick="openModal('productImportModal')"><i class="ti ti-table-import"></i> Importar Excel</button>
             <button class="btn-secondary" style="width:auto" onclick="migrateProducts()" id="migrateProductsBtn"><i class="ti ti-download"></i> Importar do estoque</button>
@@ -1385,7 +1386,7 @@ tr:hover td{background:var(--bg2)}
 <div class="modal-bg" id="publicDbImportModal">
   <div class="modal" style="max-width:640px">
     <h3>Importar do banco público de cartas</h3>
-    <p style="font-size:12px;color:var(--text2);margin-top:-8px">Fonte: TCGdex (nome, set, número e imagem, no idioma de busca escolhido abaixo). Preço não é importado. Link de busca na Liga Pokémon é preenchido automaticamente.</p>
+    <p style="font-size:12px;color:var(--text2);margin-top:-8px">Fonte: TCGdex (nome, set, número, raridade e imagem, no idioma de busca escolhido abaixo). A imagem é copiada uma vez para o seu Storage, então o site não depende da TCGdex para exibi-la. Se a carta não tiver imagem no idioma escolhido, usamos a imagem em inglês. Preço de venda não é importado. Link de busca na Liga Pokémon é preenchido automaticamente.</p>
     <div class="modal-grid">
       <div class="form-field"><label>Nome da carta</label>
         <input type="text" id="pd-search-name" placeholder="Ex: Charizard" onkeydown="if(event.key==='Enter')searchPublicDb()">
@@ -5397,7 +5398,9 @@ function renderProducts(){
     var img=p.image_url?'<img src="'+p.image_url+'" class="inv-img" style="cursor:zoom-in" onclick="openLightbox(event,this.src)">':'<div class="inv-img-placeholder"><i class="ti ti-photo-off"></i></div>';
     return '<tr>'
       +'<td>'+img+'</td>'
-      +'<td style="font-weight:600">'+(p.liga_url?'<a href="'+p.liga_url+'" target="_blank" style="color:inherit">'+p.name+'</a>':p.name)+'</td>'
+      +'<td style="font-weight:600">'+(p.liga_url?'<a href="'+p.liga_url+'" target="_blank" style="color:inherit">'+p.name+'</a>':p.name)
+      +((p.rarity||p.catalog_key)?'<div style="font-size:11px;font-weight:400;color:var(--text2);margin-top:2px">'+(p.rarity||'')+(p.rarity&&p.catalog_key?'&nbsp;&nbsp;':'')+(p.catalog_key?'<span title="Vinculado ao catálogo TCGdex: '+p.catalog_key+'"><i class="ti ti-link"></i> catálogo</span>':'')+'</div>':'')
+      +'</td>'
       +'<td style="color:var(--text2);font-size:12px">'+(p.set_name||'-')+'</td>'
       
       +'<td>'+typeBadge(p.product_type)+'</td>'
@@ -5669,33 +5672,50 @@ async function importSelectedPdCards(){
   var btn=document.getElementById('pd-import-btn');
   btn.disabled=true;
 
-  var toInsert=[];
-  var skipped=0;
+  // 1) Edge Function busca os dados, baixa a imagem para o Storage (se ainda nao existir) e grava em card_catalog
+  var ids=selected.map(function(c){return c.id;});
+  var CHUNK=10;
+  var rows=[];
   var failed=0;
-
-  for(var i=0;i<selected.length;i++){
-    btn.textContent='Importando ('+(i+1)+'/'+selected.length+')...';
-    var brief=selected[i];
+  for(var i=0;i<ids.length;i+=CHUNK){
+    var part=ids.slice(i,i+CHUNK);
+    btn.textContent='Importando e salvando imagens ('+Math.min(i+CHUNK,ids.length)+'/'+ids.length+')...';
     try{
-      var card=await pdFetchCardDetail(brief.id);
-      var localIdStr=String(card.localId);
-      var totalRaw=card.set&&card.set.cardCount?(card.set.cardCount.official||card.set.cardCount.total):'';
-      var totalStr=totalRaw?String(totalRaw):'';
-      var displayName=card.name+' ('+localIdStr+(totalStr?'/'+totalStr:'')+')';
-      toInsert.push({
-        user_id:currentUser.id,
-        name:displayName,
-        set_name:card.set?card.set.name:null,
-        product_type:'Carta Avulsa',
-        language:lang,
-        image_url:card.image?(card.image+'/high.webp'):null,
-        liga_url:'https://www.ligapokemon.com.br/?view=cards/search&card='+encodeURIComponent(displayName)
+      var res=await callTcgdexCache({action:'import',lang:pdSearchLang,ids:part});
+      (res.results||[]).forEach(function(x){
+        if(x&&x.row)rows.push(x.row);
+        else{failed++;console.error('Falha ao importar carta:',x);}
       });
     }catch(err){
-      console.error('Erro ao importar carta',brief,err);
-      failed++;
+      console.error('Erro ao importar lote',part,err);
+      failed+=part.length;
+      if(/login/i.test(err.message)){showToast(err.message,'error');break;}
     }
   }
+
+  // 2) Cria os produtos apontando para a imagem no Storage (sem duplicar carta+idioma ja vinculada)
+  var existingKeys={};
+  products.forEach(function(p){if(p.catalog_key)existingKeys[p.catalog_key+'|'+(p.language||'')]=true;});
+  var toInsert=[];
+  var skipped=0;
+  rows.forEach(function(c){
+    var k=c.catalog_key+'|'+lang;
+    if(existingKeys[k]){skipped++;return;}
+    existingKeys[k]=true;
+    var displayName=c.name+' ('+c.local_id+(c.set_total?'/'+c.set_total:'')+')';
+    toInsert.push({
+      user_id:currentUser.id,
+      name:displayName,
+      set_name:c.set_name||null,
+      product_type:'Carta Avulsa',
+      language:lang,
+      image_url:c.image_url||null,
+      liga_url:'https://www.ligapokemon.com.br/?view=cards/search&card='+encodeURIComponent(displayName),
+      catalog_key:c.catalog_key,
+      rarity:c.rarity||null,
+      card_number:c.local_id||null
+    });
+  });
 
   if(!toInsert.length){
     showToast(skipped?'Todas as cartas selecionadas já estavam no catálogo':'Não foi possível importar as cartas selecionadas','error');
@@ -5716,6 +5736,133 @@ async function importSelectedPdCards(){
   closeModal('publicDbImportModal');
   await loadProducts();
   renderProducts();
+}
+
+// ---- CACHE DE IMAGENS DO CATALOGO (TCGdex -> Supabase Storage) ----
+var TCGDEX_ASSET_PREFIX='https://assets.tcgdex.net/';
+var CARD_IMG_STORAGE_PREFIX=SUPA_URL+'/storage/v1/object/public/card-images/';
+var IMAGE_URL_TABLES=['products','inventory','purchases','wishlist'];
+
+async function callTcgdexCache(body){
+  var s=await sb.auth.getSession();
+  var token=s&&s.data&&s.data.session?s.data.session.access_token:null;
+  if(!token)throw new Error('Sessão expirada: faça login de novo para importar cartas');
+  var resp=await fetch(SUPA_URL+'/functions/v1/tcgdex-cache',{
+    method:'POST',
+    headers:{'Authorization':'Bearer '+token,'apikey':SUPA_KEY,'Content-Type':'application/json'},
+    body:JSON.stringify(body)
+  });
+  var json={};
+  try{json=await resp.json();}catch(e){}
+  if(resp.status===404)throw new Error('Edge Function "tcgdex-cache" não encontrada: publique-a no Supabase');
+  if(!resp.ok)throw new Error(json.error||('HTTP '+resp.status));
+  return json;
+}
+
+// Troca uma URL de imagem por outra em todas as tabelas que guardam image_url
+async function replaceImageUrlEverywhere(oldUrl,newUrl){
+  var errors=0;
+  await Promise.all(IMAGE_URL_TABLES.map(function(t){
+    return sb.from(t).update({image_url:newUrl}).eq('user_id',currentUser.id).eq('image_url',oldUrl).then(function(r){
+      if(r.error){errors++;console.error('Erro ao atualizar imagem em '+t+':',r.error);}
+    });
+  }));
+  return errors;
+}
+
+async function collectTcgdexHotlinks(){
+  var urls={};
+  for(var t=0;t<IMAGE_URL_TABLES.length;t++){
+    var table=IMAGE_URL_TABLES[t],from=0,pageSize=1000;
+    while(true){
+      var r=await sb.from(table).select('image_url').eq('user_id',currentUser.id).like('image_url',TCGDEX_ASSET_PREFIX+'%').range(from,from+pageSize-1);
+      if(r.error){console.error('Erro ao ler '+table+':',r.error);break;}
+      (r.data||[]).forEach(function(x){if(x.image_url)urls[x.image_url]=true;});
+      if(!r.data||r.data.length<pageSize)break;
+      from+=pageSize;
+    }
+  }
+  return Object.keys(urls);
+}
+
+async function syncCatalogImages(){
+  var btn=document.getElementById('syncCatalogBtn');
+  if(!btn||btn.disabled)return;
+  if(!confirm('Atualizar catálogo:\n\n1) Copia para o seu Storage as imagens que ainda são carregadas direto da TCGdex (produtos, estoque, compras e desejos).\n2) Confere na TCGdex as cartas do catálogo e baixa de novo só as que mudaram.\n\nPode levar alguns minutos. Continuar?'))return;
+  var original=btn.innerHTML;
+  btn.disabled=true;
+  var summary={copied:0,copyFailed:0,checked:0,updated:0,newImages:0,errors:0};
+  try{
+    // Etapa 1: migrar hotlinks antigos para o Storage
+    btn.textContent='Procurando imagens externas...';
+    var urls=await collectTcgdexHotlinks();
+    var map={};
+    for(var i=0;i<urls.length;i+=20){
+      var part=urls.slice(i,i+20);
+      btn.textContent='Copiando imagens ('+Math.min(i+20,urls.length)+'/'+urls.length+')...';
+      try{
+        var res=await callTcgdexCache({action:'cache_url',urls:part});
+        (res.results||[]).forEach(function(x){
+          if(x.url)map[x.src]=x.url;
+          else{summary.copyFailed++;console.error('Falha ao copiar imagem:',x);}
+        });
+      }catch(err){summary.copyFailed+=part.length;console.error(err);if(/login|publique/i.test(err.message))throw err;}
+    }
+    var srcs=Object.keys(map);
+    for(var k=0;k<srcs.length;k++){
+      btn.textContent='Atualizando registros ('+(k+1)+'/'+srcs.length+')...';
+      summary.errors+=await replaceImageUrlEverywhere(srcs[k],map[srcs[k]]);
+      summary.copied++;
+    }
+
+    // Etapa 2: atualizar so cartas novas/alteradas no catalogo
+    var since=new Date().toISOString();
+    var changed={};
+    for(var guard=0;guard<1000;guard++){
+      var rr=await callTcgdexCache({action:'refresh',since:since,limit:20});
+      summary.checked+=rr.processed||0;
+      summary.updated+=rr.updated||0;
+      summary.newImages+=rr.images_downloaded||0;
+      summary.errors+=rr.errors||0;
+      (rr.changed||[]).forEach(function(c){changed[c.catalog_key]=c;});
+      btn.textContent='Verificando catálogo ('+summary.checked+' cartas, faltam '+(rr.remaining||0)+')...';
+      if(!rr.processed||!rr.remaining)break;
+    }
+
+    // Etapa 3: propagar imagem/raridade alteradas para os produtos vinculados
+    await loadProducts();
+    for(var p=0;p<products.length;p++){
+      var prod=products[p];
+      var c=prod.catalog_key?changed[prod.catalog_key]:null;
+      if(!c)continue;
+      var upd={};
+      if(c.rarity&&c.rarity!==prod.rarity)upd.rarity=c.rarity;
+      var ownImage=prod.image_url&&prod.image_url.indexOf(CARD_IMG_STORAGE_PREFIX)!==0;
+      if(c.image_url&&c.image_url!==prod.image_url&&!ownImage){
+        if(prod.image_url)summary.errors+=await replaceImageUrlEverywhere(prod.image_url,c.image_url);
+        else upd.image_url=c.image_url;
+      }
+      if(Object.keys(upd).length){
+        var ur=await sb.from('products').update(upd).eq('id',prod.id);
+        if(ur.error){summary.errors++;console.error(ur.error);}
+      }
+    }
+
+    var msg='Catálogo atualizado: '+summary.copied+' imagem(ns) copiada(s) para o Storage, '+summary.checked+' carta(s) verificada(s), '+summary.updated+' alterada(s)';
+    if(summary.copyFailed||summary.errors)msg+='. '+(summary.copyFailed+summary.errors)+' falha(s), veja o console';
+    showToast(msg,(summary.copyFailed||summary.errors)?'error':undefined);
+  }catch(err){
+    console.error('Erro ao atualizar catálogo:',err);
+    showToast('Erro ao atualizar catálogo: '+err.message,'error');
+  }finally{
+    btn.disabled=false;
+    btn.innerHTML=original;
+    await loadProducts();
+    renderProducts();
+    await loadInventory();
+    await loadPurchases();
+    await loadWishlist();
+  }
 }
 
 // ---- AUTO-MIGRATE: extract unique suppliers and customers ----
