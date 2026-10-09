@@ -2214,7 +2214,7 @@ function selectWishlistProduct(id){
 }
 
 function loadAll(){
-  Promise.all([loadPurchases(),loadInventory(),loadSales(),loadProfile(),loadProducts(),loadExpenses(),loadSuppliers(),loadCustomers(),loadWishlist(),loadPersonalCollections(),loadStockSnapshots()]).then(function(){renderSales();renderPurchases();renderInventory();loadDashboard();renderStockEvolution();saveDailySnapshot();});
+  Promise.all([loadPurchases(),loadInventory(),loadSales(),loadProfile(),loadProducts(),loadExpenses(),loadSuppliers(),loadCustomers(),loadWishlist(),loadPersonalCollections(),loadStockSnapshots()]).then(function(){updateSupplierFilter();renderSales();renderPurchases();renderInventory();loadDashboard();renderStockEvolution();saveDailySnapshot();});
 }
 
 // ==================== COLECAO PESSOAL (FICHARIO) ====================
@@ -2551,15 +2551,7 @@ function loadInventory(){
   return sb.from('inventory').select('*').eq('user_id',currentUser.id).order('created_at',{ascending:false}).then(function(r){
     inventory=r.data||[];
     // Populate supplier filter from purchases
-    var sel=document.getElementById('filterInvSupplier');
-    if(sel){
-      var current=sel.value;
-      var suppliers=[];
-      purchases.forEach(function(p){if(p.supplier&&suppliers.indexOf(p.supplier)===-1)suppliers.push(p.supplier);});
-      suppliers.sort();
-      sel.innerHTML='<option value="">Todos fornecedores</option>'+suppliers.map(function(s){return '<option>'+s+'</option>';}).join('');
-      sel.value=current;
-    }
+    updateSupplierFilter();
     renderInventory();
   });
 }
@@ -6498,14 +6490,16 @@ function toggleSaleField(id,field,value){
 }
 
 function updateSupplierFilter(){
-  var sel=document.getElementById('filterPurSupplier');
-  if(!sel)return;
-  var current=sel.value;
-  var suppliers=[];
-  purchases.forEach(function(p){if(p.supplier&&suppliers.indexOf(p.supplier)===-1)suppliers.push(p.supplier);});
-  suppliers.sort();
-  sel.innerHTML='<option value="">Todos fornecedores</option>'+suppliers.map(function(s){return '<option>'+s+'</option>';}).join('');
-  sel.value=current;
+  var names=[];
+  purchases.forEach(function(p){if(p.supplier&&names.indexOf(p.supplier)===-1)names.push(p.supplier);});
+  names.sort(function(a,b){return a.localeCompare(b,'pt-BR');});
+  ['filterPurSupplier','filterInvSupplier'].forEach(function(id){
+    var sel=document.getElementById(id);
+    if(!sel)return;
+    var current=sel.value;
+    sel.innerHTML='<option value="">Todos fornecedores</option>'+names.map(function(s){return '<option>'+s+'</option>';}).join('');
+    sel.value=current;
+  });
 }
 
 
