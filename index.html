@@ -570,12 +570,20 @@ tr:hover td{background:var(--bg2)}
       <!-- CUSTOMERS -->
       <div id="cad-customers" style="display:none">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-          <input type="text" id="filterCustomerName" placeholder="Buscar cliente..." oninput="renderCustomers()" style="padding:8px 12px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text);font-size:13px;width:220px">
-          <button class="btn-primary" style="width:auto" onclick="document.getElementById('customerModal').classList.add('open')"><i class="ti ti-plus"></i> Novo cliente</button>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <input type="text" id="filterCustomerName" placeholder="Buscar cliente ou interesse..." oninput="renderCustomers()" style="padding:8px 12px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text);font-size:13px;width:240px">
+            <select id="filterCustomerContact" onchange="renderCustomers()" style="padding:8px 12px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text);font-size:13px">
+              <option value="">Todos</option>
+              <option value="atrasados">Contato atrasado</option>
+              <option value="com-interesse">Com interesse</option>
+            </select>
+          </div>
+          <button class="btn-primary" style="width:auto" onclick="openNewCustomer()"><i class="ti ti-plus"></i> Novo cliente</button>
         </div>
+        <div id="customerContactAlert" style="display:none;background:var(--danger-bg);border:1px solid #F7C1C1;border-radius:var(--radius);padding:10px 14px;margin-bottom:10px;color:var(--danger);font-size:13px;font-weight:600"><i class="ti ti-bell-ringing"></i> <span id="customerContactAlertText"></span></div>
         <div class="table-wrap">
-          <table><thead><tr><th>Nome</th><th>WhatsApp</th><th>Cidade</th><th>Vendas</th><th></th></tr></thead>
-          <tbody id="customersTable"><tr><td colspan="5"><div class="empty-state"><i class="ti ti-users"></i>Nenhum cliente</div></td></tr></tbody></table>
+          <table><thead><tr><th>Nome</th><th>WhatsApp</th><th>Cidade</th><th>Interesses</th><th>Proximo contato</th><th>Vendas</th><th></th></tr></thead>
+          <tbody id="customersTable"><tr><td colspan="7"><div class="empty-state"><i class="ti ti-users"></i>Nenhum cliente</div></td></tr></tbody></table>
         </div>
       </div>
       <!-- PRODUCTS -->
@@ -1311,6 +1319,22 @@ tr:hover td{background:var(--bg2)}
       <div class="form-field full"><label>Nome *</label><input type="text" id="cus-name" placeholder="Ex: João Silva"></div>
       <div class="form-field"><label>WhatsApp</label><input type="text" id="cus-whatsapp" placeholder="55119..."></div>
       <div class="form-field"><label>Cidade</label><input type="text" id="cus-city" placeholder="Ex: São Paulo"></div>
+      <div class="form-field full"><label>Interesses</label>
+        <textarea id="cus-interests" rows="2" placeholder="Ex: Charizard, cartas JP, ETBs de Prismatic Evolutions..."></textarea>
+      </div>
+      <div class="form-field"><label>Recontatar a cada</label>
+        <select id="cus-freq">
+          <option value="7">7 dias</option>
+          <option value="15">15 dias</option>
+          <option value="30" selected>30 dias</option>
+          <option value="60">60 dias</option>
+          <option value="90">90 dias</option>
+        </select>
+      </div>
+      <div class="form-field"><label>Ultimo contato</label>
+        <input type="date" id="cus-last-contact">
+        <div style="font-size:11px;color:var(--text2);margin-top:4px">Em branco = contato pendente</div>
+      </div>
     </div>
     <div class="modal-actions">
       <button class="btn-secondary" onclick="closeModal('customerModal')">Cancelar</button>
@@ -2968,7 +2992,7 @@ function renderInventory(){
     var mgColor=inv.sale_price>inv.cost_price?'var(--success)':'var(--danger)';
     var prod=inv.product_id?products.filter(function(p){return p.id===inv.product_id;})[0]:null;
     var marketPriceCell=prod&&prod.market_price?fmt(prod.market_price):'<span style="color:var(--text3)">-</span>';
-    var extrasBadge=inv.extras?'<span style="font-size:10px;background:#F3E8FF;color:#6B21A8;padding:1px 6px;border-radius:10px;font-weight:600;margin-left:4px">'+inv.extras+'</span>':''; var ligaLink=inv.liga_url?'<a href="'+inv.liga_url+'" target="_blank" style="font-size:11px;color:var(--blue);margin-left:4px" title="Ver na Liga Pokemon"><i class="ti ti-external-link"></i></a>':''; var statusClass=inv.status==='Reservado'?'badge-mp':inv.status==='Em estoque'?'badge-nosale':inv.status==='A Caminho'?'badge-lp':inv.status==='Pokedex'?'badge-jp':'badge-nm';
+    var extrasBadge=inv.extras?'<span style="font-size:10px;background:#F3E8FF;color:#6B21A8;padding:1px 6px;border-radius:10px;font-weight:600;margin-left:4px">'+inv.extras+'</span>':''; var invLiga=invLigaUrl(inv); var ligaLink=invLiga?'<a href="'+invLiga+'" target="_blank" style="font-size:11px;color:var(--blue);margin-left:4px" title="'+(inv.liga_url?'Ver na Liga Pokemon':'Buscar na Liga Pokemon')+'"><i class="ti ti-external-link"></i></a>':''; var statusClass=inv.status==='Reservado'?'badge-mp':inv.status==='Em estoque'?'badge-nosale':inv.status==='A Caminho'?'badge-lp':inv.status==='Pokedex'?'badge-jp':'badge-nm';
     var statusLabel=inv.status||'A venda';
     return '<tr>'
       +'<td><input type="checkbox" class="inv-select-box" value="'+inv.id+'" '+(selectedInvIds.has(inv.id)?'checked':'')+' onchange="toggleInvSelect(\''+inv.id+'\',this.checked)"></td>'
@@ -4381,11 +4405,25 @@ function copyBinderText(){
   navigator.clipboard.writeText(text).then(function(){showToast('Lista copiada! Cole no WhatsApp');}).catch(function(){showToast('Nao foi possivel copiar','error');});
 }
 
+// Link da Liga do item: o do proprio estoque, senao o do produto, senao o da compra, senao uma busca pelo nome
+function invLigaUrl(inv){
+  if(!inv)return '';
+  if(inv.liga_url)return inv.liga_url;
+  var prod=inv.product_id?products.filter(function(p){return p.id===inv.product_id;})[0]:null;
+  if(!prod&&inv.name)prod=products.filter(function(p){return p.name&&p.name.toLowerCase()===inv.name.toLowerCase()&&p.liga_url;})[0];
+  if(prod&&prod.liga_url)return prod.liga_url;
+  var pur=inv.purchase_id?purchases.filter(function(p){return p.id===inv.purchase_id;})[0]:null;
+  if(pur&&pur.liga_url)return pur.liga_url;
+  if(inv.product_type&&inv.product_type!=='Carta Avulsa')return '';
+  return inv.name?'https://www.ligapokemon.com.br/?view=cards/search&card='+encodeURIComponent(inv.name):'';
+}
+
 function exportInventory(){
-  var rows=[['Nome','Tipo','Set','Idioma','Condicao','Qtd Total','Qtd Disponivel','Custo Unit.','Preco Venda','Margem','Status']];
+  var rows=[['ID','Nome','Tipo','Set','Idioma','Condicao','Extras','Qtd Total','Qtd Disponivel','Custo Unit.','Preco Venda','Margem','Preco Mercado','Status','Link Liga Pokemon']];
   inventory.forEach(function(i){
     var mg=i.sale_price>0?((i.sale_price-i.cost_price)/i.sale_price*100).toFixed(1)+'%':'-';
-    rows.push([i.name,i.product_type||'',i.set_name||'',i.language,i.condition,i.quantity_total,i.quantity_available,i.cost_price,i.sale_price,mg,i.status||'A venda']);
+    var prod=i.product_id?products.filter(function(p){return p.id===i.product_id;})[0]:null;
+    rows.push([i.id,i.name,i.product_type||'',i.set_name||'',i.language,i.condition,i.extras||'',i.quantity_total,i.quantity_available,i.cost_price,i.sale_price,mg,prod&&prod.market_price?prod.market_price:'',i.status||'A venda',invLigaUrl(i)]);
   });
   exportCSV(rows,'estoque_zeraora.csv');
 }
@@ -5300,6 +5338,9 @@ function openNewCustomer(){
   document.getElementById('cus-name').value='';
   document.getElementById('cus-whatsapp').value='';
   document.getElementById('cus-city').value='';
+  document.getElementById('cus-interests').value='';
+  document.getElementById('cus-freq').value='30';
+  document.getElementById('cus-last-contact').value='';
   openModal('customerModal');
 }
 
@@ -5368,23 +5409,85 @@ async function loadCustomers(){
   populateCustomerSelects();
 }
 
+// Dias ate o proximo contato (so para clientes com interesse cadastrado). null = nao acompanhado.
+function customerDaysUntilContact(c){
+  if(!c.interests||!String(c.interests).trim())return null;
+  if(!c.last_contact_date)return -Infinity;
+  var last=new Date(c.last_contact_date+'T00:00:00');
+  var next=new Date(last.getTime()+(c.contact_frequency_days||30)*86400000);
+  var today=new Date();today.setHours(0,0,0,0);
+  return Math.round((next-today)/86400000);
+}
+
+function updateCustomerContactAlert(){
+  var overdue=customers.filter(function(c){var d=customerDaysUntilContact(c);return d!==null&&d<=0;}).length;
+  var box=document.getElementById('customerContactAlert');
+  if(!box)return;
+  if(overdue>0){
+    box.style.display='block';
+    document.getElementById('customerContactAlertText').textContent=overdue+' cliente(s) com contato atrasado sobre os interesses';
+  }else{box.style.display='none';}
+}
+
 function renderCustomers(){
   var q=(document.getElementById('filterCustomerName').value||'').toLowerCase();
-  var list=customers.filter(function(c){return !q||c.name.toLowerCase().indexOf(q)!==-1;});
+  var cf=(document.getElementById('filterCustomerContact')||{}).value||'';
+  var list=customers.filter(function(c){
+    if(q&&(c.name+' '+(c.interests||'')).toLowerCase().indexOf(q)===-1)return false;
+    var d=customerDaysUntilContact(c);
+    if(cf==='atrasados'&&!(d!==null&&d<=0))return false;
+    if(cf==='com-interesse'&&d===null)return false;
+    return true;
+  });
+  // Atrasados primeiro, depois quem esta mais perto do contato, depois sem acompanhamento
+  list.sort(function(a,b){
+    var da=customerDaysUntilContact(a),db=customerDaysUntilContact(b);
+    if(da===null&&db===null)return a.name.localeCompare(b.name,'pt-BR');
+    if(da===null)return 1;
+    if(db===null)return -1;
+    return da-db;
+  });
+  updateCustomerContactAlert();
   var tb=document.getElementById('customersTable');
-  if(!list.length){tb.innerHTML='<tr><td colspan="5"><div class="empty-state"><i class="ti ti-users"></i>Nenhum cliente</div></td></tr>';return;}
+  if(!list.length){tb.innerHTML='<tr><td colspan="7"><div class="empty-state"><i class="ti ti-users"></i>Nenhum cliente</div></td></tr>';return;}
   tb.innerHTML=list.map(function(c){
     var saleCount=sales.filter(function(s){return s.customer_id===c.id||(s.buyer&&s.buyer.toLowerCase()===c.name.toLowerCase());}).length;
+    var d=customerDaysUntilContact(c);
+    var contactHtml;
+    if(d===null)contactHtml='<span style="color:var(--text3)">-</span>';
+    else if(!c.last_contact_date)contactHtml='<span class="badge" style="background:var(--danger-bg);color:var(--danger)">Nunca contatado</span>';
+    else if(d<=0)contactHtml='<span class="badge" style="background:var(--danger-bg);color:var(--danger)">Atrasado ('+Math.abs(d)+'d)</span>';
+    else contactHtml='<span class="badge" style="background:var(--bg2);color:var(--text2)">Em '+d+'d</span>';
+    if(c.last_contact_date)contactHtml+='<div style="font-size:11px;color:var(--text3);margin-top:2px">ultimo: '+c.last_contact_date+'</div>';
+    var interestsHtml=c.interests?'<div style="max-width:260px;white-space:pre-wrap;font-size:12px">'+c.interests+'</div>':'<span style="color:var(--text3)">-</span>';
+    var waLink='';
+    if(c.whatsapp){
+      var msg=c.interests?'Oi '+c.name.split(' ')[0]+'! Tudo bem? Lembrei de voce: chegou novidade sobre '+c.interests.split('\n')[0]+'. Quer dar uma olhada?':'';
+      waLink='<a href="https://wa.me/'+c.whatsapp+(msg?'?text='+encodeURIComponent(msg):'')+'" target="_blank" style="color:var(--success)"><i class="ti ti-brand-whatsapp"></i> '+c.whatsapp+'</a>';
+    }
     return '<tr>'
       +'<td style="font-weight:600">'+c.name+'</td>'
-      +'<td>'+(c.whatsapp?'<a href="https://wa.me/'+c.whatsapp+'" target="_blank" style="color:var(--success)"><i class="ti ti-brand-whatsapp"></i> '+c.whatsapp+'</a>':'-')+'</td>'
+      +'<td>'+(waLink||'-')+'</td>'
       +'<td>'+(c.city||'-')+'</td>'
+      +'<td>'+interestsHtml+'</td>'
+      +'<td>'+contactHtml+'</td>'
       +'<td><span class="badge badge-nm">'+saleCount+'</span></td>'
       +'<td><div class="actions-cell">'
+      +(d!==null?'<button class="btn-success" onclick="registerCustomerContact(\''+c.id+'\')" title="Registrar contato feito hoje"><i class="ti ti-message-check"></i></button>':'')
       +'<button class="btn-small" onclick="editCustomer(\''+c.id+'\')" title="Editar"><i class="ti ti-edit"></i></button>'
       +'<button class="btn-danger" onclick="deleteCustomer(\''+c.id+'\')" title="Excluir"><i class="ti ti-trash"></i></button>'
       +'</div></td></tr>';
   }).join('');
+}
+
+async function registerCustomerContact(id){
+  var today=seToday();
+  var r=await sb.from('customers').update({last_contact_date:today}).eq('id',id);
+  if(r.error){console.error(r.error);showToast('Erro ao registrar contato: '+(r.error.message||''),'error');return;}
+  var c=customers.filter(function(x){return x.id===id;})[0];
+  if(c)c.last_contact_date=today;
+  renderCustomers();
+  showToast('Contato registrado!');
 }
 
 function editCustomer(id){
@@ -5395,6 +5498,9 @@ function editCustomer(id){
   document.getElementById('cus-name').value=c.name||'';
   document.getElementById('cus-whatsapp').value=c.whatsapp||'';
   document.getElementById('cus-city').value=c.city||'';
+  document.getElementById('cus-interests').value=c.interests||'';
+  document.getElementById('cus-freq').value=String(c.contact_frequency_days||30);
+  document.getElementById('cus-last-contact').value=c.last_contact_date||'';
   openModal('customerModal');
 }
 
@@ -5402,9 +5508,12 @@ async function saveCustomer(){
   var name=document.getElementById('cus-name').value.trim();
   if(!name){showToast('Nome obrigatorio','error');return;}
   var id=document.getElementById('cus-id').value;
-  var payload={user_id:currentUser.id,name:name,whatsapp:document.getElementById('cus-whatsapp').value||null,city:document.getElementById('cus-city').value||null};
+  var payload={user_id:currentUser.id,name:name,whatsapp:document.getElementById('cus-whatsapp').value||null,city:document.getElementById('cus-city').value||null,
+    interests:document.getElementById('cus-interests').value.trim()||null,
+    contact_frequency_days:parseInt(document.getElementById('cus-freq').value)||30,
+    last_contact_date:document.getElementById('cus-last-contact').value||null};
   var r=id?await sb.from('customers').update(payload).eq('id',id):await sb.from('customers').insert(payload);
-  if(r.error){showToast('Erro ao salvar','error');return;}
+  if(r.error){console.error('Erro ao salvar cliente:',r.error);showToast('Erro ao salvar: '+(r.error.message||'ver console'),'error');return;}
   showToast(id?'Cliente atualizado!':'Cliente criado!');
   closeModal('customerModal');
   await loadCustomers();
