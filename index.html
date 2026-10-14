@@ -804,7 +804,8 @@ tr:hover td{background:var(--bg2)}
           <a id="mpBookmarklet" href="#" onclick="event.preventDefault();showToast('Arraste este botao para a barra de favoritos');" style="display:inline-block;background:var(--amber);color:#2C1A00;font-weight:700;padding:3px 10px;border-radius:8px;text-decoration:none;margin-left:4px">Atualizar ZeraoraTCG</a></li>
         <li>Esteja logado na Liga Pokémon nesse navegador.</li>
         <li>Clique em <b>Iniciar atualização</b>. A Liga abre em outra aba; nela, clique no favorito <b>Atualizar ZeraoraTCG</b>.</li>
-        <li>Deixe as duas abas abertas. Cada carta leva ~3 segundos. Os resultados aparecem aqui como <b>propostas</b> e só entram no estoque quando você aprovar.</li>
+        <li>Deixe as duas abas abertas. Cada carta leva ~3 segundos. A Liga permite 200 consultas a cada 4 horas, então cada rodada pega até 190 cartas, começando pelas que estão há mais tempo sem atualizar. Os resultados aparecem aqui como <b>propostas</b> e só entram no estoque quando você aprovar.</li>
+        <li>Para consultar uma carta só: na linha do estoque, clique no ícone <i class="ti ti-zoom-money"></i> <b>Menor na Liga</b> e, na aba que abrir, clique no mesmo favorito. Ele destaca a oferta mais barata na sua condição, idioma e extras.</li>
       </ol>
       <div style="display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap">
         <button class="btn-primary" style="width:auto" onclick="mpStartRun()"><i class="ti ti-player-play"></i> Iniciar atualização</button>
@@ -3061,6 +3062,7 @@ function renderInventory(){
       +'<button class="btn-small" onclick="openInvEdit(\''+inv.id+'\')" title="Editar"><i class="ti ti-tag"></i></button>'
       +(inv.purchase_id?'':'<button class="btn-small" onclick="openSplitInv(\''+inv.id+'\')" title="Dividir estoque (item sem compra vinculada)"><i class="ti ti-arrows-split"></i></button>')
       +'<button class="btn-small" onclick="openPriceHistory(\''+inv.id+'\')" title="Historico"><i class="ti ti-chart-line"></i></button>'
+      +((!inv.product_type||inv.product_type==='Carta Avulsa')&&invLiga?'<button class="btn-small" onclick="mpOpenLowest(\''+inv.id+'\')" title="Menor na Liga: abre a carta na Liga; clique no favorito Atualizar ZeraoraTCG para destacar a menor oferta na sua condicao"><i class="ti ti-zoom-money"></i></button>':'')
       +'</div></td>'
       +'</tr>';
   }).join('');
@@ -4494,6 +4496,37 @@ function zrLigaBookmarklet(){
   var op=window.opener,results=[];
   var sleep=function(ms){return new Promise(function(r){setTimeout(r,ms);});};
   var norm=function(s){return String(s||'').trim().toUpperCase().replace(/^#/,'').replace(/^0+(?=.)/,'');};
+  // Modo "Menor na Liga": a pagina foi aberta pelo atalho do estoque (#zr=...). So localiza e destaca a oferta; nao le preco.
+  var hm=location.hash.match(/zr=([^&]+)/);
+  if(hm){
+    (async function(){
+      var t;try{t=JSON.parse(decodeURIComponent(hm[1]));}catch(e){say('Link do atalho invalido.');return;}
+      if(typeof cards_stock==='undefined'||!cards_stock.length){say('Esta pagina nao lista ofertas da carta (o link do cadastro aponta para uma busca).');return;}
+      var LANG={'PT-BR':[8,11],'PT':[8,11],'EN':[2],'JP':[6],'CH':[10,12],'FR':[4],'ES':[3],'DE':[1],'IT':[5],'KO':[7]};
+      var langs=LANG[String(t.lang||'').toUpperCase()]||[];
+      var X=/promo/i.test(t.extras)?7:/reverse/i.test(t.extras)?3:/foil|holo/i.test(t.extras)?2:0;
+      var st=cards_stock.slice();
+      var tn=norm(t.num);if(tn){var byNum=st.filter(function(s){return norm(s.num)===tn;});if(byNum.length)st=byNum;}
+      st.sort(function(a,b){return a.p-b.p;});
+      var okL=function(s){return !langs.length||langs.indexOf(+s.idioma)>=0;};
+      var okX=function(s){var e=+s.extras||0;return X?(e>0&&e%X===0):(e===0||(e%3!==0&&e%7!==0));};
+      var sameCond=st.filter(function(s){return +s.qualid===t.q&&okL(s);});
+      var pick=sameCond.filter(okX)[0],msg='Menor oferta '+t.cond+' · '+t.lang+(t.extras?' · '+t.extras:'')+' destacada';
+      if(!pick&&sameCond.length){pick=sameCond[0];msg='Nenhuma oferta com os mesmos extras; destacada a menor '+t.cond+' · '+t.lang;}
+      if(!pick){pick=st.filter(function(s){return +s.qualid<t.q&&okL(s);})[0];if(pick)msg='Nenhuma oferta '+t.cond+' nesse idioma; destacada a menor em condicao melhor';}
+      if(!pick){say('Nenhuma oferta nesse idioma para esta carta.');return;}
+      var el;
+      for(var k=0;k<20&&!(el=document.getElementById('mpline_1_'+pick.id));k++){
+        var more=[].slice.call(document.querySelectorAll('button,a,div')).filter(function(x){return /^\s*VER MAIS\s*$/i.test(x.textContent)&&x.offsetParent;})[0];
+        if(!more)break;more.click();await sleep(800);
+      }
+      if(!el){say('Nao consegui exibir a oferta na lista. Use os filtros da propria Liga.');return;}
+      el.scrollIntoView({block:'center'});
+      el.style.outline='3px solid #F5B301';el.style.background='#FFF7DB';el.style.borderRadius='8px';
+      say(msg+'<br><span style="opacity:.75">'+sameCond.length+' oferta(s) nessa condicao e idioma</span>');
+    })();
+    return;
+  }
   function finish(msg){
     try{localStorage.setItem('zr_results',JSON.stringify(results));}catch(e){}
     say(msg+'<br><button id="zrCopy" style="margin-top:8px;padding:4px 10px;border-radius:6px;border:0;cursor:pointer">Copiar resultados</button>');
@@ -4536,6 +4569,12 @@ function zrLigaBookmarklet(){
             var e=c[0];var cond=it.q===1?2:it.q;
             var j=await get(location.origin+'/ajax/mp/marketplace.php?opc=latestsales&tcg=2&card_id='+e.idcard+'&card_ed='+e.id+'&card_num='+encodeURIComponent(e.num)+'&filter_set=&filter_cond='+cond+'&filter_extras=-1&filter_period=4&has_extras=0',true);
             var d=j?JSON.parse(j):null;
+            if(d&&d.error&&/limite/i.test(d.message||'')){
+              var left=items.length-k;
+              try{if(!op.closed)op.postMessage({type:'zr-limit',done:results.length,left:left,message:d.message},origin);}catch(x){}
+              finish('A Liga avisou o limite de consultas (200 a cada 4 horas).<br>Feitas: '+results.length+'. Ficaram '+left+' para a proxima rodada.');
+              return;
+            }
             if(!d||d.error){res.note=d&&d.message?d.message:'Sem resposta do historico de vendas';}
             else{
               var g=(d.graph&&d.graph.quantities)||[];res.sold_12m=g.reduce(function(a,b){return a+(b||0);},0);
@@ -4578,26 +4617,57 @@ function openMarketModal(){
   loadMarketProposals();
 }
 
-// Monta a lista de cartas disponiveis para consultar
+// A Liga permite 200 consultas ao historico de vendas a cada 4 horas por conta. Deixamos folga.
+var MP_MAX_PER_RUN=190;
+
+// Todas as cartas disponiveis que podem ser consultadas, da que esta ha mais tempo sem atualizar
+// para a mais recente (empate: maior preco de venda primeiro). Ignora as que ja tem proposta pendente.
+function mpEligible(){
+  var pending=new Set(mpProposals.map(function(p){return p.inventory_id;}));
+  return inventory.filter(function(i){
+    return (i.quantity_available||0)>0&&(!i.product_type||i.product_type==='Carta Avulsa')&&!pending.has(i.id);
+  }).sort(function(a,b){
+    var da=a.market_updated_at||'',db=b.market_updated_at||'';
+    if(da!==db)return da<db?-1:1;
+    return (parseFloat(b.sale_price)||0)-(parseFloat(a.sale_price)||0);
+  });
+}
+
+// Monta a lista da rodada (no maximo MP_MAX_PER_RUN cartas)
 function mpBuildJob(){
   var Q={'M':1,'NM':2,'SP':3,'MP':4,'HP':5,'D':6};
-  return inventory.filter(function(i){
-    return (i.quantity_available||0)>0&&(!i.product_type||i.product_type==='Carta Avulsa');
-  }).map(function(i){
+  return mpEligible().map(function(i){
     var mm=(i.name||'').match(/\(([^()\/]+)\/[^()]*\)/g);
     var num=mm?mm[mm.length-1].replace(/^\(/,'').replace(/\/.*$/,''):'';
     return {id:i.id,name:i.name,url:invLigaUrl(i),num:num,q:Q[i.condition]||2,lang:i.language||'PT-BR',extras:i.extras||''};
-  }).filter(function(x){return x.url;});
+  }).filter(function(x){return x.url;}).slice(0,MP_MAX_PER_RUN);
+}
+
+// Atalho "Menor na Liga": abre a carta na Liga com a condicao/idioma/extras no endereco (#zr=...).
+// Na Liga, o favorito "Atualizar ZeraoraTCG" le isso e destaca a oferta mais barata que bate com a carta.
+function mpOpenLowest(id){
+  var inv=inventory.filter(function(i){return i.id===id;})[0];if(!inv)return;
+  var url=invLigaUrl(inv);if(!url){showToast('Item sem link da Liga','error');return;}
+  var Q={'M':1,'NM':2,'SP':3,'MP':4,'HP':5,'D':6};
+  var mm=(inv.name||'').match(/\(([^()\/]+)\/[^()]*\)/g);
+  var num=mm?mm[mm.length-1].replace(/^\(/,'').replace(/\/.*$/,''):'';
+  var info={q:Q[inv.condition]||2,cond:inv.condition||'NM',lang:inv.language||'PT-BR',extras:inv.extras||'',num:num};
+  window.open(url.split('#')[0]+'#zr='+encodeURIComponent(JSON.stringify(info)),'_blank');
+  if(!sessionStorage.getItem('mpLowestTip')){
+    showToast('Na aba da Liga, clique no favorito "Atualizar ZeraoraTCG" para destacar a menor oferta');
+    try{sessionStorage.setItem('mpLowestTip','1');}catch(e){}
+  }
 }
 
 async function mpStartRun(){
   var items=mpBuildJob();
-  if(!items.length){showToast('Nenhuma carta disponivel com link da Liga','error');return;}
+  if(!items.length){showToast(mpProposals.length?'Todas as cartas ja tem proposta pendente. Revise-as antes de uma nova rodada.':'Nenhuma carta disponivel com link da Liga','error');return;}
+  var total=mpEligible().length;
   var mins=Math.ceil(items.length*3/60);
-  if(!confirm('Vou consultar '+items.length+' cartas na Liga (cerca de '+mins+' min).\nAs propostas pendentes anteriores serao substituidas. Continuar?'))return;
-  var r=await sb.from('market_price_proposals').update({status:'substituida'}).eq('user_id',currentUser.id).eq('status','pendente');
-  if(r.error){showToast('Erro ao preparar: '+r.error.message,'error');return;}
-  mpProposals=[];mpSelected=new Set();renderMarketProposals();
+  var msg='Vou consultar '+items.length+' cartas na Liga (cerca de '+mins+' min).';
+  if(total>items.length)msg+='\n\nA Liga permite 200 consultas a cada 4 horas. Esta rodada pega as '+items.length+' que estao ha mais tempo sem atualizar; as outras '+(total-items.length)+' ficam para a proxima.';
+  msg+='\n\nAs propostas pendentes que voce ainda nao revisou continuam na lista. Continuar?';
+  if(!confirm(msg))return;
   mpJob=items;mpRunning=true;mpReceived=0;
   var w=window.open('https://www.ligapokemon.com.br/','zrLiga');
   if(!w){showToast('O navegador bloqueou a nova aba. Permita pop-ups para este site.','error');return;}
@@ -4621,6 +4691,10 @@ window.addEventListener('message',function(ev){
     mpRunning=false;mpJob=null;
     mpSetStatus('Concluido: '+mpReceived+' cartas. Revise e aprove abaixo.');
     showToast('Atualizacao de precos concluida');
+  }else if(d.type==='zr-limit'){
+    mpRunning=false;mpJob=null;
+    mpSetStatus('A Liga atingiu o limite de 200 consultas em 4 horas. Feitas: '+mpReceived+'. As outras '+d.left+' entram numa proxima rodada (daqui a algumas horas).');
+    showToast('Limite de consultas da Liga atingido','error');
   }
 });
 
