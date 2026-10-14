@@ -273,6 +273,7 @@ tr:hover td{background:var(--bg2)}
         <h3>Estoque</h3>
         <div style="display:flex;gap:8px">
           <button class="btn-secondary" style="width:auto" onclick="openModal('verifyStockModal')"><i class="ti ti-shield-check"></i> Verificar estoque</button>
+          <button class="btn-secondary" style="width:auto" onclick="openMarketModal()"><i class="ti ti-refresh"></i> Preços de mercado</button>
           <button class="btn-secondary" style="width:auto" onclick="exportInventory()"><i class="ti ti-download"></i> CSV</button>
           <button class="btn-secondary" style="width:auto" id="toggleZeroBtn" onclick="toggleZeroStock()"><i class="ti ti-eye-off"></i> Ocultar esgotados</button>
         </div>
@@ -323,8 +324,8 @@ tr:hover td{background:var(--bg2)}
         <button class="btn-small" style="width:auto;margin-left:auto" onclick="clearInvSelection()">Limpar selecao</button>
       </div>
       <div class="table-wrap">
-        <table><thead><tr><th style="width:26px"><input type="checkbox" id="selectAllInv" onchange="toggleSelectAllInv(this)"></th><th>Foto</th><th onclick="sortTable('inv','name')" style="cursor:pointer;user-select:none">Nome ↕</th><th onclick="sortTable('inv','product_type')" style="cursor:pointer;user-select:none">Tipo ↕</th><th onclick="sortTable('inv','set_name')" style="cursor:pointer;user-select:none">Set ↕</th><th onclick="sortTable('inv','language')" style="cursor:pointer;user-select:none">Idioma ↕</th><th onclick="sortTable('inv','condition')" style="cursor:pointer;user-select:none">Cond. ↕</th><th onclick="sortTable('inv','quantity_available')" style="cursor:pointer;user-select:none">Disponivel ↕</th><th onclick="sortTable('inv','quantity_total')" style="cursor:pointer;user-select:none">Total ↕</th><th onclick="sortTable('inv','cost_price')" style="cursor:pointer;user-select:none">Custo ↕</th><th onclick="sortTable('inv','sale_price')" style="cursor:pointer;user-select:none">Preco venda ↕</th><th>Margem</th><th>Preço Mercado</th><th onclick="sortTable('inv','status')" style="cursor:pointer;user-select:none">Status ↕</th><th></th></tr></thead>
-        <tbody id="inventoryTable"><tr><td colspan="14"><div class="empty-state"><i class="ti ti-package"></i>Estoque vazio — registre compras para popular</div></td></tr></tbody></table>
+        <table><thead><tr><th style="width:26px"><input type="checkbox" id="selectAllInv" onchange="toggleSelectAllInv(this)"></th><th>Foto</th><th onclick="sortTable('inv','name')" style="cursor:pointer;user-select:none">Nome ↕</th><th onclick="sortTable('inv','product_type')" style="cursor:pointer;user-select:none">Tipo ↕</th><th onclick="sortTable('inv','set_name')" style="cursor:pointer;user-select:none">Set ↕</th><th onclick="sortTable('inv','language')" style="cursor:pointer;user-select:none">Idioma ↕</th><th onclick="sortTable('inv','condition')" style="cursor:pointer;user-select:none">Cond. ↕</th><th onclick="sortTable('inv','quantity_available')" style="cursor:pointer;user-select:none">Disponivel ↕</th><th onclick="sortTable('inv','quantity_total')" style="cursor:pointer;user-select:none">Total ↕</th><th onclick="sortTable('inv','cost_price')" style="cursor:pointer;user-select:none">Custo ↕</th><th onclick="sortTable('inv','sale_price')" style="cursor:pointer;user-select:none">Preco venda ↕</th><th>Margem</th><th onclick="sortTable('inv','market_price')" style="cursor:pointer;user-select:none" title="Ultima venda na Liga na mesma condicao, idioma e extras">Preço Mercado ↕</th><th onclick="sortTable('inv','market_sold_qty')" style="cursor:pointer;user-select:none" title="Unidades vendidas na Liga nos ultimos 12 meses nessa condicao">Vendas 12m ↕</th><th onclick="sortTable('inv','status')" style="cursor:pointer;user-select:none">Status ↕</th><th></th></tr></thead>
+        <tbody id="inventoryTable"><tr><td colspan="15"><div class="empty-state"><i class="ti ti-package"></i>Estoque vazio — registre compras para popular</div></td></tr></tbody></table>
       </div>
     </div>
 
@@ -788,6 +789,49 @@ tr:hover td{background:var(--bg2)}
     <div class="modal-actions">
       <button class="btn-secondary" onclick="closeModal('invEditModal')">Cancelar</button>
       <button class="btn-primary" style="width:auto" onclick="saveInvPrice()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL PRECOS DE MERCADO (Liga Pokemon - ultimas vendas) -->
+<div class="modal-bg" id="marketModal">
+  <div class="modal" style="max-width:1100px">
+    <h3>Preços de mercado — últimas vendas na Liga</h3>
+    <div style="background:var(--bg2);border-radius:var(--radius);padding:12px 14px;font-size:13px;line-height:1.55">
+      <b>Como atualizar</b>
+      <ol style="margin:6px 0 0 18px;padding:0">
+        <li>Só na primeira vez: arraste este botão para a barra de favoritos do navegador →
+          <a id="mpBookmarklet" href="#" onclick="event.preventDefault();showToast('Arraste este botao para a barra de favoritos');" style="display:inline-block;background:var(--amber);color:#2C1A00;font-weight:700;padding:3px 10px;border-radius:8px;text-decoration:none;margin-left:4px">Atualizar ZeraoraTCG</a></li>
+        <li>Esteja logado na Liga Pokémon nesse navegador.</li>
+        <li>Clique em <b>Iniciar atualização</b>. A Liga abre em outra aba; nela, clique no favorito <b>Atualizar ZeraoraTCG</b>.</li>
+        <li>Deixe as duas abas abertas. Cada carta leva ~3 segundos. Os resultados aparecem aqui como <b>propostas</b> e só entram no estoque quando você aprovar.</li>
+      </ol>
+      <div style="display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap">
+        <button class="btn-primary" style="width:auto" onclick="mpStartRun()"><i class="ti ti-player-play"></i> Iniciar atualização</button>
+        <span id="mpStatus" style="color:var(--text2)"></span>
+      </div>
+      <details style="margin-top:8px">
+        <summary style="cursor:pointer;color:var(--text2)">A aba da Liga não se comunicou com o site? Cole os resultados aqui</summary>
+        <textarea id="mpPaste" rows="3" style="width:100%;margin-top:6px;font-size:12px" placeholder="No favorito da Liga, clique em 'Copiar resultados' e cole aqui"></textarea>
+        <button class="btn-secondary" style="width:auto;margin-top:6px" onclick="mpImportPasted()">Importar resultados colados</button>
+      </details>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <b id="mpCount" style="font-size:13px"></b>
+      <span style="flex:1"></span>
+      <button class="btn-secondary" style="width:auto" onclick="mpSelectAll(true)">Selecionar todos com preço</button>
+      <button class="btn-secondary" style="width:auto" onclick="mpSelectAll(false)">Limpar seleção</button>
+      <button class="btn-secondary" style="width:auto" onclick="mpDecide('descartada')"><i class="ti ti-x"></i> Descartar selecionados</button>
+      <button class="btn-primary" style="width:auto" onclick="mpDecide('aprovada')"><i class="ti ti-check"></i> Aprovar selecionados</button>
+    </div>
+    <div style="overflow:auto;max-height:55vh;border:1px solid var(--border);border-radius:var(--radius)">
+      <table style="width:100%;font-size:12px">
+        <thead><tr><th style="width:26px"></th><th>Carta</th><th>Preço venda</th><th>Mercado atual</th><th>Última venda Liga</th><th>Vendas 12m</th><th>Média recentes</th><th>Dif. %</th><th>Observação</th></tr></thead>
+        <tbody id="mpTable"></tbody>
+      </table>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeModal('marketModal')">Fechar</button>
     </div>
   </div>
 </div>
@@ -2984,14 +3028,17 @@ function renderInventory(){
   if(invSortField){filtered.sort(function(a,b){var va=a[invSortField]||'';var vb=b[invSortField]||'';if(typeof va==='number'||typeof vb==='number'){va=parseFloat(va)||0;vb=parseFloat(vb)||0;}else{va=String(va).toLowerCase();vb=String(vb).toLowerCase();}return invSortAsc?(va>vb?1:-1):(va<vb?1:-1);});}
   var tb=document.getElementById('inventoryTable');
   updateInvSummary(filtered);
-  if(!filtered.length){tb.innerHTML='<tr><td colspan="14"><div class="empty-state"><i class="ti ti-package"></i>Nenhum item encontrado</div></td></tr>';updateBulkInvBar();return;}
+  if(!filtered.length){tb.innerHTML='<tr><td colspan="15"><div class="empty-state"><i class="ti ti-package"></i>Nenhum item encontrado</div></td></tr>';updateBulkInvBar();return;}
   tb.innerHTML=filtered.map(function(inv){
     var avail=inv.quantity_available||0;
     var qtyClass=avail===0?'zero':avail<=2?'low':'';
     var mg=inv.sale_price>0?((inv.sale_price-inv.cost_price)/inv.sale_price*100).toFixed(0)+'%':'-';
     var mgColor=inv.sale_price>inv.cost_price?'var(--success)':'var(--danger)';
     var prod=inv.product_id?products.filter(function(p){return p.id===inv.product_id;})[0]:null;
-    var marketPriceCell=prod&&prod.market_price?fmt(prod.market_price):'<span style="color:var(--text3)">-</span>';
+    var marketPriceCell=inv.market_price!=null&&inv.market_price!==''
+      ?'<span title="Ultima venda na Liga'+(inv.market_last_sale_date?' em '+mpFmtDate(inv.market_last_sale_date):'')+(inv.market_note?' - '+mpEsc(inv.market_note):'')+'">'+fmt(inv.market_price)+'</span>'
+      :(prod&&prod.market_price?fmt(prod.market_price):'<span style="color:var(--text3)">-</span>');
+    var marketQtyCell=inv.market_sold_qty!=null?inv.market_sold_qty:'<span style="color:var(--text3)">-</span>';
     var extrasBadge=inv.extras?'<span style="font-size:10px;background:#F3E8FF;color:#6B21A8;padding:1px 6px;border-radius:10px;font-weight:600;margin-left:4px">'+inv.extras+'</span>':''; var invLiga=invLigaUrl(inv); var ligaLink=invLiga?'<a href="'+invLiga+'" target="_blank" style="font-size:11px;color:var(--blue);margin-left:4px" title="'+(inv.liga_url?'Ver na Liga Pokemon':'Buscar na Liga Pokemon')+'"><i class="ti ti-external-link"></i></a>':''; var statusClass=inv.status==='Reservado'?'badge-mp':inv.status==='Em estoque'?'badge-nosale':inv.status==='A Caminho'?'badge-lp':inv.status==='Pokedex'?'badge-jp':'badge-nm';
     var statusLabel=inv.status||'A venda';
     return '<tr>'
@@ -3008,6 +3055,7 @@ function renderInventory(){
       +'<td style="font-weight:600">'+(inv.sale_price>0?fmt(inv.sale_price):'<span style="color:var(--text3)">Nao definido</span>')+'</td>'
       +'<td style="color:'+mgColor+'">'+mg+'</td>'
       +'<td style="color:var(--text2)">'+marketPriceCell+'</td>'
+      +'<td style="color:var(--text2)">'+marketQtyCell+'</td>'
       +'<td><span class="badge '+statusClass+'">'+statusLabel+'</span></td>'
       +'<td><div class="actions-cell">'
       +'<button class="btn-small" onclick="openInvEdit(\''+inv.id+'\')" title="Editar"><i class="ti ti-tag"></i></button>'
@@ -4419,13 +4467,259 @@ function invLigaUrl(inv){
 }
 
 function exportInventory(){
-  var rows=[['ID','Nome','Tipo','Set','Idioma','Condicao','Extras','Qtd Total','Qtd Disponivel','Custo Unit.','Preco Venda','Margem','Preco Mercado','Status','Link Liga Pokemon']];
+  var rows=[['ID','Nome','Tipo','Set','Idioma','Condicao','Extras','Qtd Total','Qtd Disponivel','Custo Unit.','Preco Venda','Margem','Preco Mercado','Status','Link Liga Pokemon','Vendas 12m','Data Ultima Venda Liga']];
   inventory.forEach(function(i){
     var mg=i.sale_price>0?((i.sale_price-i.cost_price)/i.sale_price*100).toFixed(1)+'%':'-';
     var prod=i.product_id?products.filter(function(p){return p.id===i.product_id;})[0]:null;
-    rows.push([i.id,i.name,i.product_type||'',i.set_name||'',i.language,i.condition,i.extras||'',i.quantity_total,i.quantity_available,i.cost_price,i.sale_price,mg,prod&&prod.market_price?prod.market_price:'',i.status||'A venda',invLigaUrl(i)]);
+    var mkt=i.market_price!=null?i.market_price:(prod&&prod.market_price?prod.market_price:'');
+    rows.push([i.id,i.name,i.product_type||'',i.set_name||'',i.language,i.condition,i.extras||'',i.quantity_total,i.quantity_available,i.cost_price,i.sale_price,mg,mkt,i.status||'A venda',invLigaUrl(i),i.market_sold_qty!=null?i.market_sold_qty:'',i.market_last_sale_date||'']);
   });
   exportCSV(rows,'estoque_zeraora.csv');
+}
+
+// ===== PRECOS DE MERCADO: ultimas vendas na Liga Pokemon =====
+// Fluxo: o site abre a Liga em outra aba -> o usuario clica no favorito "Atualizar ZeraoraTCG" ->
+// o favorito pede a lista ao site, consulta o historico de vendas de cada carta (logado, devagar)
+// e devolve os resultados -> o site grava como propostas -> o usuario aprova o que quiser.
+var LIGA_ORIGIN_RE=/^https:\/\/(www\.)?ligapokemon\.com\.br$/;
+var mpJob=null,mpRunning=false,mpReceived=0,mpProposals=[],mpSelected=new Set();
+
+// Codigo do favorito. Roda DENTRO da pagina da Liga. Precisa ser autocontido (vira um link javascript:).
+function zrLigaBookmarklet(){
+  if(!/ligapokemon\.com\.br$/.test(location.hostname)){alert('Use este favorito numa aba da Liga Pokemon.');return;}
+  if(window.__zrRun){alert('A atualizacao ja esta rodando nesta aba.');return;}
+  var box=document.getElementById('zrBox');
+  if(!box){box=document.createElement('div');box.id='zrBox';box.style.cssText='position:fixed;z-index:2147483647;top:12px;right:12px;width:300px;background:#1c1917;color:#fff;padding:12px 14px;border-radius:10px;font:13px/1.45 sans-serif;box-shadow:0 6px 24px rgba(0,0,0,.45)';document.body.appendChild(box);}
+  var say=function(h){box.innerHTML='<b>ZeraoraTCG</b><br>'+h;};
+  var op=window.opener,results=[];
+  var sleep=function(ms){return new Promise(function(r){setTimeout(r,ms);});};
+  var norm=function(s){return String(s||'').trim().toUpperCase().replace(/^#/,'').replace(/^0+(?=.)/,'');};
+  function finish(msg){
+    try{localStorage.setItem('zr_results',JSON.stringify(results));}catch(e){}
+    say(msg+'<br><button id="zrCopy" style="margin-top:8px;padding:4px 10px;border-radius:6px;border:0;cursor:pointer">Copiar resultados</button>');
+    document.getElementById('zrCopy').onclick=function(){navigator.clipboard.writeText(JSON.stringify(results)).then(function(){say('Resultados copiados. Cole na tela Precos de mercado do ZeraoraTCG.');});};
+    window.__zrRun=false;
+  }
+  if(!op||op.closed){
+    var prev=null;try{prev=localStorage.getItem('zr_results');}catch(e){}
+    if(prev){results=JSON.parse(prev);finish('Esta aba nao foi aberta pelo ZeraoraTCG.<br>Ultimos resultados salvos: '+results.length+' cartas.');}
+    else say('Abra a Liga pelo botao <b>Iniciar atualizacao</b> do ZeraoraTCG e clique neste favorito de novo.');
+    return;
+  }
+  async function get(u,isJson){
+    for(var a=0;a<3;a++){
+      try{
+        var r=await fetch(u,{credentials:'include'});var t=await r.text();
+        if((isJson&&t.charAt(0)!=='{')||(!isJson&&t.length<20000)){await sleep(10000);continue;}
+        await sleep(1200);return t;
+      }catch(e){await sleep(5000);}
+    }
+    return null;
+  }
+  function exOk(want,got){got=got||'';if(/promo/i.test(want))return /Promo/.test(got);if(/reverse/i.test(want))return /Reverse/.test(got);if(/foil|holo/i.test(want))return /(^|, )Foil/.test(got)&&!/Reverse/.test(got);return !/Reverse|Promo/.test(got);}
+  function langOk(want,got){got=String(got||'').toUpperCase();want=String(want||'').toUpperCase();if(want==='PT-BR'||want==='PT')return got==='PT'||got==='PTEN';if(want==='CH')return /^(TW|TK|CH|ZH|CN)/.test(got);return got===want;}
+  async function run(items,origin){
+    window.__zrRun=true;
+    for(var k=0;k<items.length;k++){
+      var it=items[k];
+      var res={inventory_id:it.id,last_price:null,last_sale_date:null,sold_12m:null,recent_qty:null,recent_avg:null,note:''};
+      say('Consultando '+(k+1)+' de '+items.length+'<br><span style="opacity:.75">'+String(it.name||'').replace(/</g,'&lt;')+'</span>');
+      try{
+        var h=await get(it.url,false);
+        var m=h&&h.match(/var cards_editions = (\[.*?\]);\s*\n/s);
+        if(!m){res.note=h?'Link aponta para uma busca, nao para a carta':'Liga nao respondeu';}
+        else{
+          var eds=JSON.parse(m[1]);var um=it.url.match(/[?&]num=([^&]+)/);var num=norm(um?decodeURIComponent(um[1]):it.num);
+          var c=eds.filter(function(e){return norm(e.num)===num;});if(!c.length&&eds.length===1)c=eds;
+          if(!c.length){res.note='Edicao nao identificada pelo link';}
+          else{
+            var e=c[0];var cond=it.q===1?2:it.q;
+            var j=await get(location.origin+'/ajax/mp/marketplace.php?opc=latestsales&tcg=2&card_id='+e.idcard+'&card_ed='+e.id+'&card_num='+encodeURIComponent(e.num)+'&filter_set=&filter_cond='+cond+'&filter_extras=-1&filter_period=4&has_extras=0',true);
+            var d=j?JSON.parse(j):null;
+            if(!d||d.error){res.note=d&&d.message?d.message:'Sem resposta do historico de vendas';}
+            else{
+              var g=(d.graph&&d.graph.quantities)||[];res.sold_12m=g.reduce(function(a,b){return a+(b||0);},0);
+              var o=(d.orders||[]).filter(function(s){return !s.graded&&langOk(it.lang,s.lang);});
+              var ex=o.filter(function(s){return exOk(it.extras,s.extras);});
+              var use=ex.length?ex:o;
+              if(!use.length){res.note='Sem vendas nessa condicao e idioma em 12 meses';}
+              else{
+                if(!ex.length)res.note='Sem venda com os mesmos extras; usei a ultima com extras diferente';
+                res.last_price=use[0].price;res.last_sale_date=use[0].dtData;
+                var q=use.reduce(function(a,s){return a+s.quant;},0);
+                res.recent_qty=q;res.recent_avg=Math.round(use.reduce(function(a,s){return a+s.price*s.quant;},0)/q*100)/100;
+              }
+            }
+            if(c.length>1)res.note+=(res.note?'; ':'')+'Mais de uma edicao com esse numero, usei '+e.code;
+          }
+        }
+      }catch(err){res.note='Erro: '+err.message;}
+      results.push(res);
+      try{if(!op.closed)op.postMessage({type:'zr-result',result:res},origin);}catch(e){}
+    }
+    try{if(!op.closed)op.postMessage({type:'zr-done',count:results.length},origin);}catch(e){}
+    finish('Concluido: '+results.length+' cartas consultadas.'+(op.closed?'<br>A aba do ZeraoraTCG foi fechada; copie os resultados e cole la.':' Revise no ZeraoraTCG.'));
+  }
+  say('Aguardando a lista de cartas do ZeraoraTCG...');
+  window.addEventListener('message',function(ev){
+    if(ev.source!==op||!ev.data||ev.data.type!=='zr-job'||window.__zrRun)return;
+    run(ev.data.items,ev.origin);
+  });
+  op.postMessage({type:'zr-ready'},'*');
+}
+
+function mpEsc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function mpFmtDate(d){if(!d)return '';var p=String(d).slice(0,10).split('-');return p.length===3?p[2]+'/'+p[1]+'/'+p[0]:d;}
+function mpSetStatus(t){var el=document.getElementById('mpStatus');if(el)el.textContent=t;}
+
+function openMarketModal(){
+  document.getElementById('mpBookmarklet').href='javascript:'+encodeURIComponent('('+zrLigaBookmarklet.toString()+')();void 0');
+  openModal('marketModal');
+  loadMarketProposals();
+}
+
+// Monta a lista de cartas disponiveis para consultar
+function mpBuildJob(){
+  var Q={'M':1,'NM':2,'SP':3,'MP':4,'HP':5,'D':6};
+  return inventory.filter(function(i){
+    return (i.quantity_available||0)>0&&(!i.product_type||i.product_type==='Carta Avulsa');
+  }).map(function(i){
+    var mm=(i.name||'').match(/\(([^()\/]+)\/[^()]*\)/g);
+    var num=mm?mm[mm.length-1].replace(/^\(/,'').replace(/\/.*$/,''):'';
+    return {id:i.id,name:i.name,url:invLigaUrl(i),num:num,q:Q[i.condition]||2,lang:i.language||'PT-BR',extras:i.extras||''};
+  }).filter(function(x){return x.url;});
+}
+
+async function mpStartRun(){
+  var items=mpBuildJob();
+  if(!items.length){showToast('Nenhuma carta disponivel com link da Liga','error');return;}
+  var mins=Math.ceil(items.length*3/60);
+  if(!confirm('Vou consultar '+items.length+' cartas na Liga (cerca de '+mins+' min).\nAs propostas pendentes anteriores serao substituidas. Continuar?'))return;
+  var r=await sb.from('market_price_proposals').update({status:'substituida'}).eq('user_id',currentUser.id).eq('status','pendente');
+  if(r.error){showToast('Erro ao preparar: '+r.error.message,'error');return;}
+  mpProposals=[];mpSelected=new Set();renderMarketProposals();
+  mpJob=items;mpRunning=true;mpReceived=0;
+  var w=window.open('https://www.ligapokemon.com.br/','zrLiga');
+  if(!w){showToast('O navegador bloqueou a nova aba. Permita pop-ups para este site.','error');return;}
+  mpSetStatus('Liga aberta em outra aba. Nela, clique no favorito "Atualizar ZeraoraTCG". Mantenha esta aba aberta.');
+}
+
+window.addEventListener('message',function(ev){
+  if(!LIGA_ORIGIN_RE.test(ev.origin))return;
+  var d=ev.data||{};
+  if(d.type==='zr-ready'){
+    if(!currentUser)return;
+    if(!mpJob)mpJob=mpBuildJob();
+    mpRunning=true;
+    ev.source.postMessage({type:'zr-job',items:mpJob},ev.origin);
+    mpSetStatus('Atualizacao iniciada: 0 de '+mpJob.length+'...');
+  }else if(d.type==='zr-result'&&d.result){
+    mpReceived++;
+    mpSaveResults([d.result]);
+    mpSetStatus('Recebidas '+mpReceived+' de '+(mpJob?mpJob.length:'?')+'...');
+  }else if(d.type==='zr-done'){
+    mpRunning=false;mpJob=null;
+    mpSetStatus('Concluido: '+mpReceived+' cartas. Revise e aprove abaixo.');
+    showToast('Atualizacao de precos concluida');
+  }
+});
+
+async function mpSaveResults(list){
+  var rows=list.filter(function(x){return x&&x.inventory_id;}).map(function(x){
+    return {user_id:currentUser.id,inventory_id:x.inventory_id,last_price:x.last_price,last_sale_date:x.last_sale_date,sold_12m:x.sold_12m,recent_qty:x.recent_qty,recent_avg:x.recent_avg,note:x.note||null,status:'pendente'};
+  });
+  if(!rows.length)return;
+  var r=await sb.from('market_price_proposals').insert(rows).select();
+  if(r.error){showToast('Erro ao salvar proposta: '+r.error.message,'error');return;}
+  mpProposals=mpProposals.concat(r.data||[]);
+  renderMarketProposals();
+}
+
+async function mpImportPasted(){
+  var txt=document.getElementById('mpPaste').value.trim();
+  var list;try{list=JSON.parse(txt);}catch(e){showToast('Conteudo colado invalido','error');return;}
+  if(!Array.isArray(list)||!list.length){showToast('Nenhum resultado no conteudo colado','error');return;}
+  await sb.from('market_price_proposals').update({status:'substituida'}).eq('user_id',currentUser.id).eq('status','pendente');
+  mpProposals=[];mpSelected=new Set();
+  for(var k=0;k<list.length;k+=100){await mpSaveResults(list.slice(k,k+100));}
+  document.getElementById('mpPaste').value='';
+  showToast(list.length+' resultados importados');
+}
+
+function loadMarketProposals(){
+  return sb.from('market_price_proposals').select('*').eq('user_id',currentUser.id).eq('status','pendente').order('created_at').then(function(r){
+    if(r.error){showToast('Erro ao carregar propostas: '+r.error.message,'error');return;}
+    mpProposals=r.data||[];
+    renderMarketProposals();
+  });
+}
+
+function renderMarketProposals(){
+  var tb=document.getElementById('mpTable');if(!tb)return;
+  var rows=mpProposals.map(function(p){
+    var inv=inventory.filter(function(i){return i.id===p.inventory_id;})[0]||{};
+    var dif=(p.last_price&&inv.sale_price>0)?(inv.sale_price/p.last_price-1)*100:null;
+    return {p:p,inv:inv,dif:dif};
+  });
+  rows.sort(function(a,b){
+    if(a.p.last_price==null&&b.p.last_price!=null)return 1;
+    if(b.p.last_price==null&&a.p.last_price!=null)return -1;
+    return Math.abs(b.dif||0)-Math.abs(a.dif||0);
+  });
+  var withPrice=rows.filter(function(x){return x.p.last_price!=null;}).length;
+  document.getElementById('mpCount').textContent=mpProposals.length?(mpProposals.length+' propostas pendentes ('+withPrice+' com preco, '+mpSelected.size+' selecionadas)'):'Nenhuma proposta pendente';
+  if(!rows.length){tb.innerHTML='<tr><td colspan="9" style="text-align:center;color:var(--text3);padding:16px">Nenhuma proposta pendente. Clique em Iniciar atualizacao.</td></tr>';return;}
+  tb.innerHTML=rows.map(function(x){
+    var p=x.p,inv=x.inv,has=p.last_price!=null;
+    var difCol=x.dif==null?'var(--text3)':(x.dif>=0?'var(--success)':'var(--danger)');
+    var cur=inv.market_price!=null?fmt(inv.market_price):'-';
+    return '<tr>'
+      +'<td><input type="checkbox" '+(has?'':'disabled')+' '+(mpSelected.has(p.id)?'checked':'')+' onchange="mpToggle(\''+p.id+'\',this.checked)"></td>'
+      +'<td><b>'+mpEsc(inv.name||'(item removido)')+'</b><br><span style="color:var(--text2)">'+mpEsc((inv.condition||'')+' · '+(inv.language||'')+(inv.extras?' · '+inv.extras:''))+'</span></td>'
+      +'<td>'+(inv.sale_price>0?fmt(inv.sale_price):'-')+'</td>'
+      +'<td style="color:var(--text2)">'+cur+'</td>'
+      +'<td>'+(has?'<b>'+fmt(p.last_price)+'</b><br><span style="color:var(--text2)">'+mpFmtDate(p.last_sale_date)+'</span>':'-')+'</td>'
+      +'<td>'+(p.sold_12m!=null?p.sold_12m:'-')+'</td>'
+      +'<td>'+(p.recent_avg!=null?fmt(p.recent_avg)+'<br><span style="color:var(--text2)">'+p.recent_qty+' un.</span>':'-')+'</td>'
+      +'<td style="color:'+difCol+';font-weight:600">'+(x.dif==null?'-':(x.dif>0?'+':'')+x.dif.toFixed(0)+'%')+'</td>'
+      +'<td style="color:var(--text2);max-width:260px">'+mpEsc(p.note||'')+'</td>'
+      +'</tr>';
+  }).join('');
+}
+
+function mpToggle(id,on){if(on)mpSelected.add(id);else mpSelected.delete(id);renderMarketProposals();}
+function mpSelectAll(on){
+  mpSelected=new Set();
+  if(on)mpProposals.forEach(function(p){if(p.last_price!=null)mpSelected.add(p.id);});
+  renderMarketProposals();
+}
+
+async function mpDecide(status){
+  var ids=Array.from(mpSelected);
+  if(!ids.length){showToast('Selecione ao menos uma proposta','error');return;}
+  var label=status==='aprovada'?'Aprovar':'Descartar';
+  if(!confirm(label+' '+ids.length+' proposta(s)?'+(status==='aprovada'?'\nO Preco Mercado e as Vendas 12m dessas cartas serao atualizados.':'')))return;
+  var now=new Date().toISOString(),errors=0;
+  if(status==='aprovada'){
+    var chosen=mpProposals.filter(function(p){return mpSelected.has(p.id);});
+    for(var k=0;k<chosen.length;k+=10){
+      await Promise.all(chosen.slice(k,k+10).map(function(p){
+        var payload={market_price:p.last_price,market_sold_qty:p.sold_12m,market_last_sale_date:p.last_sale_date,market_updated_at:now,market_note:p.note||null};
+        return sb.from('inventory').update(payload).eq('id',p.inventory_id).then(function(r){
+          if(r.error){errors++;return;}
+          var local=inventory.filter(function(i){return i.id===p.inventory_id;})[0];
+          if(local)Object.assign(local,payload);
+        });
+      }));
+    }
+  }
+  var r=await sb.from('market_price_proposals').update({status:status,decided_at:now}).in('id',ids);
+  if(r.error){showToast('Erro: '+r.error.message,'error');return;}
+  mpProposals=mpProposals.filter(function(p){return !mpSelected.has(p.id);});
+  mpSelected=new Set();
+  renderMarketProposals();
+  renderInventory();
+  showToast(errors?(errors+' itens nao foram atualizados'):(ids.length+' proposta(s) '+(status==='aprovada'?'aprovadas':'descartadas')),errors?'error':undefined);
 }
 
 function exportSales(){
