@@ -283,31 +283,37 @@ tr:hover td{background:var(--bg2)}
           <div style="font-size:11px;color:var(--success);font-weight:700;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px">A venda</div>
           <div style="font-size:22px;font-weight:700;color:var(--success)" id="inv-sum-avenda-val">R$ 0,00</div>
           <div style="font-size:12px;color:var(--text2);margin-top:4px"><span id="inv-sum-avenda-qty">0</span> item(s)</div>
+          <div style="font-size:11px;color:var(--text3);margin-top:2px">Custo: <span id="inv-sum-avenda-cost">R$ 0,00</span></div>
         </div>
         <div style="background:var(--bg);border:1px solid #F0994A;border-radius:var(--radius-lg);padding:14px 16px;min-height:90px">
           <div style="font-size:11px;color:#7A5200;font-weight:700;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px">Reservado</div>
           <div style="font-size:22px;font-weight:700;color:#7A5200" id="inv-sum-reservado-val">R$ 0,00</div>
           <div style="font-size:12px;color:var(--text2);margin-top:4px"><span id="inv-sum-reservado-qty">0</span> item(s)</div>
+          <div style="font-size:11px;color:var(--text3);margin-top:2px">Custo: <span id="inv-sum-reservado-cost">R$ 0,00</span></div>
         </div>
         <div style="background:var(--bg);border:1px solid var(--border2);border-radius:var(--radius-lg);padding:14px 16px;min-height:90px">
           <div style="font-size:11px;color:var(--text2);font-weight:700;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px">Em estoque</div>
           <div style="font-size:22px;font-weight:700;color:var(--text)" id="inv-sum-estoque-val">R$ 0,00</div>
           <div style="font-size:12px;color:var(--text2);margin-top:4px"><span id="inv-sum-estoque-qty">0</span> item(s)</div>
+          <div style="font-size:11px;color:var(--text3);margin-top:2px">Custo: <span id="inv-sum-estoque-cost">R$ 0,00</span></div>
         </div>
         <div style="background:var(--bg);border:1px solid #6FA8DC;border-radius:var(--radius-lg);padding:14px 16px;min-height:90px">
           <div style="font-size:11px;color:#0C447C;font-weight:700;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px">A caminho</div>
           <div style="font-size:22px;font-weight:700;color:#0C447C" id="inv-sum-caminho-val">R$ 0,00</div>
           <div style="font-size:12px;color:var(--text2);margin-top:4px"><span id="inv-sum-caminho-qty">0</span> item(s)</div>
+          <div style="font-size:11px;color:var(--text3);margin-top:2px">Custo: <span id="inv-sum-caminho-cost">R$ 0,00</span></div>
         </div>
         <div style="background:var(--bg);border:1px solid #C99A7A;border-radius:var(--radius-lg);padding:14px 16px;min-height:90px">
           <div style="font-size:11px;color:#712B13;font-weight:700;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px">Pokedex</div>
           <div style="font-size:22px;font-weight:700;color:#712B13" id="inv-sum-pokedex-val">R$ 0,00</div>
           <div style="font-size:12px;color:var(--text2);margin-top:4px"><span id="inv-sum-pokedex-qty">0</span> item(s)</div>
+          <div style="font-size:11px;color:var(--text3);margin-top:2px">Custo: <span id="inv-sum-pokedex-cost">R$ 0,00</span></div>
         </div>
         <div style="background:var(--bg);border:1px solid var(--amber);border-radius:var(--radius-lg);padding:14px 16px;min-height:90px">
           <div style="font-size:11px;color:var(--amber-dark);font-weight:700;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px">Total geral</div>
           <div style="font-size:22px;font-weight:700;color:var(--amber-dark)" id="inv-sum-total-val">R$ 0,00</div>
           <div style="font-size:12px;color:var(--text2);margin-top:4px"><span id="inv-sum-total-qty">0</span> item(s)</div>
+          <div style="font-size:11px;color:var(--text3);margin-top:2px">Custo: <span id="inv-sum-total-cost">R$ 0,00</span></div>
         </div>
       </div>
       <div class="filters">
@@ -2576,15 +2582,30 @@ async function deleteCollectionCard(id){
   renderFicharioPage();
 }
 
+// O Supabase devolve no maximo 1000 linhas por consulta: busca em paginas ate acabar.
+// makeQuery deve devolver uma consulta NOVA a cada chamada (com order estavel).
+async function fetchAllRows(makeQuery,label){
+  var all=[],from=0,pageSize=1000;
+  while(true){
+    var r=await makeQuery().range(from,from+pageSize-1);
+    if(r.error){console.error('Erro ao carregar '+(label||'dados')+':',r.error);return {data:all,error:r.error};}
+    var chunk=r.data||[];
+    all=all.concat(chunk);
+    if(chunk.length<pageSize)break;
+    from+=pageSize;
+  }
+  return {data:all,error:null};
+}
+
 function loadPurchases(){
-  return sb.from('purchases').select('*').eq('user_id',currentUser.id).order('purchase_date',{ascending:false}).then(function(r){
+  return fetchAllRows(function(){return sb.from('purchases').select('*').eq('user_id',currentUser.id).order('purchase_date',{ascending:false}).order('id');},'compras').then(function(r){
     purchases=r.data||[];updateSupplierFilter();renderPurchases();
   populateSupplierSelects();
   });
 }
 
 function loadInventory(){
-  return sb.from('inventory').select('*').eq('user_id',currentUser.id).order('created_at',{ascending:false}).then(function(r){
+  return fetchAllRows(function(){return sb.from('inventory').select('*').eq('user_id',currentUser.id).order('created_at',{ascending:false}).order('id');},'estoque').then(function(r){
     inventory=r.data||[];
     // Populate supplier filter from purchases
     updateSupplierFilter();
@@ -2594,7 +2615,7 @@ function loadInventory(){
 }
 
 function loadSales(){
-  return sb.from('sales').select('*').eq('user_id',currentUser.id).order('sale_date',{ascending:false}).then(function(r){
+  return fetchAllRows(function(){return sb.from('sales').select('*').eq('user_id',currentUser.id).order('sale_date',{ascending:false}).order('id');},'vendas').then(function(r){
     sales=r.data||[];updatePlatformFilter();
   populateCustomerSelects();
   });
@@ -4474,12 +4495,15 @@ function invLigaUrl(inv){
 }
 
 function exportInventory(){
-  var rows=[['ID','Nome','Tipo','Set','Idioma','Condicao','Extras','Qtd Total','Qtd Disponivel','Custo Unit.','Preco Venda','Margem','Preco Mercado','Status','Link Liga Pokemon','Vendas 12m','Data Ultima Venda Liga']];
+  var rows=[['ID','Nome','Tipo','Set','Idioma','Condicao','Extras','Qtd Total','Qtd Disponivel','Custo Unit.','Preco Venda','Margem','Preco Mercado','Status','Link Liga Pokemon','Vendas 12m','Data Ultima Venda Liga','Categoria','Recebido em','Custo Total (disp.)','Valor Venda Total (disp.)']];
   inventory.forEach(function(i){
+    var qd=i.quantity_available||0;
+    var custoTot=((parseFloat(i.cost_price)||0)*qd).toFixed(2);
+    var vendaTot=((i.sale_price>0?parseFloat(i.sale_price):(parseFloat(i.cost_price)||0))*qd).toFixed(2);
     var mg=i.sale_price>0?((i.sale_price-i.cost_price)/i.sale_price*100).toFixed(1)+'%':'-';
     var prod=i.product_id?products.filter(function(p){return p.id===i.product_id;})[0]:null;
     var mkt=i.market_price!=null?i.market_price:(prod&&prod.market_price?prod.market_price:'');
-    rows.push([i.id,i.name,i.product_type||'',i.set_name||'',i.language,i.condition,i.extras||'',i.quantity_total,i.quantity_available,i.cost_price,i.sale_price,mg,mkt,i.status||'A venda',invLigaUrl(i),i.market_sold_qty!=null?i.market_sold_qty:'',i.market_last_sale_date||'']);
+    rows.push([i.id,i.name,i.product_type||'',i.set_name||'',i.language,i.condition,i.extras||'',i.quantity_total,i.quantity_available,i.cost_price,i.sale_price,mg,mkt,i.status||'A venda',invLigaUrl(i),i.market_sold_qty!=null?i.market_sold_qty:'',i.market_last_sale_date||'',i.card_category||'',i.received_at||'',custoTot,vendaTot]);
   });
   exportCSV(rows,'estoque_zeraora.csv');
 }
@@ -6881,6 +6905,7 @@ function updateInvSummary(list){
     return a+price*(i.quantity_available||0);
   },0);}
   function sumQty(arr){return arr.reduce(function(a,i){return a+(i.quantity_available||0);},0);}
+  function sumCost(arr){return arr.reduce(function(a,i){return a+(parseFloat(i.cost_price)||0)*(i.quantity_available||0);},0);}
 
   var fmtV=function(v){var n=(parseFloat(v)||0).toFixed(2);var parts=n.split('.');return 'R$ '+parts[0].replace(/\B(?=(\d{3})+(?!\d))/g,'.')+','+parts[1];};
 
@@ -6898,6 +6923,10 @@ function updateInvSummary(list){
   var totalQty=sumQty(aVenda)+sumQty(reservado)+sumQty(emEstoque)+sumQty(aCaminho)+sumQty(pokedex);
   document.getElementById('inv-sum-total-val').textContent=fmtV(total);
   document.getElementById('inv-sum-total-qty').textContent=totalQty;
+  [['avenda',aVenda],['reservado',reservado],['estoque',emEstoque],['caminho',aCaminho],['pokedex',pokedex]].forEach(function(x){
+    document.getElementById('inv-sum-'+x[0]+'-cost').textContent=fmtV(sumCost(x[1]));
+  });
+  document.getElementById('inv-sum-total-cost').textContent=fmtV(sumCost(aVenda)+sumCost(reservado)+sumCost(emEstoque)+sumCost(aCaminho)+sumCost(pokedex));
 }
 
 function sortTable(table,field){

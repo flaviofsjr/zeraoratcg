@@ -225,10 +225,20 @@ async function startApp(user) {
 
 // Load which pokemon user has collected
 async function loadCollection() {
-  var {data} = await sb.from('pokedex_collection')
-    .select('pokemon_number')
-    .eq('user_id', currentUser.id);
-  collected = new Set((data||[]).map(r => r.pokemon_number));
+  // Supabase devolve no maximo 1000 linhas por consulta: busca em paginas
+  var data = [], from = 0, pageSize = 1000;
+  while (true) {
+    var r = await sb.from('pokedex_collection')
+      .select('pokemon_number')
+      .eq('user_id', currentUser.id)
+      .order('id')
+      .range(from, from + pageSize - 1);
+    var chunk = (r && r.data) || [];
+    data = data.concat(chunk);
+    if (r.error || chunk.length < pageSize) break;
+    from += pageSize;
+  }
+  collected = new Set(data.map(r => r.pokemon_number));
 }
 
 // Build full pokemon list with names from PokeAPI
