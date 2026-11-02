@@ -324,8 +324,8 @@ tr:hover td{background:var(--bg2)}
         <button class="btn-small" style="width:auto;margin-left:auto" onclick="clearInvSelection()">Limpar selecao</button>
       </div>
       <div class="table-wrap">
-        <table><thead><tr><th style="width:26px"><input type="checkbox" id="selectAllInv" onchange="toggleSelectAllInv(this)"></th><th>Foto</th><th onclick="sortTable('inv','name')" style="cursor:pointer;user-select:none">Nome ↕</th><th onclick="sortTable('inv','product_type')" style="cursor:pointer;user-select:none">Tipo ↕</th><th onclick="sortTable('inv','set_name')" style="cursor:pointer;user-select:none">Set ↕</th><th onclick="sortTable('inv','language')" style="cursor:pointer;user-select:none">Idioma ↕</th><th onclick="sortTable('inv','condition')" style="cursor:pointer;user-select:none">Cond. ↕</th><th onclick="sortTable('inv','quantity_available')" style="cursor:pointer;user-select:none">Disponivel ↕</th><th onclick="sortTable('inv','quantity_total')" style="cursor:pointer;user-select:none">Total ↕</th><th onclick="sortTable('inv','cost_price')" style="cursor:pointer;user-select:none">Custo ↕</th><th onclick="sortTable('inv','sale_price')" style="cursor:pointer;user-select:none">Preco venda ↕</th><th>Margem</th><th onclick="sortTable('inv','market_price')" style="cursor:pointer;user-select:none" title="Ultima venda na Liga na mesma condicao, idioma e extras">Preço Mercado ↕</th><th onclick="sortTable('inv','market_sold_qty')" style="cursor:pointer;user-select:none" title="Unidades vendidas na Liga nos ultimos 12 meses nessa condicao">Vendas 12m ↕</th><th onclick="sortTable('inv','status')" style="cursor:pointer;user-select:none">Status ↕</th><th></th></tr></thead>
-        <tbody id="inventoryTable"><tr><td colspan="15"><div class="empty-state"><i class="ti ti-package"></i>Estoque vazio — registre compras para popular</div></td></tr></tbody></table>
+        <table><thead><tr><th style="width:26px"><input type="checkbox" id="selectAllInv" onchange="toggleSelectAllInv(this)"></th><th>Foto</th><th onclick="sortTable('inv','name')" style="cursor:pointer;user-select:none">Nome ↕</th><th onclick="sortTable('inv','product_type')" style="cursor:pointer;user-select:none">Tipo ↕</th><th onclick="sortTable('inv','set_name')" style="cursor:pointer;user-select:none">Set ↕</th><th onclick="sortTable('inv','language')" style="cursor:pointer;user-select:none">Idioma ↕</th><th onclick="sortTable('inv','condition')" style="cursor:pointer;user-select:none">Cond. ↕</th><th onclick="sortTable('inv','quantity_available')" style="cursor:pointer;user-select:none">Disponivel ↕</th><th onclick="sortTable('inv','quantity_total')" style="cursor:pointer;user-select:none">Total ↕</th><th onclick="sortTable('inv','cost_price')" style="cursor:pointer;user-select:none">Custo ↕</th><th onclick="sortTable('inv','sale_price')" style="cursor:pointer;user-select:none">Preco venda ↕</th><th>Margem</th><th onclick="sortTable('inv','market_price')" style="cursor:pointer;user-select:none" title="Ultima venda na Liga na mesma condicao, idioma e extras">Preço Mercado ↕</th><th onclick="sortTable('inv','market_sold_qty')" style="cursor:pointer;user-select:none" title="Unidades vendidas na Liga nos ultimos 12 meses nessa condicao">Vendas 12m ↕</th><th onclick="sortTable('inv','received_at')" style="cursor:pointer;user-select:none" title="Data em que o item chegou (base do aging)">Recebido ↕</th><th onclick="sortTable('inv','status')" style="cursor:pointer;user-select:none">Status ↕</th><th></th></tr></thead>
+        <tbody id="inventoryTable"><tr><td colspan="17"><div class="empty-state"><i class="ti ti-package"></i>Estoque vazio — registre compras para popular</div></td></tr></tbody></table>
       </div>
     </div>
 
@@ -768,7 +768,8 @@ tr:hover td{background:var(--bg2)}
       <div class="form-field"><label>Custo unitario</label><input type="text" id="inv-edit-cost" readonly style="background:var(--bg2)"></div>
       <div class="form-field"><label>Preco de venda (R$)</label><input type="number" id="inv-edit-price" placeholder="0.00" step="0.01" oninput="updateInvMarginPreview()"></div>
       <div class="form-field"><label>Margem estimada</label><input type="text" id="inv-edit-margin" readonly style="background:var(--bg2)"></div>
-      <div class="form-field"><label>Status</label><select id="inv-edit-status"><option value="A venda">A venda</option><option value="Reservado">Reservado</option><option value="Em estoque">Em estoque</option><option value="A Caminho">A Caminho</option><option value="Pokedex">Pokedex</option></select></div>
+      <div class="form-field"><label>Status</label><select id="inv-edit-status" onchange="invEditStatusChange()"><option value="A venda">A venda</option><option value="Reservado">Reservado</option><option value="Em estoque">Em estoque</option><option value="A Caminho">A Caminho</option><option value="Pokedex">Pokedex</option></select></div>
+      <div class="form-field"><label>Data de recebimento</label><input type="date" id="inv-edit-received" title="Quando o item chegou. Em branco enquanto estiver A Caminho."></div>
       <div class="form-field"><label>Extras</label><select id="inv-edit-extras"><option value="">Nenhum</option><option>Foil</option><option>Reverse Foil</option><option>Pokeball Foil</option><option>Masterball Foil</option><option>Full Art</option><option>Secret Rare</option><option>Holo</option><option>Shiny</option><option>Promo</option><option>Outro</option></select></div>
       <div class="form-field full"><label>Link Liga Pokemon</label><input type="text" id="inv-edit-liga" placeholder="https://www.ligapokemon.com.br/..."></div>
       <div class="form-field full">
@@ -1163,6 +1164,9 @@ tr:hover td{background:var(--bg2)}
           <option value="Pokedex">Pokedex</option>
         </select>
       </div>
+      <div class="form-field"><label>Data de recebimento</label>
+        <input type="date" id="bei-received" title="Em branco = nao alterar. Itens que sairem de A Caminho sem data recebem a data de hoje.">
+      </div>
     </div>
     <div class="modal-actions">
       <button class="btn-secondary" onclick="closeModal('bulkEditInventoryModal')">Cancelar</button>
@@ -1220,49 +1224,6 @@ tr:hover td{background:var(--bg2)}
     </div>
     <div class="modal-actions">
       <button class="btn-secondary" onclick="closeModal('vendaRapidaModal')">Cancelar</button>
-    </div>
-  </div>
-</div>
-
-<!-- MODAL HISTORICO DE PRECO -->
-<div class="modal-bg" id="priceHistoryModal">
-  <div class="modal" style="max-width:600px">
-    <h3><i class="ti ti-chart-line"></i> Histórico de Preço</h3>
-    <div style="padding:0">
-      <div id="phCardName" style="font-size:15px;font-weight:700;margin-bottom:4px"></div>
-      <div id="phCardInfo" style="font-size:12px;color:var(--text2);margin-bottom:1rem"></div>
-      
-      <!-- Register new price -->
-      <div style="display:flex;gap:8px;align-items:flex-end;margin-bottom:1.25rem;background:var(--bg2);padding:12px;border-radius:var(--radius)">
-        <div style="flex:1">
-          <label style="font-size:11px;color:var(--text2);font-weight:600;text-transform:uppercase;display:block;margin-bottom:4px">Registrar preco atual (R$)</label>
-          <input type="number" id="ph-price" step="0.01" min="0" placeholder="0,00"
-            style="width:100%;padding:9px 12px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text);font-size:15px;font-weight:700">
-        </div>
-        <div>
-          <label style="font-size:11px;color:var(--text2);font-weight:600;text-transform:uppercase;display:block;margin-bottom:4px">Data</label>
-          <input type="date" id="ph-date"
-            style="padding:9px 12px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text);font-size:13px">
-        </div>
-        <button onclick="savePricePoint()" style="background:var(--amber);color:#2C1A00;border:none;border-radius:var(--radius);padding:10px 16px;font-weight:700;cursor:pointer;white-space:nowrap">
-          <i class="ti ti-plus"></i> Adicionar
-        </button>
-      </div>
-
-      <!-- Chart -->
-      <div style="position:relative;height:240px;margin-bottom:1rem">
-        <canvas id="priceChart"></canvas>
-        <div id="phEmpty" style="display:none;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;color:var(--text3)">
-          <i class="ti ti-chart-line" style="font-size:32px;display:block;margin-bottom:8px;opacity:0.3"></i>
-          Nenhum registro ainda.<br>Adicione o primeiro preço acima.
-        </div>
-      </div>
-
-      <!-- History table -->
-      <div id="phTable" style="max-height:160px;overflow-y:auto;font-size:12px"></div>
-    </div>
-    <div class="modal-actions">
-      <button class="btn-secondary" onclick="closeModal('priceHistoryModal')">Fechar</button>
     </div>
   </div>
 </div>
@@ -3029,7 +2990,7 @@ function renderInventory(){
   if(invSortField){filtered.sort(function(a,b){var va=a[invSortField]||'';var vb=b[invSortField]||'';if(typeof va==='number'||typeof vb==='number'){va=parseFloat(va)||0;vb=parseFloat(vb)||0;}else{va=String(va).toLowerCase();vb=String(vb).toLowerCase();}return invSortAsc?(va>vb?1:-1):(va<vb?1:-1);});}
   var tb=document.getElementById('inventoryTable');
   updateInvSummary(filtered);
-  if(!filtered.length){tb.innerHTML='<tr><td colspan="15"><div class="empty-state"><i class="ti ti-package"></i>Nenhum item encontrado</div></td></tr>';updateBulkInvBar();return;}
+  if(!filtered.length){tb.innerHTML='<tr><td colspan="17"><div class="empty-state"><i class="ti ti-package"></i>Nenhum item encontrado</div></td></tr>';updateBulkInvBar();return;}
   tb.innerHTML=filtered.map(function(inv){
     var avail=inv.quantity_available||0;
     var qtyClass=avail===0?'zero':avail<=2?'low':'';
@@ -3057,16 +3018,32 @@ function renderInventory(){
       +'<td style="color:'+mgColor+'">'+mg+'</td>'
       +'<td style="color:var(--text2)">'+marketPriceCell+'</td>'
       +'<td style="color:var(--text2)">'+marketQtyCell+'</td>'
+      +'<td style="white-space:nowrap">'+invReceivedCell(inv)+'</td>'
       +'<td><span class="badge '+statusClass+'">'+statusLabel+'</span></td>'
       +'<td><div class="actions-cell">'
       +'<button class="btn-small" onclick="openInvEdit(\''+inv.id+'\')" title="Editar"><i class="ti ti-tag"></i></button>'
       +(inv.purchase_id?'':'<button class="btn-small" onclick="openSplitInv(\''+inv.id+'\')" title="Dividir estoque (item sem compra vinculada)"><i class="ti ti-arrows-split"></i></button>')
-      +'<button class="btn-small" onclick="openPriceHistory(\''+inv.id+'\')" title="Historico"><i class="ti ti-chart-line"></i></button>'
       +((!inv.product_type||inv.product_type==='Carta Avulsa')&&invLiga?'<button class="btn-small" onclick="mpOpenLowest(\''+inv.id+'\')" title="Menor na Liga: abre a carta na Liga; clique no favorito Atualizar ZeraoraTCG para destacar a menor oferta na sua condicao"><i class="ti ti-zoom-money"></i></button>':'')
       +'</div></td>'
       +'</tr>';
   }).join('');
 }
+// Data de recebimento: "dd/mm/aa" + dias desde que chegou (base do aging)
+function invReceivedCell(inv){
+  if(!inv.received_at){
+    return inv.status==='A Caminho'
+      ?'<span style="color:var(--text3);font-size:12px">A caminho</span>'
+      :'<span style="color:var(--text3)">-</span>';
+  }
+  var p=String(inv.received_at).slice(0,10).split('-');
+  var dt=new Date(+p[0],+p[1]-1,+p[2]);
+  var hoje=new Date();hoje.setHours(0,0,0,0);
+  var dias=Math.max(0,Math.round((hoje-dt)/86400000));
+  var cor=dias>60?'var(--danger)':dias>45?'var(--amber-dark)':'var(--text3)';
+  return '<span style="font-size:12px;color:var(--text2)">'+p[2]+'/'+p[1]+'/'+p[0].slice(2)+'</span>'
+    +'<span style="font-size:11px;color:'+cor+';margin-left:6px" title="Dias desde o recebimento">'+dias+'d</span>';
+}
+
 function renderSales(){
   var nameF=(document.getElementById('filterSaleName').value||'').toLowerCase();
   var monthF=document.getElementById('filterSaleMonth').value;
@@ -3434,6 +3411,7 @@ function openInvEdit(id){
   document.getElementById('inv-edit-cost').value=fmt(inv.cost_price);
   document.getElementById('inv-edit-price').value=inv.sale_price||'';
   document.getElementById('inv-edit-status').value=inv.status||'A venda';
+  document.getElementById('inv-edit-received').value=inv.received_at?String(inv.received_at).slice(0,10):'';
   document.getElementById('inv-edit-extras').value=inv.extras||'';
   document.getElementById('inv-edit-liga').value=inv.liga_url||'';
   var imgUrl=inv.image_url||'';
@@ -3443,6 +3421,13 @@ function openInvEdit(id){
   if(imgUrl){imgPrev.src=imgUrl;imgPrev.style.display='block';}else{imgPrev.style.display='none';}
   updateInvMarginPreview();
   openModal('invEditModal');
+}
+
+function invEditStatusChange(){
+  var st=document.getElementById('inv-edit-status').value;
+  var rec=document.getElementById('inv-edit-received');
+  if(st==='A Caminho'){rec.value='';return;}
+  if(!rec.value)rec.value=new Date().toLocaleDateString('en-CA');
 }
 
 function updateInvMarginPreview(){
@@ -3483,7 +3468,9 @@ function saveInvPrice(){
   var imgUrl=document.getElementById('inv-edit-img-url').value;
   var finalImg=imgB64||imgUrl||null;
   var invStatus=document.getElementById('inv-edit-status').value;
-  var updatePayload={sale_price:price,extras:extras,liga_url:liga,status:invStatus};
+  var received=document.getElementById('inv-edit-received').value||null;
+  // A Caminho = ainda nao chegou; ao sair de A Caminho sem data, o banco grava a data de hoje
+  var updatePayload={sale_price:price,extras:extras,liga_url:liga,status:invStatus,received_at:invStatus==='A Caminho'?null:received};
   if(finalImg) updatePayload.image_url=finalImg;
   sb.from('inventory').update(updatePayload).eq('id',id).then(function(r){
     if(r.error){showToast('Erro ao salvar','error');return;}
@@ -4293,7 +4280,7 @@ function updateBulkInvBar(){
 function openBulkEditInventoryModal(){
   if(!selectedInvIds.size){showToast('Selecione ao menos um item','error');return;}
   document.getElementById('bulkEditInvCount').textContent=selectedInvIds.size;
-  document.getElementById('bei-status').value='';
+  document.getElementById('bei-status').value='';document.getElementById('bei-received').value='';
   openModal('bulkEditInventoryModal');
 }
 
@@ -4303,7 +4290,10 @@ async function saveBulkEditInventory(){
   var payload={};
   var status=document.getElementById('bei-status').value;
   if(status)payload.status=status;
-  if(!Object.keys(payload).length){showToast('Selecione um status para alterar','error');return;}
+  var received=document.getElementById('bei-received').value;
+  if(received&&status!=='A Caminho')payload.received_at=received;
+  if(status==='A Caminho')payload.received_at=null;
+  if(!Object.keys(payload).length){showToast('Selecione um status ou uma data para alterar','error');return;}
   var btn=document.getElementById('bulkEditInvSaveBtn');
   if(btn){btn.disabled=true;btn.textContent='Salvando...';}
   var r=await sb.from('inventory').update(payload).in('id',ids);
@@ -5139,144 +5129,6 @@ function saveEditSale(){
 }
 
 
-
-
-var phCurrentItem=null, phChart=null, phHistory=[];
-
-async function openPriceHistory(invId){
-  var item=inventory.filter(function(i){return i.id===invId;})[0];
-  if(!item)return;
-  phCurrentItem=item;
-
-  document.getElementById('phCardName').textContent=item.name;
-  document.getElementById('phCardInfo').textContent=
-    (item.condition||'')+(item.language?' • '+item.language:'')+(item.set_name?' • '+item.set_name:'');
-  document.getElementById('ph-price').value=item.sale_price>0?item.sale_price:'';
-  document.getElementById('ph-date').value=new Date().toISOString().slice(0,10);
-
-  // Load history
-  var r=await sb.from('price_history').select('*')
-    .eq('user_id',currentUser.id)
-    .eq('inventory_id',invId)
-    .order('recorded_at',{ascending:true});
-  phHistory=r.data||[];
-
-  renderPriceChart();
-  openModal('priceHistoryModal');
-}
-
-function renderPriceChart(){
-  var canvas=document.getElementById('priceChart');
-  var empty=document.getElementById('phEmpty');
-  var table=document.getElementById('phTable');
-
-  if(phChart){phChart.destroy();phChart=null;}
-
-  if(!phHistory.length){
-    canvas.style.display='none';
-    empty.style.display='block';
-    table.innerHTML='';
-    return;
-  }
-
-  canvas.style.display='block';
-  empty.style.display='none';
-
-  var labels=phHistory.map(function(h){return h.recorded_at;});
-  var data=phHistory.map(function(h){return parseFloat(h.price);});
-
-  // Add current sale_price as reference line if set
-  var currentPrice=phCurrentItem&&phCurrentItem.sale_price>0?parseFloat(phCurrentItem.sale_price):null;
-
-  phChart=new Chart(canvas,{
-    type:'line',
-    data:{
-      labels:labels,
-      datasets:[{
-        label:'Preco registrado',
-        data:data,
-        borderColor:'#E8B422',
-        backgroundColor:'rgba(232,180,34,0.1)',
-        borderWidth:2,
-        pointBackgroundColor:'#E8B422',
-        pointRadius:5,
-        tension:0.3,
-        fill:true
-      }]
-    },
-    options:{
-      responsive:true,
-      maintainAspectRatio:false,
-      plugins:{
-        legend:{display:false},
-        tooltip:{
-          callbacks:{
-            label:function(ctx){return 'R$ '+ctx.parsed.y.toFixed(2).replace('.',',');}
-          }
-        }
-      },
-      scales:{
-        x:{
-          grid:{color:'rgba(255,255,255,0.05)'},
-          ticks:{color:'#888',font:{size:11}}
-        },
-        y:{
-          grid:{color:'rgba(255,255,255,0.05)'},
-          ticks:{
-            color:'#888',
-            font:{size:11},
-            callback:function(v){return 'R$ '+v.toFixed(0);}
-          }
-        }
-      }
-    }
-  });
-
-  // Table
-  var rows=phHistory.slice().reverse().map(function(h){
-    return '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)">'
-      +'<span style="color:var(--text2)">'+h.recorded_at+'</span>'
-      +'<span style="font-weight:700">'+fmt(h.price)+'</span>'
-      +'<button onclick="deletePricePoint(\''+h.id+'\')" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:12px"><i class="ti ti-trash"></i></button>'
-      +'</div>';
-  }).join('');
-  table.innerHTML=rows||'<div style="color:var(--text3);text-align:center;padding:8px">Nenhum registro</div>';
-}
-
-async function savePricePoint(){
-  if(!phCurrentItem)return;
-  var price=parseFloat(document.getElementById('ph-price').value)||0;
-  var date=document.getElementById('ph-date').value;
-  if(!price||!date){showToast('Preencha preco e data','error');return;}
-
-  var r=await sb.from('price_history').insert({
-    user_id:currentUser.id,
-    inventory_id:phCurrentItem.id,
-    card_name:phCurrentItem.name,
-    price:price,
-    recorded_at:date
-  });
-  if(r.error){showToast('Erro ao salvar','error');return;}
-
-  // Also update sale_price in inventory
-  await sb.from('inventory').update({sale_price:price}).eq('id',phCurrentItem.id);
-  phCurrentItem.sale_price=price;
-  // Update local inventory
-  var inv=inventory.filter(function(i){return i.id===phCurrentItem.id;})[0];
-  if(inv)inv.sale_price=price;
-
-  phHistory.push({id:r.data&&r.data[0]?r.data[0].id:'tmp',price:price,recorded_at:date});
-  phHistory.sort(function(a,b){return a.recorded_at.localeCompare(b.recorded_at);});
-  renderPriceChart();
-  showToast('Preco registrado!');
-}
-
-async function deletePricePoint(id){
-  if(!confirm('Remover este registro?'))return;
-  await sb.from('price_history').delete().eq('id',id);
-  phHistory=phHistory.filter(function(h){return h.id!==id;});
-  renderPriceChart();
-}
 
 
 var salesImportRows = [];
