@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Modo anúncio - Zeraora TCG</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.31.0/dist/tabler-icons.min.css">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#fff;--bg2:#f7f7f5;--bg3:#f0efe9;--text:#1a1a1a;--text2:#6b6b6b;--text3:#9a9a9a;--border:#e0dfd8;--amber:#E8B422;--amber-dark:#7A5200;--radius:8px;--radius-lg:12px}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg3);color:var(--text);min-height:100vh}
+.top{background:#0a0a0a;color:#fff;padding:14px 24px;display:flex;align-items:center;gap:14px}
+.top h1{font-size:18px;font-weight:700}
+.top a{color:var(--amber);font-size:13px;text-decoration:none;margin-left:auto}
+.wrap{max-width:1500px;margin:0 auto;padding:20px 24px;display:grid;grid-template-columns:320px 1fr;gap:24px;align-items:start}
+.panel{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px;position:sticky;top:16px}
+.panel h2{font-size:13px;text-transform:uppercase;letter-spacing:.5px;color:var(--text2);margin:14px 0 8px}
+.panel h2:first-child{margin-top:0}
+.field{display:flex;flex-direction:column;gap:4px;margin-bottom:10px}
+.field label{font-size:12px;color:var(--text2);font-weight:600}
+.field select,.field input[type=number]{padding:8px 10px;border:1px solid var(--border);border-radius:var(--radius);font-size:13px;background:var(--bg);color:var(--text)}
+.check{display:flex;align-items:center;gap:8px;font-size:13px;margin-bottom:8px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:none;border-radius:var(--radius);padding:10px 14px;font-weight:700;font-size:13px;cursor:pointer;width:100%}
+.btn-primary{background:var(--amber);color:#2C1A00}
+.btn-primary:hover{background:#D4A01E}
+.btn-secondary{background:var(--bg2);border:1px solid var(--border);color:var(--text)}
+.btn:disabled{opacity:.6;cursor:wait}
+.status{font-size:12px;color:var(--text2);margin-top:8px;min-height:16px}
+.pages{display:flex;flex-wrap:wrap;gap:20px}
+.page{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);padding:10px;display:flex;flex-direction:column;gap:8px}
+.page canvas{width:420px;height:auto;border-radius:6px;display:block}
+.page-actions{display:flex;gap:8px}
+.page-actions .btn{padding:8px 10px}
+textarea{width:100%;min-height:220px;border:1px solid var(--border);border-radius:var(--radius);padding:10px;font:13px/1.45 inherit;resize:vertical;background:var(--bg);color:var(--text)}
+.empty{background:var(--bg);border:1px dashed var(--border);border-radius:var(--radius-lg);padding:40px;text-align:center;color:var(--text2)}
+.msg{max-width:520px;margin:80px auto;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);padding:28px;text-align:center;line-height:1.5}
+.msg a{color:var(--amber-dark);font-weight:700}
+@media(max-width:900px){.wrap{grid-template-columns:1fr}.panel{position:static}.page canvas{width:100%}}
+</style>
+</head>
+<body>
+<div class="top"><i class="ti ti-speakerphone" style="font-size:22px;color:var(--amber)"></i><h1>Modo anúncio</h1><a href="/">← Voltar ao app</a></div>
+
+<div id="needLogin" class="msg" style="display:none">
+  Para gerar o anúncio, entre primeiro no app com a sua conta.<br><br><a href="/">Abrir o ZeraoraTCG e fazer login</a>
+</div>
+
+<div id="main" class="wrap" style="display:none">
+  <div class="panel">
+    <h2>Cartas</h2>
+    <div class="field"><label>Ordenar por</label>
+      <select id="optSort"><option value="price">Maior preço</option><option value="recent">Chegadas mais recentes</option><option value="name">Nome A-Z</option></select>
+    </div>
+    <div class="field"><label>Categoria</label><select id="optCat"><option value="">Todas</option></select></div>
+    <div class="field"><label>Idioma</label><select id="optLang"><option value="">Todos</option></select></div>
+    <div class="field"><label>Preço mínimo (R$)</label><input type="number" id="optMin" min="0" step="1" value="0"></div>
+    <label class="check"><input type="checkbox" id="optPhoto" checked> Só cartas com foto</label>
+
+    <h2>Imagens</h2>
+    <div class="field"><label>Cartas por imagem</label>
+      <select id="optPerPage"><option value="20">20 (5 × 4)</option><option value="30" selected>30 (5 × 6)</option><option value="40">40 (5 × 8)</option></select>
+    </div>
+    <div class="field"><label>Quantidade de imagens</label>
+      <select id="optPages"><option>1</option><option selected>2</option><option>3</option><option>4</option><option>5</option></select>
+    </div>
+    <label class="check"><input type="checkbox" id="optNew" checked> Selo "NOVO" (chegou há até 15 dias)</label>
+
+    <button class="btn btn-primary" id="btnGen" onclick="generate()" style="margin-top:6px"><i class="ti ti-photo"></i> Gerar anúncio</button>
+    <button class="btn btn-secondary" id="btnAll" onclick="downloadAll()" style="margin-top:8px;display:none"><i class="ti ti-download"></i> Baixar todas as imagens</button>
+    <div class="status" id="status"></div>
+
+    <h2>Texto do anúncio</h2>
+    <textarea id="adText" placeholder="Gere o anúncio para montar o texto"></textarea>
+    <button class="btn btn-secondary" onclick="copyText()" style="margin-top:8px"><i class="ti ti-copy"></i> Copiar texto</button>
+  </div>
+
+  <div>
+    <div class="pages" id="pages"><div class="empty">Escolha as opções e clique em <b>Gerar anúncio</b>.</div></div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+var SUPA_URL='https://cpvmidouwpfvugelffza.supabase.co';
+var SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNwdm1pZG91d3BmdnVnZWxmZnphIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0OTkxNDIsImV4cCI6MjA5NzA3NTE0Mn0.haj8uqCjzMxqlhajkcaDMpbrzyMjUogoX4A6k4QgTNg';
+var sb=supabase.createClient(SUPA_URL,SUPA_KEY);
+var LOGO_URL='https://i.ibb.co/Vc194DR8/dba84186-71fe-471a-87d3-5e2c89832ab3.png';
+var SITE='zeraoratcgp.vercel.app';
+var CAT_ORDER=['Pokemon Comum','Treinador Comum','Energia','EX','Arte Rara','Promo'];
+var CAT_LABEL={'Pokemon Comum':'Pokémon Comum','Treinador Comum':'Treinador Comum','Energia':'Energia','EX':'EX','Arte Rara':'Arte Rara','Promo':'Promo'};
+var FLAG={'PT-BR':'br','EN':'us','JP':'jp','FR':'fr','CH':'cn','KO':'kr','ES':'es','IT':'it','DE':'de'};
+
+var session=null,user=null,profile=null,items=[],canvases=[],imgCache={};
+
+// ---------- carga ----------
+async function fetchAll(makeQuery){
+  var all=[],from=0,size=1000;
+  while(true){
+    var r=await makeQuery().range(from,from+size-1);
+    if(r.error)throw r.error;
+    var chunk=r.data||[];all=all.concat(chunk);
+    if(chunk.length<size)break;from+=size;
+  }
+  return all;
+}
+
+function mergeIdentical(list){
+  var map={},order=[];
+  list.forEach(function(i){
+    var key=[(i.name||'').toLowerCase(),(i.set_name||'').trim().toLowerCase(),i.condition||'',i.language||'',(i.extras||'').toLowerCase(),i.sale_price||0].join('|');
+    if(!map[key]){map[key]=Object.assign({},i);order.push(key);}
+    else{
+      var m=map[key];
+      m.quantity_available=(m.quantity_available||0)+(i.quantity_available||0);
+      if(!m.image_url&&i.image_url)m.image_url=i.image_url;
+      if(i.received_at&&(!m.received_at||i.received_at>m.received_at))m.received_at=i.received_at;
+    }
+  });
+  return order.map(function(k){return map[k];});
+}
+
+async function init(){
+  var s=await sb.auth.getSession();
+  session=s&&s.data&&s.data.session;
+  if(!session){document.getElementById('needLogin').style.display='block';return;}
+  user=session.user;
+  document.getElementById('main').style.display='grid';
+  setStatus('Carregando estoque...');
+  try{
+    var pr=await sb.from('public_profiles').select('*').eq('user_id',user.id).limit(1);
+    profile=(pr.data&&pr.data[0])||{};
+    var inv=await fetchAll(function(){return sb.from('inventory').select('id,name,set_name,language,condition,extras,quantity_available,sale_price,image_url,card_category,received_at,product_type,status')
+      .eq('user_id',user.id).eq('status','A venda').gt('quantity_available',0).gt('sale_price',0).order('id');});
+    items=mergeIdentical(inv);
+    fillFilters();
+    setStatus(items.length+' cartas à venda carregadas.');
+  }catch(e){console.error(e);setStatus('Erro ao carregar o estoque: '+(e.message||e));}
+}
+
+function fillFilters(){
+  var cats={},langs={};
+  items.forEach(function(i){if(i.card_category)cats[i.card_category]=(cats[i.card_category]||0)+1;if(i.language)langs[i.language]=(langs[i.language]||0)+1;});
+  document.getElementById('optCat').innerHTML='<option value="">Todas</option>'+CAT_ORDER.filter(function(c){return cats[c];}).map(function(c){return '<option value="'+c+'">'+CAT_LABEL[c]+' ('+cats[c]+')</option>';}).join('');
+  document.getElementById('optLang').innerHTML='<option value="">Todos</option>'+Object.keys(langs).sort().map(function(l){return '<option value="'+l+'">'+l+' ('+langs[l]+')</option>';}).join('');
+}
+
+// ---------- selecao ----------
+function daysSince(d){
+  if(!d)return 9999;
+  var p=String(d).slice(0,10).split('-');var dt=new Date(+p[0],+p[1]-1,+p[2]);
+  var t=new Date();t.setHours(0,0,0,0);return Math.round((t-dt)/86400000);
+}
+function selectItems(){
+  var cat=document.getElementById('optCat').value,lang=document.getElementById('optLang').value;
+  var min=parseFloat(document.getElementById('optMin').value)||0,photo=document.getElementById('optPhoto').checked;
+  var sort=document.getElementById('optSort').value;
+  var list=items.filter(function(i){
+    if(cat&&i.card_category!==cat)return false;
+    if(lang&&i.language!==lang)return false;
+    if((parseFloat(i.sale_price)||0)<min)return false;
+    if(photo&&!i.image_url)return false;
+    return true;
+  });
+  list.sort(function(a,b){
+    if(sort==='recent'){var d=daysSince(a.received_at)-daysSince(b.received_at);if(d)return d;return b.sale_price-a.sale_price;}
+    if(sort==='name')return (a.name||'').localeCompare(b.name||'','pt-BR');
+    return (parseFloat(b.sale_price)||0)-(parseFloat(a.sale_price)||0);
+  });
+  return list;
+}
+
+// ---------- imagens ----------
+async function loadImg(url){
+  if(!url)return null;
+  if(imgCache[url])return imgCache[url];
+  imgCache[url]=(async function(){
+    try{
+      var direct=/^https:\/\/(flagcdn\.com|cpvmidouwpfvugelffza\.supabase\.co\/storage)\//.test(url);
+      var resp=direct?await fetch(url,{mode:'cors'})
+        :await fetch(SUPA_URL+'/functions/v1/img-proxy?url='+encodeURIComponent(url),{headers:{'Authorization':'Bearer '+session.access_token,'apikey':SUPA_KEY}});
+      if(!resp.ok)return null;
+      return await createImageBitmap(await resp.blob());
+    }catch(e){console.warn('Imagem falhou',url,e);return null;}
+  })();
+  return imgCache[url];
+}
+async function preload(urls,onProgress){
+  var uniq=urls.filter(function(u,i){return u&&urls.indexOf(u)===i;}),done=0,next=0;
+  async function worker(){while(next<uniq.length){var u=uniq[next++];await loadImg(u);done++;onProgress(done,uniq.length);}}
+  var ws=[];for(var k=0;k<6;k++)ws.push(worker());
+  await Promise.all(ws);
+}
+
+// ---------- desenho ----------
+var W=1080,COLS=5,PAD=22,GAP=12,HEAD=150,FOOT=74,TXT=40;
+function cardW(){return (W-PAD*2-GAP*(COLS-1))/COLS;}
+function cardImgH(){return Math.round(cardW()*88/63);}
+
+function roundRect(ctx,x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+function fmtPrice(v){v=parseFloat(v)||0;var cents=Math.round(v*100)%100;var s=cents?v.toFixed(2).replace('.',','):String(Math.round(v));return 'R$ '+s.replace(/\B(?=(\d{3})+(?!\d))/g,'.');}
+function shortName(n){return String(n||'').replace(/\s*\(30th CELEBRATION Card Set\)/i,'').replace(/\s+/g,' ').trim();}
+function fitText(ctx,text,maxW){
+  if(ctx.measureText(text).width<=maxW)return text;
+  while(text.length>1&&ctx.measureText(text+'…').width>maxW)text=text.slice(0,-1);
+  return text+'…';
+}
+function waLabel(){
+  var w=String(profile.whatsapp||'').replace(/\D/g,'');
+  if(w.length>=12&&w.indexOf('55')===0){var d=w.slice(2);return '('+d.slice(0,2)+') '+d.slice(2,d.length-4)+'-'+d.slice(-4);}
+  return w;
+}
+function binderUrl(){return profile.slug?SITE+'/binder/'+profile.slug:SITE;}
+
+async function drawPage(list,pageIdx,totalPages,rows){
+  var cw=cardW(),ch=cardImgH(),rowH=ch+TXT+GAP;
+  var H=HEAD+PAD+rows*rowH-GAP+PAD+FOOT;
+  var c=document.createElement('canvas');c.width=W;c.height=H;
+  var ctx=c.getContext('2d');
+  ctx.fillStyle='#f0efe9';ctx.fillRect(0,0,W,H);
+  // cabecalho
+  ctx.fillStyle='#0a0a0a';ctx.fillRect(0,0,W,HEAD);
+  var logo=await loadImg(LOGO_URL);
+  if(logo){ctx.save();ctx.beginPath();ctx.arc(PAD+52,HEAD/2,52,0,Math.PI*2);ctx.clip();ctx.drawImage(logo,PAD,HEAD/2-52,104,104);ctx.restore();
+    ctx.strokeStyle='#E8B422';ctx.lineWidth=4;ctx.beginPath();ctx.arc(PAD+52,HEAD/2,52,0,Math.PI*2);ctx.stroke();}
+  var tx=PAD+(logo?124:0);
+  ctx.fillStyle='#fff';ctx.font='800 44px -apple-system,Segoe UI,sans-serif';ctx.textBaseline='alphabetic';
+  ctx.fillText(fitText(ctx,profile.display_name||'Cartas Pokémon',560),tx,HEAD/2-4);
+  ctx.fillStyle='#bdbdbd';ctx.font='500 24px -apple-system,Segoe UI,sans-serif';
+  ctx.fillText('Cartas Pokémon TCG à venda',tx,HEAD/2+34);
+  ctx.textAlign='right';
+  ctx.fillStyle='#E8B422';ctx.font='800 30px -apple-system,Segoe UI,sans-serif';
+  if(profile.whatsapp)ctx.fillText('WhatsApp '+waLabel(),W-PAD,HEAD/2-4);
+  ctx.fillStyle='#bdbdbd';ctx.font='600 22px -apple-system,Segoe UI,sans-serif';
+  ctx.fillText(totalPages>1?'Página '+(pageIdx+1)+' de '+totalPages:'',W-PAD,HEAD/2+34);
+  ctx.textAlign='left';
+  // cartas
+  var showNew=document.getElementById('optNew').checked;
+  for(var k=0;k<list.length;k++){
+    var it=list[k],col=k%COLS,row=Math.floor(k/COLS);
+    var x=PAD+col*(cw+GAP),y=HEAD+PAD+row*rowH;
+    ctx.save();roundRect(ctx,x,y,cw,ch,10);ctx.clip();
+    var img=await loadImg(it.image_url);
+    if(img){var s=Math.max(cw/img.width,ch/img.height),iw=img.width*s,ih=img.height*s;ctx.drawImage(img,x+(cw-iw)/2,y+(ch-ih)/2,iw,ih);}
+    else{ctx.fillStyle='#dedcd4';ctx.fillRect(x,y,cw,ch);ctx.fillStyle='#8a877d';ctx.font='600 20px sans-serif';ctx.textAlign='center';ctx.fillText('Sem foto',x+cw/2,y+ch/2);ctx.textAlign='left';}
+    // faixa de preco
+    var bandH=50;
+    var g=ctx.createLinearGradient(0,y+ch-bandH-26,0,y+ch);g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(1,'rgba(0,0,0,0.55)');
+    ctx.fillStyle=g;ctx.fillRect(x,y+ch-bandH-26,cw,bandH+26);
+    ctx.restore();
+    var price=fmtPrice(it.sale_price);
+    ctx.font='900 32px -apple-system,Segoe UI,sans-serif';
+    var pw=Math.min(cw-12,ctx.measureText(price).width+24);
+    roundRect(ctx,x+(cw-pw)/2,y+ch-bandH+2,pw,42,21);ctx.fillStyle='#E8B422';ctx.fill();
+    ctx.fillStyle='#1a1200';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText(fitText(ctx,price,pw-12),x+cw/2,y+ch-bandH+24);
+    ctx.textAlign='left';ctx.textBaseline='alphabetic';
+    // selos
+    if(showNew&&daysSince(it.received_at)<=15){
+      roundRect(ctx,x+8,y+8,78,28,14);ctx.fillStyle='#16a34a';ctx.fill();
+      ctx.fillStyle='#fff';ctx.font='800 17px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('NOVO',x+47,y+22);ctx.textAlign='left';ctx.textBaseline='alphabetic';
+    }
+    if((it.quantity_available||0)>1){
+      var q='x'+it.quantity_available;
+      roundRect(ctx,x+cw-56,y+8,48,28,14);ctx.fillStyle='rgba(10,10,10,.8)';ctx.fill();
+      ctx.fillStyle='#fff';ctx.font='800 17px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(q,x+cw-32,y+22);ctx.textAlign='left';ctx.textBaseline='alphabetic';
+    }
+    // linha de baixo: bandeira, condicao, nome
+    var ly=y+ch+28,lx=x+2;
+    var fl=FLAG[it.language]?await loadImg('https://flagcdn.com/48x36/'+FLAG[it.language]+'.png'):null;
+    if(fl){ctx.drawImage(fl,lx,ly-19,30,22);lx+=36;}
+    else if(it.language){ctx.fillStyle='#555';ctx.font='700 17px sans-serif';ctx.fillText(it.language,lx,ly);lx+=ctx.measureText(it.language).width+8;}
+    if(it.condition){
+      ctx.font='800 17px sans-serif';var cwid=ctx.measureText(it.condition).width+14;
+      roundRect(ctx,lx,ly-20,cwid,24,6);ctx.fillStyle=(it.condition==='NM'||it.condition==='M')?'#dcfce7':'#fef3c7';ctx.fill();
+      ctx.fillStyle=(it.condition==='NM'||it.condition==='M')?'#166534':'#92400e';ctx.fillText(it.condition,lx+7,ly-1);lx+=cwid+8;
+    }
+    ctx.fillStyle='#1a1a1a';ctx.font='600 19px -apple-system,Segoe UI,sans-serif';
+    var label=shortName(it.name).replace(/\s*\([^()]*\/[^()]*\)\s*$/,'');
+    ctx.fillText(fitText(ctx,label||shortName(it.name),x+cw-lx),lx,ly);
+  }
+  // rodape
+  var fy=H-FOOT;
+  ctx.fillStyle='#0a0a0a';ctx.fillRect(0,fy,W,FOOT);
+  ctx.fillStyle='#fff';ctx.font='700 26px -apple-system,Segoe UI,sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText('Veja todas as cartas: '+binderUrl(),W/2,fy+FOOT/2);
+  ctx.textAlign='left';ctx.textBaseline='alphabetic';
+  return c;
+}
+
+// ---------- fluxo ----------
+async function generate(){
+  if(!items.length){setStatus('Nenhuma carta à venda encontrada.');return;}
+  var btn=document.getElementById('btnGen');btn.disabled=true;
+  var per=parseInt(document.getElementById('optPerPage').value,10),pages=parseInt(document.getElementById('optPages').value,10);
+  var rows=Math.ceil(per/COLS);
+  var list=selectItems();
+  var take=list.slice(0,per*pages);
+  if(!take.length){setStatus('Nenhuma carta com esses filtros.');btn.disabled=false;return;}
+  setStatus('Baixando imagens...');
+  var urls=take.map(function(i){return i.image_url;}).concat([LOGO_URL]).concat(take.map(function(i){return FLAG[i.language]?'https://flagcdn.com/48x36/'+FLAG[i.language]+'.png':null;}));
+  await preload(urls,function(d,t){setStatus('Baixando imagens... '+d+'/'+t);});
+  setStatus('Desenhando...');
+  var nPages=Math.ceil(take.length/per);
+  canvases=[];
+  var box=document.getElementById('pages');box.innerHTML='';
+  for(var p=0;p<nPages;p++){
+    var c=await drawPage(take.slice(p*per,(p+1)*per),p,nPages,rows);
+    canvases.push(c);
+    var wrap=document.createElement('div');wrap.className='page';
+    wrap.appendChild(c);
+    var act=document.createElement('div');act.className='page-actions';
+    act.innerHTML='<button class="btn btn-primary" onclick="downloadPage('+p+')"><i class="ti ti-download"></i> Baixar imagem '+(p+1)+'</button><button class="btn btn-secondary" onclick="copyPage('+p+')"><i class="ti ti-copy"></i> Copiar</button>';
+    wrap.appendChild(act);box.appendChild(wrap);
+  }
+  var failed=take.filter(function(i){return i.image_url&&!imgCache[i.image_url];}).length;
+  document.getElementById('btnAll').style.display=nPages>1?'flex':'none';
+  buildText(take,list.length);
+  setStatus(take.length+' cartas em '+nPages+' imagem(ns).'+(list.length>take.length?' Ficaram de fora '+(list.length-take.length)+' (aumente a quantidade de imagens se quiser).':''));
+  btn.disabled=false;
+}
+
+function fileName(p){var d=new Date().toISOString().slice(0,10);return 'anuncio_'+d+'_'+(p+1)+'.png';}
+function downloadPage(p){
+  canvases[p].toBlob(function(b){var a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=fileName(p);a.click();setTimeout(function(){URL.revokeObjectURL(a.href);},2000);},'image/png');
+}
+function downloadAll(){canvases.forEach(function(_,p){setTimeout(function(){downloadPage(p);},p*400);});}
+function copyPage(p){
+  canvases[p].toBlob(async function(b){
+    try{await navigator.clipboard.write([new ClipboardItem({'image/png':b})]);setStatus('Imagem '+(p+1)+' copiada. Cole direto no WhatsApp (Ctrl+V).');}
+    catch(e){setStatus('Seu navegador não deixou copiar a imagem. Use "Baixar".');}
+  },'image/png');
+}
+
+function buildText(take,totalAvail){
+  var name=profile.display_name||'Minha loja';
+  var top=take.slice().sort(function(a,b){return b.sale_price-a.sale_price;}).slice(0,5);
+  var novos=take.filter(function(i){return daysSince(i.received_at)<=15;}).length;
+  var prices=take.map(function(i){return parseFloat(i.sale_price)||0;});
+  var t='🔥 *'+name+'* — cartas Pokémon disponíveis!\n\n';
+  t+='⭐ *Destaques*\n'+top.map(function(i){return '• '+shortName(i.name)+' — '+fmtPrice(i.sale_price);}).join('\n')+'\n\n';
+  t+='🃏 '+take.length+' cartas nas imagens, de '+fmtPrice(Math.min.apply(null,prices))+' a '+fmtPrice(Math.max.apply(null,prices))+'\n';
+  if(novos)t+='🆕 '+novos+' novidade(s) chegando agora\n';
+  t+='\n💬 Tem interesse? Me chama no privado'+(profile.whatsapp?' ou no WhatsApp '+waLabel():'')+'\n';
+  t+='🔗 Fichário completo ('+totalAvail+' cartas): https://'+binderUrl();
+  document.getElementById('adText').value=t;
+}
+async function copyText(){
+  var t=document.getElementById('adText').value;if(!t)return;
+  try{await navigator.clipboard.writeText(t);setStatus('Texto copiado.');}catch(e){document.getElementById('adText').select();document.execCommand('copy');setStatus('Texto copiado.');}
+}
+function setStatus(s){document.getElementById('status').textContent=s;}
+
+init();
+</script>
+</body>
+</html>

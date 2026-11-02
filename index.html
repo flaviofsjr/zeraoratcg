@@ -274,7 +274,7 @@ tr:hover td{background:var(--bg2)}
         <div style="display:flex;gap:8px">
           <button class="btn-secondary" style="width:auto" onclick="openModal('verifyStockModal')"><i class="ti ti-shield-check"></i> Verificar estoque</button>
           <button class="btn-secondary" style="width:auto" onclick="openMarketModal()"><i class="ti ti-refresh"></i> Preços de mercado</button>
-          <button class="btn-secondary" style="width:auto" onclick="exportInventory()"><i class="ti ti-download"></i> CSV</button>
+          <a class="btn-secondary" style="width:auto;text-decoration:none;display:inline-flex;align-items:center;gap:4px" href="/anuncio" target="_blank" title="Gerar imagens e texto para anunciar no WhatsApp"><i class="ti ti-speakerphone"></i> Modo anúncio</a><button class="btn-secondary" style="width:auto" onclick="exportInventory()"><i class="ti ti-download"></i> CSV</button>
           <button class="btn-secondary" style="width:auto" id="toggleZeroBtn" onclick="toggleZeroStock()"><i class="ti ti-eye-off"></i> Ocultar esgotados</button>
         </div>
       </div>
