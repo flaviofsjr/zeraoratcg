@@ -3765,16 +3765,20 @@ function openSaleModal(){
   openModal('saleModal');
 }
 
+// So itens com status "A venda" podem ser vendidos (Reservado, Em estoque, A Caminho e Pokedex nao)
+function isSellable(i){return !!i&&(i.quantity_available||0)>0&&(i.status||'A venda')==='A venda';}
+function notSellableMsg(i){return '"'+(i&&i.name||'Item')+'" esta como "'+((i&&i.status)||'-')+'". Mude o status para "A venda" antes de vender.';}
+
 function filterInvSuggestions(){
   var val=document.getElementById('s-search').value.toLowerCase();
   var box=document.getElementById('invSuggestions');
   if(!val||val.length<2){box.style.display='none';return;}
   var matches=inventory.filter(function(i){
-    return i.name.toLowerCase().indexOf(val)!==-1&&(i.quantity_available||0)>0;
+    return i.name.toLowerCase().indexOf(val)!==-1&&isSellable(i);
   }).slice(0,8);
   if(!matches.length){
     box.style.display='block';
-    box.innerHTML='<div style="padding:12px;color:var(--text3);font-size:13px">Nenhum item disponivel no estoque</div>';
+    box.innerHTML='<div style="padding:12px;color:var(--text3);font-size:13px">Nenhum item "A venda" disponivel no estoque</div>';
     return;
   }
   box.style.display='block';
@@ -3816,6 +3820,7 @@ function saveSale(){
   if(!price){showToast('Informe o preco de venda','error');return;}
   var inv=inventory.filter(function(i){return i.id===invId;})[0];
   if(!inv){showToast('Item nao encontrado','error');return;}
+  if((inv.status||'A venda')!=='A venda'){showToast(notSellableMsg(inv),'error');return;}
   if(qty>(inv.quantity_available||0)){showToast('Quantidade indisponivel no estoque','error');return;}
 
   var salePayload={
@@ -3834,7 +3839,7 @@ function saveSale(){
   };
 
   sb.from('sales').insert(salePayload).then(function(r){
-    if(r.error){showToast('Erro ao registrar venda','error');return;}
+    if(r.error){showToast(r.error.code==='P0001'?r.error.message:'Erro ao registrar venda','error');return;}
     var newQty=(inv.quantity_available||0)-qty;
     sb.from('inventory').update({quantity_available:newQty}).eq('id',invId).then(function(){
       showToast('Venda registrada! Estoque atualizado.');
@@ -3892,11 +3897,11 @@ function filterMpSaleSuggestions(rid){
   var box=document.getElementById('mp-s-sugg-'+rid);
   if(!val||val.length<2){box.style.display='none';return;}
   var matches=inventory.filter(function(i){
-    return i.name.toLowerCase().indexOf(val)!==-1&&(i.quantity_available||0)>0;
+    return i.name.toLowerCase().indexOf(val)!==-1&&isSellable(i);
   }).slice(0,8);
   if(!matches.length){
     box.style.display='block';
-    box.innerHTML='<div style="padding:12px;color:var(--text3);font-size:13px">Nenhum item disponivel no estoque</div>';
+    box.innerHTML='<div style="padding:12px;color:var(--text3);font-size:13px">Nenhum item "A venda" disponivel no estoque</div>';
     return;
   }
   box.style.display='block';
@@ -4055,6 +4060,7 @@ async function saveMpSales(){
     if(!invId||qty<=0)return;
     var inv=inventory.filter(function(i){return i.id===invId;})[0];
     if(!inv)return;
+    if(!stockError&&(inv.status||'A venda')!=='A venda')stockError=notSellableMsg(inv);
     if(!stockError&&qty>(availMap[invId]||0)){
       stockError='Quantidade indisponivel para "'+inv.name+'" (disponivel: '+(availMap[invId]||0)+')';
     }
@@ -5220,13 +5226,13 @@ function loadSalesExcel(input) {
 
         // Find inventory item by name
         var invItem = inventory.filter(function(i) {
-          return i.name.toLowerCase() === name.toLowerCase() && i.quantity_available > 0;
+          return i.name.toLowerCase() === name.toLowerCase() && isSellable(i);
         })[0];
 
         // If no exact match, try partial
         if (!invItem) {
           invItem = inventory.filter(function(i) {
-            return i.name.toLowerCase().indexOf(name.toLowerCase()) !== -1 && i.quantity_available > 0;
+            return i.name.toLowerCase().indexOf(name.toLowerCase()) !== -1 && isSellable(i);
           })[0];
         }
 
@@ -5515,6 +5521,7 @@ async function vrConfirm(){
   if(!buyer){showToast('Selecione um comprador','error');return;}
   var today=new Date().toISOString().slice(0,10);
   var inv=vrSelectedItem;
+  if((inv.status||'A venda')!=='A venda'){showToast(notSellableMsg(inv),'error');return;}
 
   var salePayload={
     user_id:currentUser.id,
