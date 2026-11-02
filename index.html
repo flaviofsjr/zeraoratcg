@@ -318,7 +318,7 @@ tr:hover td{background:var(--bg2)}
         <select id="filterInvStatus" onchange="renderInventory()"><option value="">Todos status</option><option>A venda</option><option>Reservado</option><option>Em estoque</option><option>A Caminho</option><option>Pokedex</option></select>
         <select id="filterInvSupplier" onchange="renderInventory()"><option value="">Todos fornecedores</option></select>
         <select id="filterInvSet" onchange="renderInventory()" style="max-width:220px"><option value="">Todas coleções</option></select>
-        <select id="filterInvCat" onchange="renderInventory()"><option value="">Todas categorias</option><option>Pokemon Comum</option><option>Treinador Comum</option><option>EX</option><option>Arte Rara</option><option value="__none__">Sem categoria</option></select>
+        <select id="filterInvCat" onchange="renderInventory()"><option value="">Todas categorias</option><option>Pokemon Comum</option><option>Treinador Comum</option><option>Energia</option><option>EX</option><option>Arte Rara</option><option>Promo</option><option value="__none__">Sem categoria</option></select>
       </div>
       <div id="bulkInvBar" style="display:none;align-items:center;gap:10px;background:var(--amber-bg);border:1px solid var(--amber);border-radius:var(--radius);padding:8px 14px;margin-bottom:10px;flex-wrap:wrap">
         <span style="font-size:13px;font-weight:600"><span id="bulkInvCount">0</span> item(ns) selecionado(s)</span>
@@ -771,7 +771,7 @@ tr:hover td{background:var(--bg2)}
       <div class="form-field"><label>Preco de venda (R$)</label><input type="number" id="inv-edit-price" placeholder="0.00" step="0.01" oninput="updateInvMarginPreview()"></div>
       <div class="form-field"><label>Margem estimada</label><input type="text" id="inv-edit-margin" readonly style="background:var(--bg2)"></div>
       <div class="form-field"><label>Status</label><select id="inv-edit-status" onchange="invEditStatusChange()"><option value="A venda">A venda</option><option value="Reservado">Reservado</option><option value="Em estoque">Em estoque</option><option value="A Caminho">A Caminho</option><option value="Pokedex">Pokedex</option></select></div>
-      <div class="form-field"><label>Categoria</label><select id="inv-edit-category"><option value="">Sem categoria</option><option>Pokemon Comum</option><option>Treinador Comum</option><option>EX</option><option>Arte Rara</option></select></div>
+      <div class="form-field"><label>Categoria</label><select id="inv-edit-category"><option value="">Sem categoria</option><option>Pokemon Comum</option><option>Treinador Comum</option><option>Energia</option><option>EX</option><option>Arte Rara</option><option>Promo</option></select></div>
       <div class="form-field"><label>Data de recebimento</label><input type="date" id="inv-edit-received" title="Quando o item chegou. Em branco enquanto estiver A Caminho."></div>
       <div class="form-field"><label>Extras</label><select id="inv-edit-extras"><option value="">Nenhum</option><option>Foil</option><option>Reverse Foil</option><option>Pokeball Foil</option><option>Masterball Foil</option><option>Full Art</option><option>Secret Rare</option><option>Holo</option><option>Shiny</option><option>Promo</option><option>Outro</option></select></div>
       <div class="form-field full"><label>Link Liga Pokemon</label><input type="text" id="inv-edit-liga" placeholder="https://www.ligapokemon.com.br/..."></div>
@@ -1168,7 +1168,7 @@ tr:hover td{background:var(--bg2)}
         </select>
       </div>
       <div class="form-field"><label>Categoria</label>
-        <select id="bei-category"><option value="">Nao alterar</option><option>Pokemon Comum</option><option>Treinador Comum</option><option>EX</option><option>Arte Rara</option><option value="__clear__">Limpar categoria</option></select>
+        <select id="bei-category"><option value="">Nao alterar</option><option>Pokemon Comum</option><option>Treinador Comum</option><option>Energia</option><option>EX</option><option>Arte Rara</option><option>Promo</option><option value="__clear__">Limpar categoria</option></select>
       </div>
       <div class="form-field"><label>Data de recebimento</label>
         <input type="date" id="bei-received" title="Em branco = nao alterar. Itens que sairem de A Caminho sem data recebem a data de hoje.">
@@ -6850,7 +6850,7 @@ function updateSetFilter(){
 
 function catBadge(c){
   if(!c)return '<span style="color:var(--text3)">-</span>';
-  var st={'Pokemon Comum':'background:#EEF2F7;color:#334155','Treinador Comum':'background:#ECFDF3;color:#166534','EX':'background:#EFF6FF;color:#1D4ED8','Arte Rara':'background:#FDF2F8;color:#9D174D'}[c]||'';
+  var st={'Pokemon Comum':'background:#EEF2F7;color:#334155','Treinador Comum':'background:#ECFDF3;color:#166534','EX':'background:#EFF6FF;color:#1D4ED8','Arte Rara':'background:#FDF2F8;color:#9D174D','Promo':'background:#FEF3C7;color:#92400E','Energia':'background:#F3E8FF;color:#6B21A8'}[c]||'';
   return '<span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:10px;white-space:nowrap;'+st+'">'+c+'</span>';
 }
 
