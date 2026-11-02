@@ -87,6 +87,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <div class="filters">
       <input type="text" id="filterName" placeholder="Buscar item..." oninput="filterItems()" style="width:200px">
       <select id="filterType" onchange="filterItems()"><option value="">Todos tipos</option><option>Carta Avulsa</option><option>Lacrado</option><option>Acessorio</option><option>Lote</option></select>
+      <select id="filterCat" onchange="filterItems()"><option value="">Todas categorias</option></select>
       <select id="filterLang" onchange="filterItems()"><option value="">Todos idiomas</option><option value="PT-BR">PT-BR</option><option value="EN">EN</option><option value="JP">JP</option><option value="FR">FR</option><option value="CH">CH</option></select>
       <select id="filterCond" onchange="filterItems()"><option value="">Todas condicoes</option><option>M</option><option>NM</option><option>SP</option><option>MP</option><option>HP</option><option>D</option></select>
       <select id="filterSort" onchange="filterItems()">
@@ -133,11 +134,26 @@ function init(){
 function loadItems(userId){
   sb.from('inventory').select('*').eq('user_id',userId).eq('status','A venda').gt('quantity_available',0).gt('sale_price',0).order('name').then(function(r){
     allItems=r.data||[];
+    updateCatFilter();
     document.getElementById('loadingScreen').style.display='none';
     document.getElementById('mainContent').style.display='block';
     updateStats();
     filterItems();
   }).catch(function(){showNotFound();});
+}
+
+// Categorias exibidas no fichario (so as que existem nos itens a venda)
+var CAT_ORDER=['Pokemon Comum','Treinador Comum','Energia','EX','Arte Rara','Promo'];
+var CAT_LABEL={'Pokemon Comum':'Pokémon Comum','Treinador Comum':'Treinador Comum','Energia':'Energia','EX':'EX','Arte Rara':'Arte Rara','Promo':'Promo'};
+function updateCatFilter(){
+  var sel=document.getElementById('filterCat');
+  if(!sel)return;
+  var counts={};
+  allItems.forEach(function(i){if(i.card_category)counts[i.card_category]=(counts[i.card_category]||0)+(i.quantity_available||0);});
+  sel.innerHTML='<option value="">Todas categorias</option>'+CAT_ORDER.filter(function(c){return counts[c];}).map(function(c){
+    return '<option value="'+c+'">'+CAT_LABEL[c]+' ('+counts[c]+')</option>';
+  }).join('');
+  sel.style.display=Object.keys(counts).length?'':'none';
 }
 
 function updateStats(){
@@ -192,12 +208,14 @@ function filterItems(){
   var typeF=document.getElementById('filterType').value;
   var langF=document.getElementById('filterLang').value;
   var condF=document.getElementById('filterCond').value;
+  var catF=document.getElementById('filterCat').value;
   var sortF=document.getElementById('filterSort').value;
   var filtered=allItems.filter(function(i){
     if(nameF&&i.name.toLowerCase().indexOf(nameF)===-1)return false;
     if(typeF&&i.product_type!==typeF)return false;
     if(langF&&i.language!==langF)return false;
     if(condF&&i.condition!==condF)return false;
+    if(catF&&i.card_category!==catF)return false;
     return true;
   });
   var merged=mergeIdenticalItems(filtered);
