@@ -1,7 +1,20 @@
 {
   "rewrites": [
-    { "source": "/binder/:slug", "destination": "/binder.html" },
-    { "source": "/pokedex", "destination": "/pokedex.html" },
-    { "source": "/", "destination": "/index.html" }
+    {
+      "source": "/binder/:slug",
+      "destination": "/binder.html"
+    },
+    {
+      "source": "/pokedex",
+      "destination": "/pokedex.html"
+    },
+    {
+      "source": "/anuncio",
+      "destination": "/anuncio.html"
+    },
+    {
+      "source": "/",
+      "destination": "/index.html"
+    }
   ]
 }
