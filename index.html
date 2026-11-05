@@ -4842,9 +4842,11 @@ async function mpDecide(status){
 }
 
 function exportSales(){
-  var rows=[['Item','Qtd','Preco Unit.','Custo Unit.','Lucro Total','Plataforma','Comprador','Data']];
+  var rows=[['Item','Qtd','Preco Unit.','Custo Unit.','Lucro Total','Plataforma','Comprador','Data','Fornecedor']];
   sales.forEach(function(s){
-    rows.push([s.card_name,s.quantity,s.sale_price,s.cost_price,((s.sale_price-s.cost_price)*s.quantity).toFixed(2),s.platform||'',s.buyer||'',s.sale_date]);
+    // Fornecedor de origem: venda -> item do estoque -> compra
+    var inv=s.inventory_id?inventory.filter(function(x){return x.id===s.inventory_id;})[0]:null;
+    rows.push([s.card_name,s.quantity,s.sale_price,s.cost_price,((s.sale_price-s.cost_price)*s.quantity).toFixed(2),s.platform||'',s.buyer||'',s.sale_date,invSupplierName(inv)]);
   });
   exportCSV(rows,'vendas_zeraora.csv');
 }
