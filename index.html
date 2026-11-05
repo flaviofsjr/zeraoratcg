@@ -4500,8 +4500,17 @@ function invLigaUrl(inv){
   return inv.name?'https://www.ligapokemon.com.br/?view=cards/search&card='+encodeURIComponent(inv.name):'';
 }
 
+// Fornecedor de origem do item: pela compra vinculada (cadastro do fornecedor, senao o nome gravado na compra)
+function invSupplierName(inv){
+  if(!inv||!inv.purchase_id)return '';
+  var pur=purchases.filter(function(p){return p.id===inv.purchase_id;})[0];
+  if(!pur)return '';
+  var sup=pur.supplier_id?suppliers.filter(function(x){return x.id===pur.supplier_id;})[0]:null;
+  return (sup&&sup.name)||pur.supplier||'';
+}
+
 function exportInventory(){
-  var rows=[['ID','Nome','Tipo','Set','Idioma','Condicao','Extras','Qtd Total','Qtd Disponivel','Custo Unit.','Preco Venda','Margem','Preco Mercado','Status','Link Liga Pokemon','Vendas 12m','Data Ultima Venda Liga','Categoria','Recebido em','Custo Total (disp.)','Valor Venda Total (disp.)']];
+  var rows=[['ID','Nome','Tipo','Set','Idioma','Condicao','Extras','Qtd Total','Qtd Disponivel','Custo Unit.','Preco Venda','Margem','Preco Mercado','Status','Fornecedor','Link Liga Pokemon','Vendas 12m','Data Ultima Venda Liga','Categoria','Recebido em','Custo Total (disp.)','Valor Venda Total (disp.)']];
   inventory.forEach(function(i){
     var qd=i.quantity_available||0;
     var custoTot=((parseFloat(i.cost_price)||0)*qd).toFixed(2);
@@ -4509,7 +4518,8 @@ function exportInventory(){
     var mg=i.sale_price>0?((i.sale_price-i.cost_price)/i.sale_price*100).toFixed(1)+'%':'-';
     var prod=i.product_id?products.filter(function(p){return p.id===i.product_id;})[0]:null;
     var mkt=i.market_price!=null?i.market_price:(prod&&prod.market_price?prod.market_price:'');
-    rows.push([i.id,i.name,i.product_type||'',i.set_name||'',i.language,i.condition,i.extras||'',i.quantity_total,i.quantity_available,i.cost_price,i.sale_price,mg,mkt,i.status||'A venda',invLigaUrl(i),i.market_sold_qty!=null?i.market_sold_qty:'',i.market_last_sale_date||'',i.card_category||'',i.received_at||'',custoTot,vendaTot]);
+    var forn=invSupplierName(i);
+    rows.push([i.id,i.name,i.product_type||'',i.set_name||'',i.language,i.condition,i.extras||'',i.quantity_total,i.quantity_available,i.cost_price,i.sale_price,mg,mkt,i.status||'A venda',forn,invLigaUrl(i),i.market_sold_qty!=null?i.market_sold_qty:'',i.market_last_sale_date||'',i.card_category||'',i.received_at||'',custoTot,vendaTot]);
   });
   exportCSV(rows,'estoque_zeraora.csv');
 }
