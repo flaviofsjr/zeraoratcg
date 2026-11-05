@@ -175,7 +175,9 @@ async function loadImg(url){
   if(imgCache[url])return imgCache[url];
   imgCache[url]=(async function(){
     try{
-      var direct=/^https:\/\/(flagcdn\.com|cpvmidouwpfvugelffza\.supabase\.co\/storage)\//.test(url);
+      // data: (foto colada/enviada e salva dentro do registro) e hosts com CORS liberado vao direto;
+      // o resto passa pelo img-proxy (que so aceita hosts da lista dele).
+      var direct=/^data:image\//.test(url)||/^https:\/\/(flagcdn\.com|cpvmidouwpfvugelffza\.supabase\.co\/storage)\//.test(url);
       var resp=direct?await fetch(url,{mode:'cors'})
         :await fetch(SUPA_URL+'/functions/v1/img-proxy?url='+encodeURIComponent(url),{headers:{'Authorization':'Bearer '+session.access_token,'apikey':SUPA_KEY}});
       if(!resp.ok)return null;
