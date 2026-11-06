@@ -201,6 +201,7 @@ tr:hover td{background:var(--bg2)}
     <div class="nav-tab" onclick="showPage('compras',this)"><i class="ti ti-shopping-bag"></i> Compras</div>
     <div class="nav-tab" onclick="showPage('estoque',this)"><i class="ti ti-package"></i> Estoque</div>
     <div class="nav-tab" onclick="showPage('vendas',this)"><i class="ti ti-receipt"></i> Vendas</div>
+    <div class="nav-tab" onclick="showPage('envios',this)"><i class="ti ti-truck"></i> Envios<span id="shipmentsBadge" class="nav-badge" style="display:none" title="Clientes a avisar">0</span></div>
     <div class="nav-tab" onclick="showPage('dre',this)"><i class="ti ti-chart-bar"></i> DRE</div>
     <div class="nav-tab" onclick="showPage('binder',this)"><i class="ti ti-layout-grid"></i> Binder</div>
     <div class="nav-tab" onclick="showPage('precificador',this)"><i class="ti ti-calculator"></i> Preco</div>
@@ -475,6 +476,32 @@ tr:hover td{background:var(--bg2)}
           </tbody>
         </table>
       </div>
+    </div>
+
+    <!-- ENVIOS (RASTREIO) -->
+    <div class="page" id="page-envios">
+      <div class="section-header">
+        <h3>Envios e chegadas</h3>
+        <button class="btn-primary" style="width:auto" onclick="openShipmentModal()"><i class="ti ti-plus"></i> Novo envio</button>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin-bottom:1.25rem">
+        <div class="metric" style="cursor:pointer" onclick="setShipQuickFilter('saida')"><div class="metric-label"><i class="ti ti-truck-delivery"></i> Saindo (em aberto)</div><div class="metric-value" id="ship-m-out">0</div></div>
+        <div class="metric" style="cursor:pointer" onclick="setShipQuickFilter('chegada')"><div class="metric-label"><i class="ti ti-package-import"></i> Chegando (em aberto)</div><div class="metric-value" id="ship-m-in">0</div></div>
+        <div class="metric" style="cursor:pointer" onclick="setShipQuickFilter('avisar')"><div class="metric-label"><i class="ti ti-brand-whatsapp"></i> Clientes a avisar</div><div class="metric-value amber" id="ship-m-notify">0</div></div>
+        <div class="metric" style="cursor:pointer" onclick="setShipQuickFilter('atencao')" title="Previsão vencida ou sem atualização há 7+ dias"><div class="metric-label"><i class="ti ti-alert-triangle"></i> Precisam de atenção</div><div class="metric-value red" id="ship-m-alert">0</div></div>
+      </div>
+
+      <div class="table-wrap">
+        <div class="filters" style="padding:12px 12px 0">
+          <input type="text" id="filterShipText" placeholder="Buscar cliente, fornecedor, código, carta..." oninput="renderShipments()" style="width:240px">
+          <select id="filterShipDir" onchange="renderShipments()"><option value="">Saindo e chegando</option><option value="saida">Saindo (para clientes)</option><option value="chegada">Chegando (para mim)</option></select>
+          <select id="filterShipStatus" onchange="renderShipments()"><option value="abertos">Em aberto</option><option value="avisar">Clientes a avisar</option><option value="atencao">Precisam de atenção</option><option value="Entregue">Entregues</option><option value="">Todos</option></select>
+        </div>
+        <table><thead><tr><th></th><th>Para / De</th><th>Itens</th><th>Transportadora</th><th>Rastreio</th><th>Status</th><th>Postado</th><th>Previsão</th><th>Dias</th><th></th></tr></thead>
+        <tbody id="shipmentsTable"><tr><td colspan="10"><div class="empty-state"><i class="ti ti-truck"></i>Nenhum envio registrado</div></td></tr></tbody></table>
+      </div>
+      <div style="font-size:11px;color:var(--text3);margin-top:8px;line-height:1.5">Clique no código para copiar; o ícone <i class="ti ti-external-link"></i> abre o rastreio no 17TRACK (Correios, China Post e outras). Mudar o status para <b>Entregue</b> marca as vendas como entregues ou dá entrada das compras no estoque.</div>
     </div>
 
     <!-- DESEJOS (WISHLIST) -->
@@ -1508,6 +1535,64 @@ tr:hover td{background:var(--bg2)}
 </div>
 
 <!-- MODAL DESPESA -->
+<div class="modal-bg" id="shipmentModal">
+  <div class="modal" style="max-width:620px">
+    <h3 id="shipmentModalTitle">Novo envio</h3>
+    <input type="hidden" id="shp-id">
+    <div class="modal-grid">
+      <div class="form-field full"><label>Direção *</label>
+        <select id="shp-direction" onchange="shipDirectionChange()">
+          <option value="saida">Saindo — estou enviando para um cliente</option>
+          <option value="chegada">Chegando — estão enviando para mim</option>
+        </select>
+      </div>
+      <div class="form-field" id="shp-customer-field"><label>Cliente</label><select id="shp-customer" onchange="renderShipLinkList()"></select></div>
+      <div class="form-field" id="shp-supplier-field" style="display:none"><label>Fornecedor</label><select id="shp-supplier" onchange="renderShipLinkList()"></select></div>
+      <div class="form-field"><label>Nome (se não tiver cadastro)</label><input type="text" id="shp-counterpart" placeholder="Ex: comprador OLX, CSS China..."></div>
+      <div class="form-field"><label>Transportadora</label>
+        <select id="shp-carrier">
+          <option>Correios</option><option>Entrega local</option><option>Jadlog</option><option>Loggi</option><option>China Post</option><option>Cainiao</option><option>Skypostal</option><option>Redirecionador</option><option>Outro</option>
+        </select>
+      </div>
+      <div class="form-field"><label>Código de rastreio</label><input type="text" id="shp-code" placeholder="Ex: AB123456789BR" style="text-transform:uppercase"></div>
+      <div class="form-field"><label>Status</label><select id="shp-status"></select></div>
+      <div class="form-field"><label>Frete (R$)</label><input type="number" id="shp-cost" min="0" step="0.01" placeholder="Opcional"></div>
+      <div class="form-field"><label>Data de postagem</label><input type="date" id="shp-shipped"></div>
+      <div class="form-field"><label>Previsão de chegada</label><input type="date" id="shp-expected"></div>
+      <div class="form-field full">
+        <label id="shp-link-label">Vendas neste envio</label>
+        <input type="text" id="shp-link-search" placeholder="Filtrar..." oninput="renderShipLinkList()" style="margin-bottom:6px">
+        <div id="shp-link-list" style="max-height:200px;overflow:auto;border:1px solid var(--border);border-radius:var(--radius);padding:6px 8px;font-size:12px"></div>
+      </div>
+      <div class="form-field full"><label>Observações</label><textarea id="shp-notes" rows="2" placeholder="Opcional..."></textarea></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeModal('shipmentModal')">Cancelar</button>
+      <button class="btn-primary" style="width:auto" onclick="saveShipment()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="shipReceiveModal">
+  <div class="modal" style="max-width:520px">
+    <h3>Chegou! Dar entrada no estoque</h3>
+    <input type="hidden" id="shr-id">
+    <div id="shr-items" style="font-size:12px;color:var(--text2);line-height:1.6;max-height:180px;overflow:auto"></div>
+    <div class="modal-grid">
+      <div class="form-field"><label>Data de recebimento</label><input type="date" id="shr-date"></div>
+      <div class="form-field"><label>Status no estoque</label>
+        <select id="shr-status"><option value="A venda">A venda</option><option value="Em estoque">Em estoque</option><option value="Pokedex">Pokedex</option></select>
+      </div>
+    </div>
+    <div style="font-size:11px;color:var(--text3)">Compras pendentes viram "Recebido" e os itens "A Caminho" mudam para o status escolhido. Itens que já estavam no estoque com outro status não são alterados.</div>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeModal('shipReceiveModal');renderShipments()">Cancelar</button>
+      <button class="btn-secondary" onclick="confirmShipReceive(false)" title="Só marca o envio como entregue">Só marcar entregue</button>
+      <button class="btn-primary" style="width:auto" onclick="confirmShipReceive(true)">Dar entrada</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-bg" id="expenseModal">
   <div class="modal" style="max-width:480px">
     <h3 id="expenseModalTitle">Nova Despesa</h3>
@@ -1830,6 +1915,7 @@ function showPage(p,el){
     if(p==='dashboard')renderStockEvolution();
     if(p==='dre')renderDRE();
     if(p==='despesas'){loadExpenses();}
+    if(p==='envios'){loadShipments();}
     if(p==='cadastros'){loadSuppliers();loadCustomers();loadProducts();setTimeout(runMigration,1000);}
     if(p==='colecao'){currentCollectionId=null;document.getElementById('colecaoDetailView').style.display='none';document.getElementById('colecaoListView').style.display='block';loadPersonalCollections().then(renderCollectionsList);}
   }catch(err){console.error('showPage error:',err);}
@@ -1873,6 +1959,399 @@ function previewImage(input,previewId,b64Id){
   reader.readAsDataURL(file);
 }
 
+
+// ============================================================
+// ENVIOS / CHEGADAS (RASTREIO) - versao 1: rastreio por link, status manual
+// ============================================================
+var shipments=[];
+var SHIP_STATUSES=['Preparando','Postado','Em trânsito','Na alfândega','Saiu para entrega','Aguardando retirada','Entregue','Problema'];
+var SHIP_STATUS_COLORS={
+  'Preparando':['#F1EFE8','#5F5E5A'],'Postado':['#E6F1FB','#0C447C'],'Em trânsito':['#E6F1FB','#0C447C'],
+  'Na alfândega':['#FFF3E0','#E65100'],'Saiu para entrega':['#EEEDFE','#3C3489'],'Aguardando retirada':['#FAEEDA','#633806'],
+  'Entregue':['#EAF3DE','#27500A'],'Problema':['#FCEBEB','#791F1F']
+};
+var SHIP_STALE_DAYS=7;
+var shipLinkSelected=new Set();
+
+function escShip(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+function shipToday(){var d=new Date();d.setMinutes(d.getMinutes()-d.getTimezoneOffset());return d.toISOString().slice(0,10);}
+function shipFmtDate(d){if(!d)return '-';var p=String(d).slice(0,10).split('-');return p[2]+'/'+p[1];}
+function shipDaysBetween(a,b){return Math.round((new Date(String(b).slice(0,10)+'T00:00:00')-new Date(String(a).slice(0,10)+'T00:00:00'))/86400000);}
+
+async function loadShipments(){
+  if(!currentUser)return;
+  var r=await sb.from('shipments').select('*').eq('user_id',currentUser.id).order('created_at',{ascending:false});
+  if(r.error){console.error('shipments',r.error);shipments=[];}
+  else shipments=r.data||[];
+  renderShipments();
+}
+
+function shipIsOpen(s){return s.status!=='Entregue';}
+function shipNeedsNotify(s){return s.direction==='saida'&&shipIsOpen(s)&&!s.notified_at&&s.status!=='Preparando';}
+function shipNeedsAttention(s){
+  if(!shipIsOpen(s))return false;
+  if(s.status==='Problema')return true;
+  var today=shipToday();
+  if(s.expected_date&&s.expected_date<today)return true;
+  if(s.status!=='Preparando'&&shipDaysBetween(s.updated_at||s.created_at,today)>=SHIP_STALE_DAYS)return true;
+  return false;
+}
+
+function shipCounterpart(s){
+  if(s.direction==='saida'){
+    var c=customers.filter(function(x){return x.id===s.customer_id;})[0];
+    return c?c.name:(s.counterpart_name||'-');
+  }
+  var f=suppliers.filter(function(x){return x.id===s.supplier_id;})[0];
+  return f?f.name:(s.counterpart_name||'-');
+}
+
+function shipItemLabels(s){
+  var out=[];
+  (s.sale_ids||[]).forEach(function(id){var v=sales.filter(function(x){return x.id===id;})[0];if(v)out.push((v.quantity>1?v.quantity+'x ':'')+v.card_name);});
+  (s.purchase_ids||[]).forEach(function(id){var p=purchases.filter(function(x){return x.id===id;})[0];if(p)out.push((p.quantity>1?p.quantity+'x ':'')+p.description);});
+  return out;
+}
+
+function shipTrackUrl(code){return 'https://t.17track.net/pt#nums='+encodeURIComponent(code);}
+
+function setShipQuickFilter(k){
+  var d=document.getElementById('filterShipDir'),st=document.getElementById('filterShipStatus');
+  if(k==='saida'||k==='chegada'){d.value=k;st.value='abertos';}
+  else{d.value='';st.value=k;}
+  renderShipments();
+}
+
+function renderShipments(){
+  var tb=document.getElementById('shipmentsTable');
+  if(!tb)return;
+  var open=shipments.filter(shipIsOpen);
+  document.getElementById('ship-m-out').textContent=open.filter(function(s){return s.direction==='saida';}).length;
+  document.getElementById('ship-m-in').textContent=open.filter(function(s){return s.direction==='chegada';}).length;
+  var nNotify=shipments.filter(shipNeedsNotify).length;
+  document.getElementById('ship-m-notify').textContent=nNotify;
+  document.getElementById('ship-m-alert').textContent=shipments.filter(shipNeedsAttention).length;
+  var badge=document.getElementById('shipmentsBadge');
+  if(badge){badge.textContent=nNotify;badge.style.display=nNotify>0?'inline-block':'none';}
+
+  var q=(document.getElementById('filterShipText').value||'').toLowerCase().trim();
+  var dir=document.getElementById('filterShipDir').value;
+  var st=document.getElementById('filterShipStatus').value;
+  var list=shipments.filter(function(s){
+    if(dir&&s.direction!==dir)return false;
+    if(st==='abertos'&&!shipIsOpen(s))return false;
+    if(st==='avisar'&&!shipNeedsNotify(s))return false;
+    if(st==='atencao'&&!shipNeedsAttention(s))return false;
+    if(st==='Entregue'&&s.status!=='Entregue')return false;
+    if(q){
+      var hay=[shipCounterpart(s),s.counterpart_name,s.tracking_code,s.carrier,s.notes,s.status].concat(shipItemLabels(s)).join(' ').toLowerCase();
+      if(hay.indexOf(q)===-1)return false;
+    }
+    return true;
+  });
+  // Precisam de atencao primeiro, depois por previsao/postagem mais antiga
+  list.sort(function(a,b){
+    var aa=shipNeedsAttention(a)?0:1,bb=shipNeedsAttention(b)?0:1;
+    if(aa!==bb)return aa-bb;
+    var da=a.expected_date||a.shipped_date||String(a.created_at).slice(0,10),db=b.expected_date||b.shipped_date||String(b.created_at).slice(0,10);
+    return da<db?-1:da>db?1:0;
+  });
+  if(!list.length){tb.innerHTML='<tr><td colspan="10"><div class="empty-state"><i class="ti ti-truck"></i>'+(shipments.length?'Nenhum envio neste filtro':'Nenhum envio registrado')+'</div></td></tr>';return;}
+  var today=shipToday();
+  tb.innerHTML=list.map(function(s){
+    var dirIcon=s.direction==='saida'
+      ?'<i class="ti ti-truck-delivery" title="Saindo para cliente" style="color:#0C447C;font-size:18px"></i>'
+      :'<i class="ti ti-package-import" title="Chegando para mim" style="color:var(--amber-dark);font-size:18px"></i>';
+    var items=shipItemLabels(s);
+    var itemsHtml=items.length?'<span title="'+escShip(items.join('\n'))+'">'+escShip(items.slice(0,2).join(', '))+(items.length>2?' <span style="color:var(--text3)">+'+(items.length-2)+'</span>':'')+'</span>':'<span style="color:var(--text3)">-</span>';
+    var codeHtml=s.tracking_code
+      ?'<span style="font-family:monospace;cursor:copy" title="Copiar código" onclick="copyShipCode(\''+s.id+'\')">'+escShip(s.tracking_code)+'</span> <a href="'+shipTrackUrl(s.tracking_code)+'" target="_blank" rel="noopener" title="Abrir rastreio"><i class="ti ti-external-link"></i></a>'
+      :'<span style="color:var(--text3)">-</span>';
+    var col=SHIP_STATUS_COLORS[s.status]||['#F1EFE8','#5F5E5A'];
+    var stSel='<select onchange="changeShipmentStatus(\''+s.id+'\',this.value)" style="font-size:11px;font-weight:600;padding:2px 6px;border-radius:10px;border:none;background:'+col[0]+';color:'+col[1]+'">'
+      +SHIP_STATUSES.map(function(x){return '<option'+(x===s.status?' selected':'')+'>'+x+'</option>';}).join('')+'</select>';
+    var start=s.shipped_date||String(s.created_at).slice(0,10);
+    var days=shipDaysBetween(start,s.delivered_date||today);
+    var late=shipIsOpen(s)&&s.expected_date&&s.expected_date<today;
+    var alertIcon=shipNeedsAttention(s)?' <i class="ti ti-alert-triangle" style="color:var(--danger)" title="'+(s.status==='Problema'?'Status: Problema':late?'Previsão vencida':'Sem atualização há '+SHIP_STALE_DAYS+'+ dias')+'"></i>':'';
+    var notifyBtn='';
+    if(s.direction==='saida'){
+      var notified=s.notified_at?'Avisado em '+shipFmtDate(s.notified_at)+' — clique para avisar de novo':'Avisar cliente pelo WhatsApp';
+      notifyBtn='<button class="btn-small" style="color:'+(s.notified_at?'var(--text3)':'var(--success)')+'" onclick="notifyShipmentCustomer(\''+s.id+'\')" title="'+escShip(notified)+'"><i class="ti ti-brand-whatsapp"></i>'+(s.notified_at?'<i class="ti ti-check" style="font-size:10px"></i>':'')+'</button>';
+    }
+    return '<tr><td>'+dirIcon+'</td>'
+      +'<td style="font-weight:600">'+escShip(shipCounterpart(s))+(s.notes?' <i class="ti ti-note" style="color:var(--text3)" title="'+escShip(s.notes)+'"></i>':'')+'</td>'
+      +'<td style="max-width:220px">'+itemsHtml+'</td>'
+      +'<td>'+escShip(s.carrier||'-')+'</td>'
+      +'<td>'+codeHtml+'</td>'
+      +'<td>'+stSel+'</td>'
+      +'<td>'+shipFmtDate(s.shipped_date)+'</td>'
+      +'<td'+(late?' style="color:var(--danger);font-weight:600"':'')+'>'+shipFmtDate(s.expected_date)+'</td>'
+      +'<td style="text-align:center">'+days+alertIcon+'</td>'
+      +'<td><div class="actions-cell">'+notifyBtn
+      +'<button class="btn-small" onclick="openShipmentModal(\''+s.id+'\')" title="Editar"><i class="ti ti-edit"></i></button>'
+      +'<button class="btn-danger" onclick="deleteShipment(\''+s.id+'\')" title="Excluir"><i class="ti ti-trash"></i></button></div></td></tr>';
+  }).join('');
+}
+
+function copyShipCode(id){
+  var s=shipments.filter(function(x){return x.id===id;})[0];
+  if(!s||!s.tracking_code)return;
+  if(navigator.clipboard)navigator.clipboard.writeText(s.tracking_code).then(function(){showToast('Código copiado');},function(){showToast('Não foi possível copiar','error');});
+}
+
+// ---- Modal ----
+function shipFillSelect(id,list,value){
+  var sel=document.getElementById(id);
+  sel.innerHTML='<option value="">— nenhum —</option>'+list.slice().sort(function(a,b){return (a.name||'').localeCompare(b.name||'','pt-BR');}).map(function(x){return '<option value="'+x.id+'">'+escShip(x.name)+'</option>';}).join('');
+  sel.value=value||'';
+}
+
+function openShipmentModal(id){
+  var s=id?shipments.filter(function(x){return x.id===id;})[0]:null;
+  document.getElementById('shipmentModalTitle').textContent=s?'Editar envio':'Novo envio';
+  document.getElementById('shp-id').value=s?s.id:'';
+  document.getElementById('shp-direction').value=s?s.direction:'saida';
+  shipFillSelect('shp-customer',customers,s&&s.customer_id);
+  shipFillSelect('shp-supplier',suppliers,s&&s.supplier_id);
+  document.getElementById('shp-counterpart').value=s&&s.counterpart_name||'';
+  document.getElementById('shp-carrier').value=s&&s.carrier||'Correios';
+  document.getElementById('shp-code').value=s&&s.tracking_code||'';
+  document.getElementById('shp-status').innerHTML=SHIP_STATUSES.map(function(x){return '<option>'+x+'</option>';}).join('');
+  document.getElementById('shp-status').value=s?s.status:'Postado';
+  document.getElementById('shp-cost').value=s&&s.shipping_cost!=null?s.shipping_cost:'';
+  document.getElementById('shp-shipped').value=s?(s.shipped_date||''):shipToday();
+  document.getElementById('shp-expected').value=s&&s.expected_date||'';
+  document.getElementById('shp-notes').value=s&&s.notes||'';
+  document.getElementById('shp-link-search').value='';
+  shipLinkSelected=new Set(s?(s.direction==='saida'?(s.sale_ids||[]):(s.purchase_ids||[])):[]);
+  shipDirectionChange(true);
+  openModal('shipmentModal');
+}
+
+function shipDirectionChange(keepSelection){
+  var dir=document.getElementById('shp-direction').value;
+  document.getElementById('shp-customer-field').style.display=dir==='saida'?'':'none';
+  document.getElementById('shp-supplier-field').style.display=dir==='chegada'?'':'none';
+  document.getElementById('shp-link-label').textContent=dir==='saida'?'Vendas neste envio':'Compras neste pacote';
+  if(keepSelection!==true)shipLinkSelected=new Set();
+  renderShipLinkList();
+}
+
+function shipToggleLink(id,checked){if(checked)shipLinkSelected.add(id);else shipLinkSelected.delete(id);}
+
+function renderShipLinkList(){
+  var dir=document.getElementById('shp-direction').value;
+  var q=(document.getElementById('shp-link-search').value||'').toLowerCase().trim();
+  var box=document.getElementById('shp-link-list');
+  var rows;
+  if(dir==='saida'){
+    var cid=document.getElementById('shp-customer').value;
+    var c=customers.filter(function(x){return x.id===cid;})[0];
+    rows=sales.filter(function(v){
+      if(shipLinkSelected.has(v.id))return true;
+      if(c&&!(v.customer_id===c.id||(v.buyer&&v.buyer.toLowerCase()===c.name.toLowerCase())))return false;
+      if(!c&&v.delivered)return false;
+      return true;
+    }).map(function(v){return {id:v.id,date:v.sale_date||'',label:(v.quantity>1?v.quantity+'x ':'')+v.card_name,sub:(v.buyer||'')+(v.delivered?' · entregue':''),};});
+  }else{
+    var sid=document.getElementById('shp-supplier').value;
+    rows=purchases.filter(function(p){
+      if(shipLinkSelected.has(p.id))return true;
+      if(sid&&p.supplier_id!==sid)return false;
+      return p.status==='Pendente';
+    }).map(function(p){return {id:p.id,date:p.purchase_date||'',label:(p.quantity>1?p.quantity+'x ':'')+p.description,sub:(p.supplier||'')+' · '+(p.status||'Recebido')};});
+  }
+  if(q)rows=rows.filter(function(r){return (r.label+' '+r.sub).toLowerCase().indexOf(q)!==-1;});
+  rows.sort(function(a,b){var sa=shipLinkSelected.has(a.id)?0:1,sb2=shipLinkSelected.has(b.id)?0:1;if(sa!==sb2)return sa-sb2;return a.date<b.date?1:a.date>b.date?-1:0;});
+  rows=rows.slice(0,150);
+  if(!rows.length){box.innerHTML='<div style="color:var(--text3);padding:6px 0">'+(dir==='saida'?'Nenhuma venda encontrada (escolha o cliente ou busque pelo nome da carta)':'Nenhuma compra pendente encontrada')+'</div>';return;}
+  box.innerHTML=rows.map(function(r){
+    return '<label style="display:flex;gap:8px;align-items:center;padding:3px 0;cursor:pointer;text-transform:none;letter-spacing:0;font-size:12px;color:var(--text)"><input type="checkbox" style="width:auto;margin:0" '+(shipLinkSelected.has(r.id)?'checked ':'')+'onchange="shipToggleLink(\''+r.id+'\',this.checked)">'
+      +'<span style="flex:1"><b>'+escShip(r.label)+'</b> <span style="color:var(--text3)">'+escShip(r.sub)+'</span></span><span style="color:var(--text3)">'+shipFmtDate(r.date)+'</span></label>';
+  }).join('');
+}
+
+async function saveShipment(){
+  var id=document.getElementById('shp-id').value;
+  var dir=document.getElementById('shp-direction').value;
+  var old=id?shipments.filter(function(x){return x.id===id;})[0]:null;
+  var status=document.getElementById('shp-status').value;
+  var costRaw=document.getElementById('shp-cost').value;
+  var linked=Array.from(shipLinkSelected);
+  var payload={
+    user_id:currentUser.id,
+    direction:dir,
+    customer_id:dir==='saida'?(document.getElementById('shp-customer').value||null):null,
+    supplier_id:dir==='chegada'?(document.getElementById('shp-supplier').value||null):null,
+    counterpart_name:document.getElementById('shp-counterpart').value.trim()||null,
+    carrier:document.getElementById('shp-carrier').value,
+    tracking_code:document.getElementById('shp-code').value.trim().toUpperCase().replace(/\s+/g,'')||null,
+    status:status,
+    shipping_cost:costRaw===''?null:parseFloat(costRaw),
+    shipped_date:document.getElementById('shp-shipped').value||null,
+    expected_date:document.getElementById('shp-expected').value||null,
+    notes:document.getElementById('shp-notes').value.trim()||null,
+    sale_ids:dir==='saida'?linked:[],
+    purchase_ids:dir==='chegada'?linked:[],
+    updated_at:new Date().toISOString()
+  };
+  if(!payload.customer_id&&!payload.supplier_id&&!payload.counterpart_name&&!linked.length){showToast('Informe o cliente/fornecedor, um nome ou os itens','error');return;}
+  var becameDelivered=status==='Entregue'&&(!old||old.status!=='Entregue');
+  if(status!=='Entregue')payload.delivered_date=null;
+  else if(!old||!old.delivered_date)payload.delivered_date=shipToday();
+  var r=id?await sb.from('shipments').update(payload).eq('id',id).select().single():await sb.from('shipments').insert(payload).select().single();
+  if(r.error){console.error(r.error);showToast('Erro ao salvar envio','error');return;}
+  closeModal('shipmentModal');
+  showToast('Envio salvo');
+  await loadShipments();
+  if(becameDelivered)afterShipmentDelivered(r.data);
+}
+
+async function deleteShipment(id){
+  var s=shipments.filter(function(x){return x.id===id;})[0];
+  if(!s)return;
+  if(!confirm('Excluir o envio de/para "'+shipCounterpart(s)+'"'+(s.tracking_code?' ('+s.tracking_code+')':'')+'?\n\nAs vendas, compras e o estoque não são alterados.'))return;
+  var r=await sb.from('shipments').delete().eq('id',id);
+  if(r.error){showToast('Erro ao excluir','error');return;}
+  showToast('Envio excluído');
+  loadShipments();
+}
+
+// ---- Status rapido na tabela ----
+async function changeShipmentStatus(id,status){
+  var s=shipments.filter(function(x){return x.id===id;})[0];
+  if(!s)return;
+  var wasDelivered=s.status==='Entregue';
+  var payload={status:status,updated_at:new Date().toISOString()};
+  if(status==='Entregue'&&s.direction==='chegada'&&(s.purchase_ids||[]).length){
+    // Abre a tela de entrada no estoque antes de gravar
+    openShipReceive(s);return;
+  }
+  payload.delivered_date=status==='Entregue'?(s.delivered_date||shipToday()):null;
+  var r=await sb.from('shipments').update(payload).eq('id',id);
+  if(r.error){showToast('Erro ao atualizar status','error');renderShipments();return;}
+  Object.assign(s,payload);
+  renderShipments();
+  if(status==='Entregue'&&!wasDelivered)afterShipmentDelivered(s);
+}
+
+function afterShipmentDelivered(s){
+  if(s.direction==='saida'){
+    var pend=(s.sale_ids||[]).filter(function(id){var v=sales.filter(function(x){return x.id===id;})[0];return v&&!v.delivered;});
+    if(pend.length&&confirm('Marcar '+pend.length+' venda(s) deste envio como entregue(s)?')){
+      sb.from('sales').update({delivered:true}).in('id',pend).then(function(r){
+        if(r.error){showToast('Erro ao marcar vendas como entregues','error');return;}
+        sales.forEach(function(v){if(pend.indexOf(v.id)!==-1)v.delivered=true;});
+        if(typeof renderSales==='function')renderSales();
+        showToast('Vendas marcadas como entregues');
+      });
+    }
+  }else if((s.purchase_ids||[]).length){
+    openShipReceive(s);
+  }
+}
+
+// ---- Chegada: entrada no estoque ----
+function openShipReceive(s){
+  document.getElementById('shr-id').value=s.id;
+  document.getElementById('shr-date').value=shipToday();
+  var allPokedex=true;
+  var lines=(s.purchase_ids||[]).map(function(pid){
+    var p=purchases.filter(function(x){return x.id===pid;})[0];
+    if(!p)return '';
+    var inv=inventory.filter(function(i){return i.purchase_id===pid;});
+    if(!inv.length||inv.some(function(i){return i.status!=='Pokedex';}))allPokedex=false;
+    var where=inv.length?inv.map(function(i){return i.status||'A venda';}).join(', '):(p.status==='Pendente'?'ainda não está no estoque':'sem item no estoque');
+    return '• <b>'+escShip((p.quantity>1?p.quantity+'x ':'')+p.description)+'</b> <span style="color:var(--text3)">('+escShip(where)+')</span>';
+  }).filter(Boolean);
+  document.getElementById('shr-items').innerHTML=lines.join('<br>')||'Nenhuma compra vinculada.';
+  document.getElementById('shr-status').value=allPokedex?'Pokedex':'A venda';
+  openModal('shipReceiveModal');
+}
+
+async function confirmShipReceive(doStock){
+  var id=document.getElementById('shr-id').value;
+  var s=shipments.filter(function(x){return x.id===id;})[0];
+  if(!s){closeModal('shipReceiveModal');return;}
+  var recDate=document.getElementById('shr-date').value||shipToday();
+  var target=document.getElementById('shr-status').value;
+  var errors=0;
+  if(doStock){
+    for(var k=0;k<(s.purchase_ids||[]).length;k++){
+      var pid=s.purchase_ids[k];
+      var p=purchases.filter(function(x){return x.id===pid;})[0];
+      if(!p||p.status==='Cancelado')continue;
+      var inv=inventory.filter(function(i){return i.purchase_id===pid;});
+      if(inv.length){
+        var caminho=inv.filter(function(i){return i.status==='A Caminho';}).map(function(i){return i.id;});
+        if(caminho.length){
+          var r1=await sb.from('inventory').update({status:target,received_at:recDate}).in('id',caminho);
+          if(r1.error)errors++;
+        }
+      }else if(p.status==='Pendente'){
+        var qty=p.quantity||1;
+        var costUnit=(parseFloat(p.total_amount||0)+parseFloat(p.shipping_cost||0))/qty;
+        var r2=await sb.from('inventory').insert({
+          user_id:currentUser.id,purchase_id:p.id,name:p.description,product_type:p.product_type,set_name:p.set_name||null,
+          language:p.language,condition:p.condition,quantity_total:qty,quantity_available:qty,cost_price:parseFloat(costUnit.toFixed(2)),
+          sale_price:p.sale_price||0,image_url:p.image_url||null,notes:p.notes||null,extras:p.extras||null,liga_url:p.liga_url||null,
+          product_id:p.product_id||null,status:target,received_at:recDate
+        });
+        if(r2.error)errors++;
+      }
+      if(p.status==='Pendente'){
+        var r3=await sb.from('purchases').update({status:'Recebido'}).eq('id',pid);
+        if(r3.error)errors++;
+      }
+    }
+  }
+  var r4=await sb.from('shipments').update({status:'Entregue',delivered_date:recDate,updated_at:new Date().toISOString()}).eq('id',id);
+  if(r4.error)errors++;
+  closeModal('shipReceiveModal');
+  showToast(errors?'Concluído com '+errors+' erro(s) — confira o estoque':(doStock?'Chegada registrada e estoque atualizado!':'Envio marcado como entregue'),errors?'error':'success');
+  if(doStock)loadAll();else loadShipments();
+}
+
+// ---- Avisar cliente pelo WhatsApp ----
+function shipWhatsNumber(raw){
+  var d=String(raw||'').replace(/\D/g,'');
+  if(!d)return '';
+  if(d.length<=11)d='55'+d.replace(/^0+/,'');
+  return d;
+}
+
+function shipNotifyMessage(s){
+  var c=customers.filter(function(x){return x.id===s.customer_id;})[0];
+  var name=(c?c.name:(s.counterpart_name||'')).split(' ')[0];
+  var items=shipItemLabels(s);
+  var itemsTxt=items.length?(items.length<=4?items.join(', '):items.slice(0,4).join(', ')+' e mais '+(items.length-4)):'';
+  var oi='Oi'+(name?' '+name:'')+'! ';
+  var suas=itemsTxt?'Suas cartas ('+itemsTxt+')':'Suas cartas';
+  var track=s.tracking_code&&s.carrier!=='Entrega local'?'\n\nCódigo de rastreio: '+s.tracking_code+'\nAcompanhe aqui: '+shipTrackUrl(s.tracking_code):'';
+  var msg;
+  switch(s.status){
+    case 'Saiu para entrega':msg=oi+suas+' saíram para entrega hoje! 🚚';break;
+    case 'Aguardando retirada':msg=oi+suas+' já estão disponíveis para retirada'+(s.carrier==='Correios'?' na agência dos Correios':'')+'. 📦';break;
+    case 'Entregue':msg=oi+'Vi que '+suas.charAt(0).toLowerCase()+suas.slice(1)+' foram entregues. Chegou tudo certinho? 😊';break;
+    case 'Problema':msg=oi+'Estou acompanhando o envio das suas cartas e houve um imprevisto com a transportadora. Já estou resolvendo e te mantenho informado.';break;
+    default:msg=s.carrier==='Entrega local'?oi+suas+' já estão a caminho! 🚚':oi+suas+' foram postadas! 📦';
+  }
+  return msg+track+'\n\nObrigado pela compra!';
+}
+
+async function notifyShipmentCustomer(id){
+  var s=shipments.filter(function(x){return x.id===id;})[0];
+  if(!s)return;
+  var c=customers.filter(function(x){return x.id===s.customer_id;})[0];
+  var num=shipWhatsNumber(c&&c.whatsapp);
+  var text=encodeURIComponent(shipNotifyMessage(s));
+  if(!num&&!confirm('Este cliente não tem WhatsApp no cadastro.\n\nAbrir o WhatsApp mesmo assim para escolher o contato?'))return;
+  window.open('https://wa.me/'+num+'?text='+text,'_blank');
+  var now=new Date().toISOString();
+  var r=await sb.from('shipments').update({notified_at:now}).eq('id',id);
+  if(!r.error){s.notified_at=now;renderShipments();}
+}
 
 // ============================================================
 // DESPESAS
@@ -2256,7 +2735,7 @@ function selectWishlistProduct(id){
 }
 
 function loadAll(){
-  Promise.all([loadPurchases(),loadInventory(),loadSales(),loadProfile(),loadProducts(),loadExpenses(),loadSuppliers(),loadCustomers(),loadWishlist(),loadPersonalCollections(),loadStockSnapshots()]).then(function(){updateSupplierFilter();renderSales();renderPurchases();renderInventory();loadDashboard();renderStockEvolution();saveDailySnapshot();});
+  Promise.all([loadPurchases(),loadInventory(),loadSales(),loadProfile(),loadProducts(),loadExpenses(),loadSuppliers(),loadCustomers(),loadWishlist(),loadPersonalCollections(),loadStockSnapshots(),loadShipments()]).then(function(){updateSupplierFilter();renderSales();renderPurchases();renderInventory();loadDashboard();renderStockEvolution();saveDailySnapshot();renderShipments();});
 }
 
 // ==================== COLECAO PESSOAL (FICHARIO) ====================
