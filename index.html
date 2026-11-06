@@ -499,8 +499,8 @@ tr:hover td{background:var(--bg2)}
           <select id="filterShipDir" onchange="renderShipments()"><option value="">Saindo e chegando</option><option value="saida">Saindo (para clientes)</option><option value="chegada">Chegando (para mim)</option></select>
           <select id="filterShipStatus" onchange="renderShipments()"><option value="abertos">Em aberto</option><option value="avisar">Clientes a avisar</option><option value="atencao">Precisam de atenção</option><option value="Entregue">Entregues</option><option value="">Todos</option></select>
         </div>
-        <table><thead><tr><th></th><th>Para / De</th><th>Itens</th><th>Transportadora</th><th>Rastreio</th><th>Status</th><th>Postado</th><th>Previsão</th><th>Dias</th><th></th></tr></thead>
-        <tbody id="shipmentsTable"><tr><td colspan="10"><div class="empty-state"><i class="ti ti-truck"></i>Nenhum envio registrado</div></td></tr></tbody></table>
+        <table><thead><tr><th></th><th>Para / De</th><th>Itens</th><th>Transportadora</th><th>Origem → Destino</th><th>Rastreio</th><th>Status</th><th>Postado</th><th>Previsão</th><th>Dias</th><th></th></tr></thead>
+        <tbody id="shipmentsTable"><tr><td colspan="11"><div class="empty-state"><i class="ti ti-truck"></i>Nenhum envio registrado</div></td></tr></tbody></table>
       </div>
       <div style="font-size:11px;color:var(--text3);margin-top:8px;line-height:1.5">Clique no código para copiar; o ícone <i class="ti ti-external-link"></i> abre o rastreio no 17TRACK. <b>Atualizar rastreios</b> consulta Correios, Loggi, Jadlog e Melhor Envio automaticamente (também roda sozinho ao abrir a aba, se a última consulta tiver mais de 6h); passe o mouse no último evento para ver o histórico. Mudar o status para <b>Entregue</b> marca as vendas como entregues ou dá entrada das compras no estoque.</div>
     </div>
@@ -1571,6 +1571,8 @@ tr:hover td{background:var(--bg2)}
       <div class="form-field"><label>Frete (R$)</label><input type="number" id="shp-cost" min="0" step="0.01" placeholder="Opcional"></div>
       <div class="form-field"><label>Data de postagem</label><input type="date" id="shp-shipped"></div>
       <div class="form-field"><label>Previsão de chegada</label><input type="date" id="shp-expected"></div>
+      <div class="form-field"><label>Origem (cidade/UF)</label><input type="text" id="shp-origin" placeholder="Preenche sozinho pelo rastreio"></div>
+      <div class="form-field"><label>Destino (cidade/UF)</label><input type="text" id="shp-destination" placeholder="Ex: Curitiba/PR"></div>
       <div class="form-field full">
         <label id="shp-link-label">Pedidos de venda neste envio</label>
         <input type="text" id="shp-link-search" placeholder="Filtrar por PV-0012, nome ou carta..." oninput="renderShipLinkList()" style="margin-bottom:6px">
@@ -2174,7 +2176,7 @@ function renderShipments(){
     var da=a.expected_date||a.shipped_date||String(a.created_at).slice(0,10),db=b.expected_date||b.shipped_date||String(b.created_at).slice(0,10);
     return da<db?-1:da>db?1:0;
   });
-  if(!list.length){tb.innerHTML='<tr><td colspan="10"><div class="empty-state"><i class="ti ti-truck"></i>'+(shipments.length?'Nenhum envio neste filtro':'Nenhum envio registrado')+'</div></td></tr>';return;}
+  if(!list.length){tb.innerHTML='<tr><td colspan="11"><div class="empty-state"><i class="ti ti-truck"></i>'+(shipments.length?'Nenhum envio neste filtro':'Nenhum envio registrado')+'</div></td></tr>';return;}
   var today=shipToday();
   tb.innerHTML=list.map(function(s){
     var dirIcon=s.direction==='saida'
@@ -2202,6 +2204,7 @@ function renderShipments(){
       +'<td style="font-weight:600">'+escShip(shipCounterpart(s))+(s.notes?' <i class="ti ti-note" style="color:var(--text3)" title="'+escShip(s.notes)+'"></i>':'')+'</td>'
       +'<td style="max-width:220px">'+itemsHtml+'</td>'
       +'<td>'+escShip(s.carrier||'-')+(s.platform?'<br><span style="font-size:11px;color:var(--text3)">via '+escShip(s.platform)+'</span>':'')+'</td>'
+      +'<td style="font-size:12px">'+shipRouteCell(s)+'</td>'
       +'<td>'+codeHtml+'</td>'
       +'<td>'+stSel+shipTrackingCell(s)+'</td>'
       +'<td>'+shipFmtDate(s.shipped_date)+'</td>'
@@ -2242,6 +2245,8 @@ function openShipmentModal(id){
   document.getElementById('shp-cost').value=s&&s.shipping_cost!=null?s.shipping_cost:'';
   document.getElementById('shp-shipped').value=s?(s.shipped_date||''):shipToday();
   document.getElementById('shp-expected').value=s&&s.expected_date||'';
+  document.getElementById('shp-origin').value=s&&s.origin||'';
+  document.getElementById('shp-destination').value=s&&s.destination||'';
   document.getElementById('shp-notes').value=s&&s.notes||'';
   document.getElementById('shp-link-search').value='';
   shipLinkSelected=new Set(s?(s.order_nos||[]):[]);
@@ -2349,8 +2354,12 @@ async function saveShipment(){
     order_nos:linked,
     sale_ids:[],
     purchase_ids:[],
+    origin:document.getElementById('shp-origin').value.trim()||null,
+    destination:document.getElementById('shp-destination').value.trim()||null,
     updated_at:new Date().toISOString()
   };
+  // Destino padrao do envio para cliente: cidade do cadastro
+  if(!payload.destination&&dir==='saida'&&payload.customer_id){var cc=customers.filter(function(x){return x.id===payload.customer_id;})[0];if(cc&&cc.city)payload.destination=cc.city;}
   if(!payload.customer_id&&!payload.supplier_id&&!payload.counterpart_name&&!linked.length){showToast('Informe o cliente/fornecedor, um nome ou os itens','error');return;}
   var becameDelivered=status==='Entregue'&&(!old||old.status!=='Entregue');
   if(status!=='Entregue')payload.delivered_date=null;
@@ -2361,6 +2370,8 @@ async function saveShipment(){
   showToast('Envio salvo');
   await loadShipments();
   if(becameDelivered)afterShipmentDelivered(r.data);
+  // Envio novo (ou codigo alterado) com rastreio: consulta na hora para preencher datas e local
+  else if(r.data&&r.data.tracking_code&&r.data.carrier!=='Entrega local'&&(!old||old.tracking_code!==r.data.tracking_code))refreshShipmentTracking(true,[r.data.id]);
 }
 
 async function deleteShipment(id){
@@ -2502,7 +2513,14 @@ function shipTrackingCell(s){
   return out;
 }
 
-async function refreshShipmentTracking(silent){
+function shipRouteCell(s){
+  var o=s.origin||'', d=s.destination||'';
+  if(!d&&s.direction==='saida'){var c=customers.filter(function(x){return x.id===s.customer_id;})[0];if(c&&c.city)d=c.city;}
+  if(!o&&!d)return '<span style="color:var(--text3)">-</span>';
+  return escShip(o||'?')+' <span style="color:var(--text3)">→</span> '+escShip(d||'?');
+}
+
+async function refreshShipmentTracking(silent,onlyIds){
   if(shipTrackingBusy)return;
   var btn=document.getElementById('shipRefreshBtn');
   var hasAny=shipments.some(function(s){return shipIsOpen(s)&&s.tracking_code&&s.carrier!=='Entrega local';});
@@ -2513,7 +2531,7 @@ async function refreshShipmentTracking(silent){
     var ss=await sb.auth.getSession();
     var token=ss&&ss.data&&ss.data.session?ss.data.session.access_token:null;
     if(!token)throw new Error('Sessão expirada: faça login de novo');
-    var resp=await fetch(SUPA_URL+'/functions/v1/track-shipments',{method:'POST',headers:{'Authorization':'Bearer '+token,'apikey':SUPA_KEY,'Content-Type':'application/json'},body:'{}'});
+    var resp=await fetch(SUPA_URL+'/functions/v1/track-shipments',{method:'POST',headers:{'Authorization':'Bearer '+token,'apikey':SUPA_KEY,'Content-Type':'application/json'},body:JSON.stringify(onlyIds&&onlyIds.length?{ids:onlyIds}:{})});
     var json={};try{json=await resp.json();}catch(e){}
     if(!resp.ok)throw new Error(json.error||('HTTP '+resp.status));
     var before={};shipments.forEach(function(s){before[s.id]=s.status;});
