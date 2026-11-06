@@ -62,6 +62,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .nav-tab{padding:14px 12px;font-size:13px;color:var(--text2);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap;flex-shrink:0}
 .nav-tab.active{color:var(--text);border-bottom-color:var(--amber);font-weight:600}
 .nav-tab:hover:not(.active){color:var(--text)}
+.order-badge{display:inline-block;font-size:10px;font-weight:700;font-family:monospace;color:var(--text2);background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:0 5px;cursor:pointer;vertical-align:middle}
 .nav-badge{display:inline-block;background:var(--danger);color:#fff;font-size:10px;font-weight:700;border-radius:10px;padding:1px 6px;margin-left:4px;vertical-align:middle}
 .nav-right{margin-left:auto;display:flex;align-items:center;gap:8px;padding-left:12px;flex-shrink:0}
 .nav-user{font-size:12px;color:var(--text2);white-space:nowrap;max-width:160px;overflow:hidden;text-overflow:ellipsis}
@@ -259,7 +260,7 @@ tr:hover td{background:var(--bg2)}
       </div>
       <div class="table-wrap">
       <div class="filters">
-        <input type="text" id="filterPurName" placeholder="Buscar por carta, fornecedor, set, condição..." oninput="renderPurchases()" style="width:190px">
+        <input type="text" id="filterPurName" placeholder="Buscar por carta, fornecedor, PC-0012..." oninput="renderPurchases()" style="width:190px">
         <select id="filterPurType" onchange="renderPurchases()"><option value="">Todos tipos</option><option>Carta Avulsa</option><option>Lacrado</option><option>Acessorio</option><option>Lote</option></select>
         <select id="filterPurSupplier" onchange="renderPurchases()"><option value="">Todos fornecedores</option></select>
       </div>
@@ -351,7 +352,7 @@ tr:hover td{background:var(--bg2)}
         </div>
       </div>
       <div class="filters">
-        <input type="text" id="filterSaleName" placeholder="Buscar por carta, comprador, plataforma..." oninput="renderSales()" style="width:190px">
+        <input type="text" id="filterSaleName" placeholder="Buscar por carta, comprador, PV-0012..." oninput="renderSales()" style="width:190px">
         <input type="month" id="filterSaleMonth" onchange="renderSales()">
         <select id="filterPlatform" onchange="renderSales()"><option value="">Todas plataformas</option></select>
       </div>
@@ -697,6 +698,7 @@ tr:hover td{background:var(--bg2)}
       </div>
       <div class="form-field"><label>Total pago (R$) *</label><input type="number" id="p-amount" placeholder="0.00" step="0.01" min="0"></div>
       <div class="form-field"><label>Data</label><input type="date" id="p-date"></div>
+      <div class="form-field"><label>Pedido</label><select id="p-order" style="width:100%" title="Itens do mesmo pedido ficam juntos (ex: para vincular a um envio)"><option value="">Novo pedido</option></select></div>
       <div class="form-field"><label>Preco de venda sugerido (R$)</label><input type="number" id="p-saleprice" placeholder="0.00" step="0.01"></div>
       <div class="form-field"><label>Extras</label>
         <select id="p-extras"><option value="">Nenhum</option><option>Foil</option><option>Reverse Foil</option><option>Pokeball Foil</option><option>Masterball Foil</option><option>Full Art</option><option>Secret Rare</option><option>Holo</option><option>Shiny</option><option>Shattered Holo</option><option>Edition One</option><option>Promo</option><option>Outro</option></select>
@@ -750,6 +752,7 @@ tr:hover td{background:var(--bg2)}
         </select>
       </div>
       <div class="form-field"><label>Data</label><input type="date" id="mp-p-date"></div>
+      <div class="form-field"><label>Pedido</label><select id="mp-p-order" style="width:100%" title="Itens do mesmo pedido ficam juntos (ex: para vincular a um envio)"><option value="">Novo pedido</option></select></div>
       <div class="form-field"><label>Status da leva</label>
         <select id="mp-p-status" style="width:100%">
           <option value="Recebido">Recebido</option>
@@ -946,6 +949,7 @@ tr:hover td{background:var(--bg2)}
       <div class="form-field"><label>Preco de venda (R$) *</label><input type="number" id="s-price" placeholder="0.00" step="0.01"></div>
       <div class="form-field"><label>Custo unitario (R$)</label><input type="number" id="s-cost" placeholder="0.00" step="0.01" readonly style="background:var(--bg2)"></div>
       <div class="form-field"><label>Data</label><input type="date" id="s-date"></div>
+      <div class="form-field"><label>Pedido</label><select id="s-order" style="width:100%" title="Itens do mesmo pedido ficam juntos (ex: para vincular a um envio)"><option value="">Novo pedido</option></select></div>
       <div class="form-field full"><label>Observacoes</label><textarea id="s-notes" rows="2" placeholder="anotacoes..."></textarea></div>
     </div>
     <div class="modal-actions">
@@ -967,6 +971,7 @@ tr:hover td{background:var(--bg2)}
       <div class="form-field"><label>Comprador</label><input type="text" id="mp-s-buyer" placeholder="ex: Joao"></div>
       <div class="form-field"><label>Plataforma</label><input type="text" id="mp-s-platform" placeholder="ex: WhatsApp, MYP Cards"></div>
       <div class="form-field"><label>Data</label><input type="date" id="mp-s-date"></div>
+      <div class="form-field"><label>Pedido</label><select id="mp-s-order" style="width:100%" title="Itens do mesmo pedido ficam juntos (ex: para vincular a um envio)"><option value="">Novo pedido</option></select></div>
     </div>
     <div class="form-field full" style="display:flex;align-items:center;gap:8px;padding:4px 0">
       <input type="checkbox" id="mp-s-is-trade" style="width:16px;height:16px;accent-color:var(--amber)">
@@ -1084,6 +1089,7 @@ tr:hover td{background:var(--bg2)}
       </div>
       <div class="form-field"><label>Total pago (R$)</label><input type="number" id="ep-amount" step="0.01" min="0"></div>
       <div class="form-field"><label>Data</label><input type="date" id="ep-date"></div>
+      <div class="form-field"><label>Nº do pedido</label><input type="number" id="ep-order" min="1" step="1" placeholder="ex: 12" title="Mude para mover este item para outro pedido"></div>
       <div class="form-field"><label>Preco de venda (R$)</label><input type="number" id="ep-saleprice" step="0.01"></div>
       <div class="form-field"><label>Extras</label>
         <select id="ep-extras"><option value="">Nenhum</option><option>Foil</option><option>Reverse Foil</option><option>Pokeball Foil</option><option>Masterball Foil</option><option>Full Art</option><option>Secret Rare</option><option>Holo</option><option>Shiny</option><option>Shattered Holo</option><option>Edition One</option><option>Promo</option><option>Outro</option></select>
@@ -1142,6 +1148,7 @@ tr:hover td{background:var(--bg2)}
       <div class="form-field"><label>Preco de venda (R$)</label><input type="number" id="es-price" step="0.01"></div>
       <div class="form-field"><label>Custo unitario (R$)</label><input type="number" id="es-cost" step="0.01"></div>
       <div class="form-field"><label>Data</label><input type="date" id="es-date"></div>
+      <div class="form-field"><label>Nº do pedido</label><input type="number" id="es-order" min="1" step="1" placeholder="ex: 12" title="Mude para mover este item para outro pedido"></div>
       <div class="form-field full"><label>Observacoes</label><textarea id="es-notes" rows="2"></textarea></div>
     </div>
     <div class="form-field full" style="display:flex;align-items:center;gap:8px;padding:4px 0">
@@ -1560,8 +1567,8 @@ tr:hover td{background:var(--bg2)}
       <div class="form-field"><label>Data de postagem</label><input type="date" id="shp-shipped"></div>
       <div class="form-field"><label>Previsão de chegada</label><input type="date" id="shp-expected"></div>
       <div class="form-field full">
-        <label id="shp-link-label">Vendas neste envio</label>
-        <input type="text" id="shp-link-search" placeholder="Filtrar..." oninput="renderShipLinkList()" style="margin-bottom:6px">
+        <label id="shp-link-label">Pedidos de venda neste envio</label>
+        <input type="text" id="shp-link-search" placeholder="Filtrar por PV-0012, nome ou carta..." oninput="renderShipLinkList()" style="margin-bottom:6px">
         <div id="shp-link-list" style="max-height:200px;overflow:auto;border:1px solid var(--border);border-radius:var(--radius);padding:6px 8px;font-size:12px"></div>
       </div>
       <div class="form-field full"><label>Observações</label><textarea id="shp-notes" rows="2" placeholder="Opcional..."></textarea></div>
@@ -1921,7 +1928,7 @@ function showPage(p,el){
   }catch(err){console.error('showPage error:',err);}
 }
 
-function openModal(id){document.getElementById(id).classList.add('open');}
+function openModal(id){document.getElementById(id).classList.add('open');if(typeof ORDER_MODAL_FIELDS!=='undefined'&&ORDER_MODAL_FIELDS[id])refreshOrderSelect(id,true);}
 function closeModal(id){document.getElementById(id).classList.remove('open');}
 
 function showToast(msg,type){
@@ -1959,6 +1966,99 @@ function previewImage(input,previewId,b64Id){
   reader.readAsDataURL(file);
 }
 
+
+// ============================================================
+// PEDIDOS (PV = pedido de venda, PC = pedido de compra)
+// O numero e atribuido no banco (trigger) quando a linha chega sem order_no.
+// ============================================================
+var ORDER_MODAL_FIELDS={
+  saleModal:{select:'s-order',party:'s-buyer',kind:'sale'},
+  mpSaleModal:{select:'mp-s-order',party:'mp-s-buyer',kind:'sale'},
+  purchaseModal:{select:'p-order',party:'p-supplier',kind:'purchase'},
+  mpPurchaseModal:{select:'mp-p-order',party:'mp-p-supplier',kind:'purchase'}
+};
+var orderPreselect=null;
+
+function orderCode(kind,n){if(n==null||n==='')return '';var s=String(n);while(s.length<4)s='0'+s;return (kind==='sale'?'PV-':'PC-')+s;}
+function orderBadge(kind,n){
+  if(n==null)return '';
+  var code=orderCode(kind,n);
+  var target=kind==='sale'?'filterSaleName':'filterPurName';
+  var render=kind==='sale'?'renderSales':'renderPurchases';
+  return ' <span class="order-badge" title="Filtrar este pedido" onclick="event.stopPropagation();document.getElementById(\''+target+'\').value=\''+code+'\';'+render+'()">'+code+'</span>';
+}
+function orderMatches(kind,n,q){
+  // Aceita "PV-0012", "pv12", "#12"
+  if(n==null||!q)return false;
+  var m=String(q).toLowerCase().replace(/\s/g,'').match(/^(pv|pc|#)-?0*(\d+)$/);
+  if(!m)return false;
+  if(m[1]==='pv'&&kind!=='sale')return false;
+  if(m[1]==='pc'&&kind!=='purchase')return false;
+  return parseInt(m[2],10)===n;
+}
+function isOrderQuery(q){return /^(pv|pc|#)-?0*\d+$/.test(String(q||'').toLowerCase().replace(/\s/g,''));}
+
+// Agrupa as linhas em pedidos: [{no, kind, party, date, rows, total, open}]
+function buildOrders(kind){
+  var src=kind==='sale'?sales:purchases;
+  var map={};
+  src.forEach(function(r){
+    if(r.order_no==null)return;
+    var o=map[r.order_no];
+    if(!o){o=map[r.order_no]={no:r.order_no,kind:kind,party:kind==='sale'?(r.buyer||''):(r.supplier||''),customer_id:r.customer_id||null,supplier_id:r.supplier_id||null,date:'',rows:[],total:0,open:false};}
+    o.rows.push(r);
+    var d=kind==='sale'?r.sale_date:r.purchase_date;
+    if(d&&d>o.date)o.date=d;
+    if(kind==='sale'){o.total+=parseFloat(r.sale_price||0)*(r.quantity||1);if(!r.paid||!r.delivered)o.open=true;}
+    else{o.total+=parseFloat(r.total_amount||0)+parseFloat(r.shipping_cost||0);if(r.status==='Pendente')o.open=true;}
+  });
+  return Object.keys(map).map(function(k){return map[k];});
+}
+function orderUnits(o){return o.rows.reduce(function(a,r){return a+(r.quantity||1);},0);}
+function orderLabel(o){
+  var st=o.kind==='sale'
+    ?(o.rows.some(function(r){return !r.paid;})?'a receber':o.rows.some(function(r){return !r.delivered;})?'a entregar':'')
+    :(o.open?'pendente':'');
+  return orderCode(o.kind,o.no)+' · '+(o.date?o.date.slice(8,10)+'/'+o.date.slice(5,7):'')+' · '+orderUnits(o)+' item(ns) · '+fmt(o.total)+(st?' · '+st:'');
+}
+
+function refreshOrderSelect(modalId,fresh){
+  var cfg=ORDER_MODAL_FIELDS[modalId];if(!cfg)return;
+  var sel=document.getElementById(cfg.select);if(!sel)return;
+  var party=(document.getElementById(cfg.party).value||'').trim().toLowerCase();
+  var keep=orderPreselect!=null?String(orderPreselect):(fresh?'':sel.value);
+  orderPreselect=null;
+  var list=party?buildOrders(cfg.kind).filter(function(o){return o.party.trim().toLowerCase()===party;}):[];
+  list.sort(function(a,b){if(a.open!==b.open)return a.open?-1:1;return b.no-a.no;});
+  list=list.slice(0,15);
+  sel.innerHTML='<option value="">Novo pedido</option>'+list.map(function(o){return '<option value="'+o.no+'">Adicionar ao '+escShip(orderLabel(o))+'</option>';}).join('');
+  sel.value=list.some(function(o){return String(o.no)===keep;})?keep:'';
+}
+
+function selectedOrderNo(selectId){
+  var v=(document.getElementById(selectId)||{}).value;
+  return v?parseInt(v,10):null;
+}
+
+// Para telas que gravam varias linhas: um numero para todas
+async function resolveOrderNo(selectId,kind){
+  var n=selectedOrderNo(selectId);
+  if(n)return n;
+  var r=await sb.rpc('next_order_no',{p_kind:kind});
+  if(r.error){console.error('next_order_no',r.error);return null;}
+  return r.data;
+}
+
+function initOrderFields(){
+  Object.keys(ORDER_MODAL_FIELDS).forEach(function(mid){
+    var el=document.getElementById(ORDER_MODAL_FIELDS[mid].party);
+    if(!el)return;
+    var fn=function(){refreshOrderSelect(mid);};
+    el.addEventListener('change',fn);
+    el.addEventListener('input',fn);
+  });
+}
+initOrderFields();
 
 // ============================================================
 // ENVIOS / CHEGADAS (RASTREIO) - versao 1: rastreio por link, status manual
@@ -2008,8 +2108,8 @@ function shipCounterpart(s){
 
 function shipItemLabels(s){
   var out=[];
-  (s.sale_ids||[]).forEach(function(id){var v=sales.filter(function(x){return x.id===id;})[0];if(v)out.push((v.quantity>1?v.quantity+'x ':'')+v.card_name);});
-  (s.purchase_ids||[]).forEach(function(id){var p=purchases.filter(function(x){return x.id===id;})[0];if(p)out.push((p.quantity>1?p.quantity+'x ':'')+p.description);});
+  shipSaleIds(s).forEach(function(id){var v=sales.filter(function(x){return x.id===id;})[0];if(v)out.push((v.quantity>1?v.quantity+'x ':'')+v.card_name);});
+  shipPurchaseIds(s).forEach(function(id){var p=purchases.filter(function(x){return x.id===id;})[0];if(p)out.push((p.quantity>1?p.quantity+'x ':'')+p.description);});
   return out;
 }
 
@@ -2044,7 +2144,7 @@ function renderShipments(){
     if(st==='atencao'&&!shipNeedsAttention(s))return false;
     if(st==='Entregue'&&s.status!=='Entregue')return false;
     if(q){
-      var hay=[shipCounterpart(s),s.counterpart_name,s.tracking_code,s.carrier,s.notes,s.status].concat(shipItemLabels(s)).join(' ').toLowerCase();
+      var hay=[shipCounterpart(s),s.counterpart_name,s.tracking_code,s.carrier,s.notes,s.status].concat(shipItemLabels(s)).concat((s.order_nos||[]).map(function(n){return orderCode(s.direction==='saida'?'sale':'purchase',n);})).join(' ').toLowerCase();
       if(hay.indexOf(q)===-1)return false;
     }
     return true;
@@ -2063,7 +2163,8 @@ function renderShipments(){
       ?'<i class="ti ti-truck-delivery" title="Saindo para cliente" style="color:#0C447C;font-size:18px"></i>'
       :'<i class="ti ti-package-import" title="Chegando para mim" style="color:var(--amber-dark);font-size:18px"></i>';
     var items=shipItemLabels(s);
-    var itemsHtml=items.length?'<span title="'+escShip(items.join('\n'))+'">'+escShip(items.slice(0,2).join(', '))+(items.length>2?' <span style="color:var(--text3)">+'+(items.length-2)+'</span>':'')+'</span>':'<span style="color:var(--text3)">-</span>';
+    var codes=(s.order_nos||[]).map(function(n){return orderCode(s.direction==='saida'?'sale':'purchase',n);});
+    var itemsHtml=(codes.length?'<span class="order-badge" style="cursor:default">'+codes.join(', ')+'</span><br>':'')+(items.length?'<span title="'+escShip(items.join('\n'))+'">'+escShip(items.slice(0,2).join(', '))+(items.length>2?' <span style="color:var(--text3)">+'+(items.length-2)+'</span>':'')+'</span>':(codes.length?'':'<span style="color:var(--text3)">-</span>'));
     var codeHtml=s.tracking_code
       ?'<span style="font-family:monospace;cursor:copy" title="Copiar código" onclick="copyShipCode(\''+s.id+'\')">'+escShip(s.tracking_code)+'</span> <a href="'+shipTrackUrl(s.tracking_code)+'" target="_blank" rel="noopener" title="Abrir rastreio"><i class="ti ti-external-link"></i></a>'
       :'<span style="color:var(--text3)">-</span>';
@@ -2124,7 +2225,9 @@ function openShipmentModal(id){
   document.getElementById('shp-expected').value=s&&s.expected_date||'';
   document.getElementById('shp-notes').value=s&&s.notes||'';
   document.getElementById('shp-link-search').value='';
-  shipLinkSelected=new Set(s?(s.direction==='saida'?(s.sale_ids||[]):(s.purchase_ids||[])):[]);
+  shipLinkSelected=new Set(s?(s.order_nos||[]):[]);
+  // Envios antigos vinculados por carta: converte para os pedidos dessas cartas
+  if(s){var legacy=s.direction==='saida'?sales.filter(function(v){return (s.sale_ids||[]).indexOf(v.id)!==-1;}):purchases.filter(function(p){return (s.purchase_ids||[]).indexOf(p.id)!==-1;});legacy.forEach(function(r){if(r.order_no!=null)shipLinkSelected.add(r.order_no);});}
   shipDirectionChange(true);
   openModal('shipmentModal');
 }
@@ -2133,42 +2236,71 @@ function shipDirectionChange(keepSelection){
   var dir=document.getElementById('shp-direction').value;
   document.getElementById('shp-customer-field').style.display=dir==='saida'?'':'none';
   document.getElementById('shp-supplier-field').style.display=dir==='chegada'?'':'none';
-  document.getElementById('shp-link-label').textContent=dir==='saida'?'Vendas neste envio':'Compras neste pacote';
+  document.getElementById('shp-link-label').textContent=dir==='saida'?'Pedidos de venda neste envio':'Pedidos de compra neste pacote';
   if(keepSelection!==true)shipLinkSelected=new Set();
   renderShipLinkList();
 }
 
-function shipToggleLink(id,checked){if(checked)shipLinkSelected.add(id);else shipLinkSelected.delete(id);}
+function shipToggleLink(no,checked){
+  if(checked)shipLinkSelected.add(no);else shipLinkSelected.delete(no);
+  // Preenche cliente/fornecedor a partir do primeiro pedido marcado
+  if(checked){
+    var dir=document.getElementById('shp-direction').value;
+    var o=buildOrders(dir==='saida'?'sale':'purchase').filter(function(x){return x.no===no;})[0];
+    var selId=dir==='saida'?'shp-customer':'shp-supplier';
+    var sel=document.getElementById(selId);
+    if(o&&!sel.value){
+      var pid=dir==='saida'?(o.customer_id||((customers.filter(function(c){return c.name.toLowerCase()===o.party.toLowerCase();})[0]||{}).id)):(o.supplier_id||((suppliers.filter(function(f){return f.name.toLowerCase()===o.party.toLowerCase();})[0]||{}).id));
+      if(pid){sel.value=pid;renderShipLinkList();}
+      else if(!document.getElementById('shp-counterpart').value)document.getElementById('shp-counterpart').value=o.party;
+    }
+  }
+}
+
+// Envio guarda numeros de pedido; as linhas sao resolvidas na hora (itens adicionados depois ao pedido entram juntos)
+function shipSaleIds(s){
+  var nos=s.direction==='saida'?(s.order_nos||[]):[];
+  var ids=sales.filter(function(v){return v.order_no!=null&&nos.indexOf(v.order_no)!==-1;}).map(function(v){return v.id;});
+  (s.sale_ids||[]).forEach(function(id){if(ids.indexOf(id)===-1)ids.push(id);});
+  return ids;
+}
+function shipPurchaseIds(s){
+  var nos=s.direction==='chegada'?(s.order_nos||[]):[];
+  var ids=purchases.filter(function(p){return p.order_no!=null&&nos.indexOf(p.order_no)!==-1;}).map(function(p){return p.id;});
+  (s.purchase_ids||[]).forEach(function(id){if(ids.indexOf(id)===-1)ids.push(id);});
+  return ids;
+}
 
 function renderShipLinkList(){
   var dir=document.getElementById('shp-direction').value;
+  var kind=dir==='saida'?'sale':'purchase';
   var q=(document.getElementById('shp-link-search').value||'').toLowerCase().trim();
   var box=document.getElementById('shp-link-list');
-  var rows;
-  if(dir==='saida'){
-    var cid=document.getElementById('shp-customer').value;
-    var c=customers.filter(function(x){return x.id===cid;})[0];
-    rows=sales.filter(function(v){
-      if(shipLinkSelected.has(v.id))return true;
-      if(c&&!(v.customer_id===c.id||(v.buyer&&v.buyer.toLowerCase()===c.name.toLowerCase())))return false;
-      if(!c&&v.delivered)return false;
+  var partyId=document.getElementById(dir==='saida'?'shp-customer':'shp-supplier').value;
+  var party=dir==='saida'?customers.filter(function(x){return x.id===partyId;})[0]:suppliers.filter(function(x){return x.id===partyId;})[0];
+  var orders=buildOrders(kind).filter(function(o){
+    if(shipLinkSelected.has(o.no))return true;
+    if(party){
+      var idMatch=dir==='saida'?o.rows.some(function(r){return r.customer_id===party.id;}):o.rows.some(function(r){return r.supplier_id===party.id;});
+      if(!idMatch&&o.party.trim().toLowerCase()!==party.name.trim().toLowerCase())return false;
       return true;
-    }).map(function(v){return {id:v.id,date:v.sale_date||'',label:(v.quantity>1?v.quantity+'x ':'')+v.card_name,sub:(v.buyer||'')+(v.delivered?' · entregue':''),};});
-  }else{
-    var sid=document.getElementById('shp-supplier').value;
-    rows=purchases.filter(function(p){
-      if(shipLinkSelected.has(p.id))return true;
-      if(sid&&p.supplier_id!==sid)return false;
-      return p.status==='Pendente';
-    }).map(function(p){return {id:p.id,date:p.purchase_date||'',label:(p.quantity>1?p.quantity+'x ':'')+p.description,sub:(p.supplier||'')+' · '+(p.status||'Recebido')};});
-  }
-  if(q)rows=rows.filter(function(r){return (r.label+' '+r.sub).toLowerCase().indexOf(q)!==-1;});
-  rows.sort(function(a,b){var sa=shipLinkSelected.has(a.id)?0:1,sb2=shipLinkSelected.has(b.id)?0:1;if(sa!==sb2)return sa-sb2;return a.date<b.date?1:a.date>b.date?-1:0;});
-  rows=rows.slice(0,150);
-  if(!rows.length){box.innerHTML='<div style="color:var(--text3);padding:6px 0">'+(dir==='saida'?'Nenhuma venda encontrada (escolha o cliente ou busque pelo nome da carta)':'Nenhuma compra pendente encontrada')+'</div>';return;}
-  box.innerHTML=rows.map(function(r){
-    return '<label style="display:flex;gap:8px;align-items:center;padding:3px 0;cursor:pointer;text-transform:none;letter-spacing:0;font-size:12px;color:var(--text)"><input type="checkbox" style="width:auto;margin:0" '+(shipLinkSelected.has(r.id)?'checked ':'')+'onchange="shipToggleLink(\''+r.id+'\',this.checked)">'
-      +'<span style="flex:1"><b>'+escShip(r.label)+'</b> <span style="color:var(--text3)">'+escShip(r.sub)+'</span></span><span style="color:var(--text3)">'+shipFmtDate(r.date)+'</span></label>';
+    }
+    // Sem cliente/fornecedor escolhido: so pedidos em aberto
+    return dir==='saida'?o.rows.some(function(r){return !r.delivered;}):o.open;
+  });
+  if(q)orders=orders.filter(function(o){
+    if(isOrderQuery(q))return orderMatches(kind,o.no,q);
+    var hay=(orderCode(kind,o.no)+' '+o.party+' '+o.rows.map(function(r){return kind==='sale'?r.card_name:r.description;}).join(' ')).toLowerCase();
+    return hay.indexOf(q)!==-1;
+  });
+  orders.sort(function(a,b){var sa=shipLinkSelected.has(a.no)?0:1,sb2=shipLinkSelected.has(b.no)?0:1;if(sa!==sb2)return sa-sb2;return b.no-a.no;});
+  orders=orders.slice(0,60);
+  if(!orders.length){box.innerHTML='<div style="color:var(--text3);padding:6px 0">'+(dir==='saida'?'Nenhum pedido de venda encontrado (escolha o cliente ou busque por PV-, nome ou carta)':'Nenhum pedido de compra pendente encontrado')+'</div>';return;}
+  box.innerHTML=orders.map(function(o){
+    var names=o.rows.map(function(r){return ((r.quantity||1)>1?r.quantity+'x ':'')+(kind==='sale'?r.card_name:r.description);});
+    var namesTxt=names.slice(0,4).join(', ')+(names.length>4?' e mais '+(names.length-4):'');
+    return '<label style="display:flex;gap:8px;align-items:flex-start;padding:4px 0;cursor:pointer;text-transform:none;letter-spacing:0;font-size:12px;color:var(--text);border-bottom:1px solid var(--border)"><input type="checkbox" style="width:auto;margin:2px 0 0" '+(shipLinkSelected.has(o.no)?'checked ':'')+'onchange="shipToggleLink('+o.no+',this.checked)">'
+      +'<span style="flex:1"><b>'+escShip(orderLabel(o))+'</b> <span style="color:var(--text2)">'+escShip(o.party)+'</span><br><span style="color:var(--text3)">'+escShip(namesTxt)+'</span></span></label>';
   }).join('');
 }
 
@@ -2192,8 +2324,9 @@ async function saveShipment(){
     shipped_date:document.getElementById('shp-shipped').value||null,
     expected_date:document.getElementById('shp-expected').value||null,
     notes:document.getElementById('shp-notes').value.trim()||null,
-    sale_ids:dir==='saida'?linked:[],
-    purchase_ids:dir==='chegada'?linked:[],
+    order_nos:linked,
+    sale_ids:[],
+    purchase_ids:[],
     updated_at:new Date().toISOString()
   };
   if(!payload.customer_id&&!payload.supplier_id&&!payload.counterpart_name&&!linked.length){showToast('Informe o cliente/fornecedor, um nome ou os itens','error');return;}
@@ -2224,7 +2357,7 @@ async function changeShipmentStatus(id,status){
   if(!s)return;
   var wasDelivered=s.status==='Entregue';
   var payload={status:status,updated_at:new Date().toISOString()};
-  if(status==='Entregue'&&s.direction==='chegada'&&(s.purchase_ids||[]).length){
+  if(status==='Entregue'&&s.direction==='chegada'&&shipPurchaseIds(s).length){
     // Abre a tela de entrada no estoque antes de gravar
     openShipReceive(s);return;
   }
@@ -2238,7 +2371,7 @@ async function changeShipmentStatus(id,status){
 
 function afterShipmentDelivered(s){
   if(s.direction==='saida'){
-    var pend=(s.sale_ids||[]).filter(function(id){var v=sales.filter(function(x){return x.id===id;})[0];return v&&!v.delivered;});
+    var pend=shipSaleIds(s).filter(function(id){var v=sales.filter(function(x){return x.id===id;})[0];return v&&!v.delivered;});
     if(pend.length&&confirm('Marcar '+pend.length+' venda(s) deste envio como entregue(s)?')){
       sb.from('sales').update({delivered:true}).in('id',pend).then(function(r){
         if(r.error){showToast('Erro ao marcar vendas como entregues','error');return;}
@@ -2247,7 +2380,7 @@ function afterShipmentDelivered(s){
         showToast('Vendas marcadas como entregues');
       });
     }
-  }else if((s.purchase_ids||[]).length){
+  }else if(shipPurchaseIds(s).length){
     openShipReceive(s);
   }
 }
@@ -2257,7 +2390,7 @@ function openShipReceive(s){
   document.getElementById('shr-id').value=s.id;
   document.getElementById('shr-date').value=shipToday();
   var allPokedex=true;
-  var lines=(s.purchase_ids||[]).map(function(pid){
+  var lines=shipPurchaseIds(s).map(function(pid){
     var p=purchases.filter(function(x){return x.id===pid;})[0];
     if(!p)return '';
     var inv=inventory.filter(function(i){return i.purchase_id===pid;});
@@ -2278,8 +2411,9 @@ async function confirmShipReceive(doStock){
   var target=document.getElementById('shr-status').value;
   var errors=0;
   if(doStock){
-    for(var k=0;k<(s.purchase_ids||[]).length;k++){
-      var pid=s.purchase_ids[k];
+    var recIds=shipPurchaseIds(s);
+    for(var k=0;k<recIds.length;k++){
+      var pid=recIds[k];
       var p=purchases.filter(function(x){return x.id===pid;})[0];
       if(!p||p.status==='Cancelado')continue;
       var inv=inventory.filter(function(i){return i.purchase_id===pid;});
@@ -3142,7 +3276,8 @@ function renderPurchases(){
   var purTypeF=document.getElementById('filterPurType').value;
   var purSupF=document.getElementById('filterPurSupplier').value;
   var purList=purchases.filter(function(p){
-    if(purNameF){
+    if(purNameF&&isOrderQuery(purNameF)){if(!orderMatches('purchase',p.order_no,purNameF))return false;}
+    else if(purNameF){
       var purStr=(p.description+' '+(p.supplier||'')+' '+(p.language||'')+' '+(p.condition||'')+' '+(p.set_name||'')+' '+(p.notes||'')).toLowerCase();
       if(purStr.indexOf(purNameF)===-1)return false;
     }
@@ -3156,7 +3291,7 @@ function renderPurchases(){
   tb.innerHTML=purList.map(function(p){
     var costUnit=p.quantity>0?(parseFloat(p.total_amount||0)/p.quantity):0;
     var jaNoEstoque=inventory.some(function(i){return i.purchase_id===p.id;});
-    var pExtrasBadge=p.extras?'<span style="font-size:10px;background:#F3E8FF;color:#6B21A8;padding:1px 6px;border-radius:10px;font-weight:600;margin-left:4px">'+p.extras+'</span>':''; var purImg=p.image_url?'<img src="'+p.image_url+'" class="inv-img" style="cursor:zoom-in" onclick="openLightbox(event,\''+p.image_url+'\')" onerror="this.style.display=\'none\'">':'<div class="inv-img-placeholder"><i class="ti ti-photo-off"></i></div>'; return '<tr><td>'+purImg+'</td><td style="font-weight:600">'+p.description+pExtrasBadge+'</td><td>'+typeBadge(p.product_type)+'</td><td>'+langBadge(p.language)+'</td><td>'+condBadge(p.condition)+'</td><td style="text-align:center">'+p.quantity+'</td><td>'+(p.supplier||'-')+'</td><td style="font-weight:600;color:var(--amber-dark)" title="Carta: '+fmt(p.total_amount)+' + Frete: '+fmt(p.shipping_cost||0)+'">'+fmt(parseFloat(p.total_amount||0)+parseFloat(p.shipping_cost||0))+'</td>'+'<td><span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:10px;background:'+(p.status==='Pendente'?'#FFF3E0':p.status==='Cancelado'?'#FFEBEE':'#EAF3DE')+';color:'+(p.status==='Pendente'?'#E65100':p.status==='Cancelado'?'#B71C1C':'#27500A')+'">'+(p.status||'Recebido')+'</span></td>'+'<td>'+p.purchase_date+'</td><td><div class="actions-cell">'+(p.status==='Pendente'&&!jaNoEstoque?'<button class="btn-small" style="color:#0C447C;border-color:#6FA8DC" onclick="marcarACaminho(\''+p.id+'\')" title="Marcar como A Caminho - ja pago, aguardando chegada"><i class="ti ti-truck-delivery"></i></button>':'')+(p.status==='Pendente'?'<button class="btn-success" onclick="efetivarCompra(\''+p.id+'\')" title="Efetivar - marcar como recebido e adicionar ao estoque"><i class="ti ti-check"></i></button>':'')+'<button class="btn-small" onclick="editPurchase(\''+p.id+'\')" title="Editar"><i class="ti ti-edit"></i></button>'+(p.quantity>1&&p.status!=='Cancelado'?'<button class="btn-small" onclick="openSplitPurchase(\''+p.id+'\')" title="Dividir compra (ex: parte veio em condicao/idioma diferente)"><i class="ti ti-arrows-split"></i></button>':'')+'<button class="btn-small" onclick="duplicatePurchase(\''+p.id+'\')" title="Duplicar"><i class="ti ti-copy"></i></button><button class="btn-danger" onclick="deletePurchase(\''+p.id+'\')"><i class="ti ti-trash"></i></button></div></td></tr>';
+    var pExtrasBadge=p.extras?'<span style="font-size:10px;background:#F3E8FF;color:#6B21A8;padding:1px 6px;border-radius:10px;font-weight:600;margin-left:4px">'+p.extras+'</span>':''; var purImg=p.image_url?'<img src="'+p.image_url+'" class="inv-img" style="cursor:zoom-in" onclick="openLightbox(event,\''+p.image_url+'\')" onerror="this.style.display=\'none\'">':'<div class="inv-img-placeholder"><i class="ti ti-photo-off"></i></div>'; return '<tr><td>'+purImg+'</td><td style="font-weight:600">'+p.description+pExtrasBadge+orderBadge('purchase',p.order_no)+'</td><td>'+typeBadge(p.product_type)+'</td><td>'+langBadge(p.language)+'</td><td>'+condBadge(p.condition)+'</td><td style="text-align:center">'+p.quantity+'</td><td>'+(p.supplier||'-')+'</td><td style="font-weight:600;color:var(--amber-dark)" title="Carta: '+fmt(p.total_amount)+' + Frete: '+fmt(p.shipping_cost||0)+'">'+fmt(parseFloat(p.total_amount||0)+parseFloat(p.shipping_cost||0))+'</td>'+'<td><span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:10px;background:'+(p.status==='Pendente'?'#FFF3E0':p.status==='Cancelado'?'#FFEBEE':'#EAF3DE')+';color:'+(p.status==='Pendente'?'#E65100':p.status==='Cancelado'?'#B71C1C':'#27500A')+'">'+(p.status||'Recebido')+'</span></td>'+'<td>'+p.purchase_date+'</td><td><div class="actions-cell">'+(p.status==='Pendente'&&!jaNoEstoque?'<button class="btn-small" style="color:#0C447C;border-color:#6FA8DC" onclick="marcarACaminho(\''+p.id+'\')" title="Marcar como A Caminho - ja pago, aguardando chegada"><i class="ti ti-truck-delivery"></i></button>':'')+(p.status==='Pendente'?'<button class="btn-success" onclick="efetivarCompra(\''+p.id+'\')" title="Efetivar - marcar como recebido e adicionar ao estoque"><i class="ti ti-check"></i></button>':'')+'<button class="btn-small" onclick="editPurchase(\''+p.id+'\')" title="Editar"><i class="ti ti-edit"></i></button>'+(p.quantity>1&&p.status!=='Cancelado'?'<button class="btn-small" onclick="openSplitPurchase(\''+p.id+'\')" title="Dividir compra (ex: parte veio em condicao/idioma diferente)"><i class="ti ti-arrows-split"></i></button>':'')+'<button class="btn-small" onclick="duplicatePurchase(\''+p.id+'\')" title="Duplicar"><i class="ti ti-copy"></i></button><button class="btn-danger" onclick="deletePurchase(\''+p.id+'\')"><i class="ti ti-trash"></i></button></div></td></tr>';
   }).join('');
 }
 
@@ -3416,6 +3551,7 @@ async function saveMpPurchases(){
   }
   btn.textContent='Salvando...';
 
+  var mpPurOrderNo=await resolveOrderNo('mp-p-order','purchase');
   for(var i=0;i<items.length;i++){
     var it=items[i];
     var rowShipping=totalQtyAll>0?parseFloat((totalShipping*(it.quantity/totalQtyAll)).toFixed(2)):0;
@@ -3441,6 +3577,7 @@ async function saveMpPurchases(){
       status:pStatus,
       shipping_cost:rowShipping
     };
+    if(mpPurOrderNo)purchasePayload.order_no=mpPurOrderNo;
     var pr=await sb.from('purchases').insert(purchasePayload).select();
     if(pr.error){fail++;continue;}
     ok++;
@@ -3561,7 +3698,8 @@ function renderSales(){
   var monthF=document.getElementById('filterSaleMonth').value;
   var platF=document.getElementById('filterPlatform').value;
   var filtered=sales.filter(function(s){
-    if(nameF){
+    if(nameF&&isOrderQuery(nameF)){if(!orderMatches('sale',s.order_no,nameF))return false;}
+    else if(nameF){
       var searchStr=(s.card_name+' '+(s.buyer||'')+' '+(s.platform||'')+' '+(s.sale_date||'')).toLowerCase();
       if(searchStr.indexOf(nameF)===-1)return false;
     }
@@ -3592,7 +3730,7 @@ function renderSales(){
     var paidBtn='<button onclick="toggleSaleField(\''+s.id+'\',\'paid\',' +(s.paid?'false':'true')+')" style="font-size:18px;background:none;border:none;cursor:pointer" title="'+(s.paid?'Pago':'Marcar pago')+'">'+(s.paid?'✅':'⬜')+'</button>';
     var delivBtn='<button onclick="toggleSaleField(\''+s.id+'\',\'delivered\',' +(s.delivered?'false':'true')+')" style="font-size:18px;background:none;border:none;cursor:pointer" title="'+(s.delivered?'Entregue':'Marcar entregue')+'">'+(s.delivered?'✅':'⬜')+'</button>';
     var selBox='<input type="checkbox" class="sale-select-box" value="'+s.id+'" '+(selectedSaleIds.has(s.id)?'checked':'')+' onchange="toggleSaleSelect(\''+s.id+'\',this.checked)">';
-    return '<tr style="opacity:'+(s.delivered?'0.6':'1')+'"><td>'+selBox+'</td><td>'+imgHtml+'</td><td style="font-weight:600">'+s.card_name+'</td><td>'+s.quantity+'</td><td>'+(s.platform||'-')+'</td><td>'+(s.buyer||'-')+'</td><td style="font-weight:600">'+fmt(ts)+'</td><td>'+fmt(tc)+'</td><td class="'+(p>=0?'profit-pos':'profit-neg')+'" style="font-weight:600">'+fmt(p)+'</td><td style="color:'+(p>=0?'var(--success)':'var(--danger)')+'">'+mg+'</td><td>'+s.sale_date+'</td><td style="text-align:center">'+paidBtn+'</td><td style="text-align:center">'+delivBtn+'</td><td><div class="actions-cell"><button class="btn-small" onclick="editSale(\''+s.id+'\')" title="Editar"><i class="ti ti-edit"></i></button><button class="btn-danger" onclick="deleteSale(\''+s.id+'\')" title="Excluir"><i class="ti ti-trash"></i></button></div></td></tr>';
+    return '<tr style="opacity:'+(s.delivered?'0.6':'1')+'"><td>'+selBox+'</td><td>'+imgHtml+'</td><td style="font-weight:600">'+s.card_name+orderBadge('sale',s.order_no)+'</td><td>'+s.quantity+'</td><td>'+(s.platform||'-')+'</td><td>'+(s.buyer||'-')+'</td><td style="font-weight:600">'+fmt(ts)+'</td><td>'+fmt(tc)+'</td><td class="'+(p>=0?'profit-pos':'profit-neg')+'" style="font-weight:600">'+fmt(p)+'</td><td style="color:'+(p>=0?'var(--success)':'var(--danger)')+'">'+mg+'</td><td>'+s.sale_date+'</td><td style="text-align:center">'+paidBtn+'</td><td style="text-align:center">'+delivBtn+'</td><td><div class="actions-cell"><button class="btn-small" onclick="editSale(\''+s.id+'\')" title="Editar"><i class="ti ti-edit"></i></button><button class="btn-danger" onclick="deleteSale(\''+s.id+'\')" title="Excluir"><i class="ti ti-trash"></i></button></div></td></tr>';
   }).join('');
   updateBulkSalesBar();
 }
@@ -3841,6 +3979,7 @@ function savePurchase(){
     status:pStatus,
     shipping_cost:pShipping
   };
+  var pOrderNo=selectedOrderNo('p-order');if(pOrderNo)purchasePayload.order_no=pOrderNo;
 
   function unlockBtn(){btn.textContent='Registrar compra';btn.disabled=false;}
   function finishError(msg,err){
@@ -4182,7 +4321,8 @@ async function saveSplitPurchase(){
     liga_url:p.liga_url||null,
     is_trade:!!p.is_trade,
     status:p.status,
-    shipping_cost:newShipping
+    shipping_cost:newShipping,
+    order_no:p.order_no!=null?p.order_no:undefined
   };
   var r2=await sb.from('purchases').insert(newPurchasePayload).select();
   if(r2.error||!r2.data||!r2.data[0]){
@@ -4316,6 +4456,7 @@ function saveSale(){
     notes:document.getElementById('s-notes').value,
     is_trade:document.getElementById('s-is-trade').checked
   };
+  var sOrderNo=selectedOrderNo('s-order');if(sOrderNo)salePayload.order_no=sOrderNo;
 
   sb.from('sales').insert(salePayload).then(function(r){
     if(r.error){showToast(r.error.code==='P0001'?r.error.message:'Erro ao registrar venda','error');return;}
@@ -4554,6 +4695,7 @@ async function saveMpSales(){
   btn.textContent='Salvando...';btn.disabled=true;
   var ok=0,fail=0;
   var newQtyByInv={};
+  var mpSaleOrderNo=await resolveOrderNo('mp-s-order','sale');
 
   for(var i=0;i<items.length;i++){
     var it=items[i];
@@ -4571,6 +4713,7 @@ async function saveMpSales(){
       notes:null,
       is_trade:isTrade
     };
+    if(mpSaleOrderNo)salePayload.order_no=mpSaleOrderNo;
     var r=await sb.from('sales').insert(salePayload);
     if(r.error){fail++;continue;}
     ok++;
@@ -4616,6 +4759,7 @@ function duplicatePurchase(id){
   if(p.image_url){prev.src=p.image_url;prev.style.display='block';}else{prev.style.display='none';}
   // Show a note that this is a duplicate
   showToast('Modal preenchido com os dados do item — ajuste o que for diferente e salve!');
+  orderPreselect=p.order_no!=null?p.order_no:null;
   openModal('purchaseModal');
 }
 
@@ -5551,6 +5695,7 @@ function editPurchase(id){
   document.getElementById('ep-status').value=p.status||'Recebido';
   document.getElementById('ep-shipping').value=p.shipping_cost||0;
   document.getElementById('ep-is-trade').checked=!!p.is_trade;
+  document.getElementById('ep-order').value=p.order_no!=null?p.order_no:'';
   document.getElementById('ep-img-b64').value='';
   document.getElementById('ep-img-url').value=p.image_url&&p.image_url.startsWith('http')?p.image_url:'';
   var prev=document.getElementById('ep-img-preview');
@@ -5583,6 +5728,7 @@ function saveEditPurchase(){
     is_trade:document.getElementById('ep-is-trade').checked,
     image_url:document.getElementById('ep-img-b64').value||document.getElementById('ep-img-url').value||null
   };
+  var epOrder=parseInt(document.getElementById('ep-order').value,10);if(epOrder>0)payload.order_no=epOrder;
   sb.from('purchases').update(payload).eq('id',id).then(function(r){
     if(r.error){showToast('Erro ao salvar','error');return;}
     // Also update inventory if exists
@@ -5647,6 +5793,7 @@ function editSale(id){
   document.getElementById('es-date').value=s.sale_date||'';
   document.getElementById('es-notes').value=s.notes||'';
   document.getElementById('es-is-trade').checked=!!s.is_trade;
+  document.getElementById('es-order').value=s.order_no!=null?s.order_no:'';
   openModal('editSaleModal');
 }
 
@@ -5666,6 +5813,7 @@ function saveEditSale(){
     notes:document.getElementById('es-notes').value||null,
     is_trade:document.getElementById('es-is-trade').checked
   };
+  var esOrder=parseInt(document.getElementById('es-order').value,10);if(esOrder>0)payload.order_no=esOrder;
   // Ajuste de estoque pela diferenca de quantidade (antes a edicao nao mexia no estoque)
   var old=sales.filter(function(x){return x.id===id;})[0];
   var inv=old&&old.inventory_id?inventory.filter(function(i){return i.id===old.inventory_id;})[0]:null;
