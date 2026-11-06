@@ -4143,20 +4143,30 @@ function duplicatePurchase(id){
 function deletePurchase(id){
   if(!confirm('Excluir esta compra? O item correspondente sai do estoque.'))return;
   var p=purchases.filter(function(x){return x.id===id;})[0];
-  sb.from('purchases').delete().eq('id',id).then(function(){
-    // Delete by purchase_id link first
-    sb.from('inventory').delete().eq('purchase_id',id).then(function(){
-      // Also delete by name match in case purchase_id link is missing
-      if(p&&p.description){
-        sb.from('inventory').delete().eq('user_id',currentUser.id).eq('name',p.description).then(function(){
-          showToast('Compra e item do estoque removidos');
-          loadAll();
-        });
-      } else {
+  // IMPORTANTE: apagar o estoque ANTES da compra. A FK inventory.purchase_id e ON DELETE SET NULL,
+  // entao apagar a compra primeiro zerava o vinculo e o estoque ficava orfao.
+  sb.from('inventory').delete().eq('purchase_id',id).select('id').then(function(r){
+    if(r.error){showToast('Erro ao remover estoque da compra','error');return;}
+    var removed=(r.data||[]).length;
+    var afterInv=function(){
+      sb.from('purchases').delete().eq('id',id).then(function(r2){
+        if(r2.error){showToast('Erro ao excluir compra','error');loadAll();return;}
         showToast('Compra e item do estoque removidos');
         loadAll();
-      }
-    });
+      });
+    };
+    if(removed>0||!p||!p.description){afterInv();return;}
+    // Compra antiga sem vinculo: procurar so linhas SEM purchase_id com o mesmo nome (nunca de outras compras)
+    var orphans=inventory.filter(function(i){return !i.purchase_id&&i.name===p.description;});
+    if(orphans.length===0){afterInv();return;}
+    var msg='Esta compra nao tem item vinculado no estoque. Existem '+orphans.length+' item(ns) sem vinculo chamados "'+p.description+'".';
+    if(orphans.length===1){
+      if(!confirm(msg+'\n\nRemover esse item do estoque tambem?')){afterInv();return;}
+    } else {
+      alert(msg+'\n\nNenhum sera removido automaticamente; ajuste o estoque manualmente se precisar.');
+      afterInv();return;
+    }
+    sb.from('inventory').delete().eq('id',orphans[0].id).then(afterInv);
   });
 }
 
@@ -5177,11 +5187,28 @@ function saveEditSale(){
     notes:document.getElementById('es-notes').value||null,
     is_trade:document.getElementById('es-is-trade').checked
   };
+  // Ajuste de estoque pela diferenca de quantidade (antes a edicao nao mexia no estoque)
+  var old=sales.filter(function(x){return x.id===id;})[0];
+  var inv=old&&old.inventory_id?inventory.filter(function(i){return i.id===old.inventory_id;})[0]:null;
+  var delta=old?payload.quantity-(old.quantity||1):0; // >0 vendeu mais, <0 devolve ao estoque
+  if(inv&&delta>0&&delta>(inv.quantity_available||0)){
+    showToast('Estoque insuficiente: so ha '+(inv.quantity_available||0)+' disponivel(is)','error');return;
+  }
   sb.from('sales').update(payload).eq('id',id).then(function(r){
     if(r.error){showToast('Erro ao salvar','error');return;}
-    showToast('Venda atualizada!');
-    closeModal('editSaleModal');
-    loadAll();
+    var done=function(extra){
+      showToast('Venda atualizada!'+(extra||''));
+      closeModal('editSaleModal');
+      loadAll();
+    };
+    if(!inv||delta===0){
+      done(old&&delta!==0&&!inv?' (sem item de estoque vinculado; estoque nao ajustado)':'');return;
+    }
+    var newQty=(inv.quantity_available||0)-delta;
+    sb.from('inventory').update({quantity_available:newQty}).eq('id',inv.id).then(function(r2){
+      if(r2.error){showToast('Venda salva, mas erro ao ajustar estoque','error');loadAll();return;}
+      done(' Estoque ajustado ('+(delta>0?'-':'+')+Math.abs(delta)+').');
+    });
   });
 }
 
