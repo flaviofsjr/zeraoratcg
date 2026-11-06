@@ -1561,6 +1561,11 @@ tr:hover td{background:var(--bg2)}
           <option>Correios</option><option>Entrega local</option><option>Jadlog</option><option>Loggi</option><option>China Post</option><option>Cainiao</option><option>Skypostal</option><option>Redirecionador</option><option>Outro</option>
         </select>
       </div>
+      <div class="form-field"><label>Plataforma de envio</label>
+        <select id="shp-platform" title="Onde a etiqueta foi comprada">
+          <option value="">Direto na transportadora</option><option>Melhor Envio</option><option>SuperFrete</option><option>Frenet</option><option>Envia</option><option>Kangu</option><option>Outro</option>
+        </select>
+      </div>
       <div class="form-field"><label>Código de rastreio</label><input type="text" id="shp-code" placeholder="Ex: AB123456789BR" style="text-transform:uppercase"></div>
       <div class="form-field"><label>Status</label><select id="shp-status"></select></div>
       <div class="form-field"><label>Frete (R$)</label><input type="number" id="shp-cost" min="0" step="0.01" placeholder="Opcional"></div>
@@ -2157,7 +2162,7 @@ function renderShipments(){
     if(st==='atencao'&&!shipNeedsAttention(s))return false;
     if(st==='Entregue'&&s.status!=='Entregue')return false;
     if(q){
-      var hay=[shipCounterpart(s),s.counterpart_name,s.tracking_code,s.carrier,s.notes,s.status].concat(shipItemLabels(s)).concat((s.order_nos||[]).map(function(n){return orderCode(s.direction==='saida'?'sale':'purchase',n);})).join(' ').toLowerCase();
+      var hay=[shipCounterpart(s),s.counterpart_name,s.tracking_code,s.carrier,s.platform,s.notes,s.status].concat(shipItemLabels(s)).concat((s.order_nos||[]).map(function(n){return orderCode(s.direction==='saida'?'sale':'purchase',n);})).join(' ').toLowerCase();
       if(hay.indexOf(q)===-1)return false;
     }
     return true;
@@ -2196,7 +2201,7 @@ function renderShipments(){
     return '<tr><td>'+dirIcon+'</td>'
       +'<td style="font-weight:600">'+escShip(shipCounterpart(s))+(s.notes?' <i class="ti ti-note" style="color:var(--text3)" title="'+escShip(s.notes)+'"></i>':'')+'</td>'
       +'<td style="max-width:220px">'+itemsHtml+'</td>'
-      +'<td>'+escShip(s.carrier||'-')+'</td>'
+      +'<td>'+escShip(s.carrier||'-')+(s.platform?'<br><span style="font-size:11px;color:var(--text3)">via '+escShip(s.platform)+'</span>':'')+'</td>'
       +'<td>'+codeHtml+'</td>'
       +'<td>'+stSel+'</td>'
       +'<td>'+shipFmtDate(s.shipped_date)+'</td>'
@@ -2230,6 +2235,7 @@ function openShipmentModal(id){
   shipFillSelect('shp-supplier',suppliers,s&&s.supplier_id);
   document.getElementById('shp-counterpart').value=s&&s.counterpart_name||'';
   document.getElementById('shp-carrier').value=s&&s.carrier||'Correios';
+  document.getElementById('shp-platform').value=s&&s.platform||'';
   document.getElementById('shp-code').value=s&&s.tracking_code||'';
   document.getElementById('shp-status').innerHTML=SHIP_STATUSES.map(function(x){return '<option>'+x+'</option>';}).join('');
   document.getElementById('shp-status').value=s?s.status:'Postado';
@@ -2331,6 +2337,7 @@ async function saveShipment(){
     supplier_id:dir==='chegada'?(document.getElementById('shp-supplier').value||null):null,
     counterpart_name:document.getElementById('shp-counterpart').value.trim()||null,
     carrier:document.getElementById('shp-carrier').value,
+    platform:document.getElementById('shp-platform').value||null,
     tracking_code:document.getElementById('shp-code').value.trim().toUpperCase().replace(/\s+/g,'')||null,
     status:status,
     shipping_cost:costRaw===''?null:parseFloat(costRaw),
