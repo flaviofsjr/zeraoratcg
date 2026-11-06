@@ -11,7 +11,7 @@ const CORS = {
 };
 
 const MR_URL = "https://api.melhorrastreio.com.br/graphql";
-const MR_QUERY = `mutation searchParcel ($tracker: TrackerSearchInput!) { result: searchParcel (tracker: $tracker) { lastStatus trackers { trackingCode type } trackingEvents { trackerType trackingCode createdAt title description from to location { city state } } } }`;
+const MR_QUERY = `mutation searchParcel ($tracker: TrackerSearchInput!) { result: searchParcel (tracker: $tracker) { lastStatus postedAt estimatedDelivery deliveredAt trackers { trackingCode type } trackingEvents { trackerType trackingCode createdAt title description from to location { city state } } } }`;
 const S10 = /^[A-Z]{2}\d{9}[A-Z]{2}$/;
 const CARRIER_TYPE: Record<string, string> = { "Correios": "correios", "Loggi": "loggi", "Jadlog": "jadlog" };
 const MAX_PER_RUN = 40;
@@ -23,7 +23,19 @@ function trackerType(code: string, carrier: string | null, platform: string | nu
   return "unknown";
 }
 
-function norm(s: string) { return (s || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, ""); }
+// Data local (Brasil, UTC-3) a partir de um ISO
+function localDate(iso: string | null | undefined): string | null {
+  if (!iso) return null;
+  const d = new Date(new Date(iso).getTime() - 3 * 3600 * 1000);
+  return isNaN(d.getTime()) ? null : d.toISOString().slice(0, 10);
+}
+function evPlace(e: any): string | null {
+  if (!e) return null;
+  if (e.location?.city) return e.location.city + (e.location.state ? "/" + e.location.state : "");
+  return e.from || null;
+}
+
+function norm(s: string) { return (s || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, ""); }
 
 function suggestStatus(lastStatus: string, ev: any, count: number): string | null {
   const t = norm((ev?.title || "") + " " + (ev?.description || ""));
@@ -61,7 +73,7 @@ Deno.serve(async (req) => {
     let ids: string[] | null = null;
     try { const b = await req.json(); if (Array.isArray(b?.ids) && b.ids.length) ids = b.ids; } catch (_) { /* sem corpo */ }
 
-    let q = sb.from("shipments").select("id,tracking_code,carrier,platform,status").eq("user_id", u.user.id)
+    let q = sb.from("shipments").select("id,tracking_code,carrier,platform,status,direction,shipped_date,expected_date,origin,destination").eq("user_id", u.user.id)
       .neq("status", "Entregue").not("tracking_code", "is", null);
     if (ids) q = q.in("id", ids);
     const { data: rows, error } = await q.order("tracking_synced_at", { ascending: true, nullsFirst: true }).limit(MAX_PER_RUN);
@@ -79,7 +91,15 @@ Deno.serve(async (req) => {
         const last = evs[0] || null;
         const loc = last ? (last.location?.city ? last.location.city + (last.location.state ? "/" + last.location.state : "") : (last.from || "")) : "";
         const suggested = suggestStatus(r?.lastStatus || "", last, evs.length);
-        const upd = {
+        // Origem: primeiro evento com local; destino: ultimo "to" informado ou local da entrega
+        const chrono = evs.slice().reverse();
+        const origin = evPlace(chrono.find((e: any) => evPlace(e))) ;
+        const toEv = evs.find((e: any) => e.to);
+        const deliveredEv = suggested === "Entregue" ? last : null;
+        const destination = (toEv && toEv.to) || evPlace(deliveredEv);
+        const posted = localDate(r?.postedAt) || localDate(chrono.find((e: any) => /coletad|postad/i.test(e.title || ""))?.createdAt);
+        const eta = localDate(r?.estimatedDelivery);
+        const upd: Record<string, unknown> = {
           tracking_last_title: last?.title || null,
           tracking_last_desc: last?.description || null,
           tracking_last_location: loc || null,
@@ -89,8 +109,12 @@ Deno.serve(async (req) => {
           tracking_synced_at: now,
           tracking_error: evs.length ? null : "Nenhum evento encontrado ainda",
         };
+        if (!s.shipped_date && posted) upd.shipped_date = posted;      // nao sobrescreve a data que voce digitou
+        if (eta && eta !== s.expected_date) upd.expected_date = eta;   // previsao da transportadora sempre atualiza
+        if (!s.origin && origin) upd.origin = origin;
+        if (!s.destination && destination) upd.destination = destination;
         await sb.from("shipments").update(upd).eq("id", s.id);
-        results.push({ id: s.id, ok: true, events: evs.length, suggested, title: upd.tracking_last_title, at: upd.tracking_last_at });
+        results.push({ id: s.id, ok: true, events: evs.length, suggested, title: upd.tracking_last_title, at: upd.tracking_last_at, shipped_date: upd.shipped_date ?? null, expected_date: upd.expected_date ?? null });
       } catch (e) {
         const msg = (e as Error).message || String(e);
         await sb.from("shipments").update({ tracking_synced_at: now, tracking_error: msg }).eq("id", s.id);
