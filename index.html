@@ -1569,7 +1569,7 @@ tr:hover td{background:var(--bg2)}
       <div class="form-field"><label>Código de rastreio</label><input type="text" id="shp-code" placeholder="Ex: AB123456789BR" style="text-transform:uppercase"></div>
       <div class="form-field"><label>Status</label><select id="shp-status"></select></div>
       <div class="form-field"><label>Frete (R$)</label><input type="number" id="shp-cost" min="0" step="0.01" placeholder="Opcional"></div>
-      <div class="form-field"><label>Data de postagem</label><input type="date" id="shp-shipped"></div>
+      <div class="form-field"><label>Data de postagem</label><input type="date" id="shp-shipped" title="Com código de rastreio, preenche sozinho com a data real da transportadora"></div>
       <div class="form-field"><label>Previsão de chegada</label><input type="date" id="shp-expected"></div>
       <div class="form-field"><label>Origem (cidade/UF)</label><input type="text" id="shp-origin" placeholder="Preenche sozinho pelo rastreio"></div>
       <div class="form-field"><label>Destino (cidade/UF)</label><input type="text" id="shp-destination" placeholder="Ex: Curitiba/PR"></div>
@@ -2110,6 +2110,7 @@ function shipIsOpen(s){return s.status!=='Entregue';}
 function shipNeedsNotify(s){return s.direction==='saida'&&shipIsOpen(s)&&!s.notified_at&&s.status!=='Preparando';}
 function shipNeedsAttention(s){
   if(!shipIsOpen(s))return false;
+  if(s.tracking_suggested_status==='Entregue')return false; // ja chegou, so falta aplicar
   if(s.status==='Problema')return true;
   var today=shipToday();
   if(s.expected_date&&s.expected_date<today)return true;
@@ -2243,7 +2244,7 @@ function openShipmentModal(id){
   document.getElementById('shp-status').innerHTML=SHIP_STATUSES.map(function(x){return '<option>'+x+'</option>';}).join('');
   document.getElementById('shp-status').value=s?s.status:'Postado';
   document.getElementById('shp-cost').value=s&&s.shipping_cost!=null?s.shipping_cost:'';
-  document.getElementById('shp-shipped').value=s?(s.shipped_date||''):shipToday();
+  document.getElementById('shp-shipped').value=s?(s.shipped_date||''):'';
   document.getElementById('shp-expected').value=s&&s.expected_date||'';
   document.getElementById('shp-origin').value=s&&s.origin||'';
   document.getElementById('shp-destination').value=s&&s.destination||'';
@@ -2517,7 +2518,8 @@ function shipRouteCell(s){
   var o=s.origin||'', d=s.destination||'';
   if(!d&&s.direction==='saida'){var c=customers.filter(function(x){return x.id===s.customer_id;})[0];if(c&&c.city)d=c.city;}
   if(!o&&!d)return '<span style="color:var(--text3)">-</span>';
-  return escShip(o||'?')+' <span style="color:var(--text3)">→</span> '+escShip(d||'?');
+  var dHtml=d?escShip(d):'<span style="color:var(--text3);cursor:help" title="'+(s.direction==='saida'?'A transportadora não informa o destino. Cadastre a cidade do cliente (Cadastros > Clientes, ex: Natal/RN) ou edite o envio.':'Edite o envio para informar o destino.')+'">?</span>';
+  return escShip(o||'?')+' <span style="color:var(--text3)">→</span> '+dHtml;
 }
 
 async function refreshShipmentTracking(silent,onlyIds){

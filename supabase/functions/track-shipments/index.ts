@@ -173,7 +173,7 @@ Deno.serve(async (req) => {
           tracking_synced_at: now,
           tracking_error: evs.length ? null : "Nenhum evento encontrado ainda",
         };
-        if (!s.shipped_date && posted) upd.shipped_date = posted;      // nao sobrescreve a data que voce digitou
+        if (posted && posted !== s.shipped_date) upd.shipped_date = posted; // data real de postagem da transportadora prevalece
         if (eta && eta !== s.expected_date) upd.expected_date = eta;   // previsao da transportadora sempre atualiza
         if (!s.origin && origin) upd.origin = origin;
         if (!s.destination && destination) upd.destination = destination;
