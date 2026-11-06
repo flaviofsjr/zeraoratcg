@@ -2299,13 +2299,15 @@ function renderShipLinkList(){
   var party=dir==='saida'?customers.filter(function(x){return x.id===partyId;})[0]:suppliers.filter(function(x){return x.id===partyId;})[0];
   var orders=buildOrders(kind).filter(function(o){
     if(shipLinkSelected.has(o.no))return true;
+    // Com busca digitada: procura em todos os pedidos (inclusive ja marcados como entregues)
+    if(q)return true;
     if(party){
       var idMatch=dir==='saida'?o.rows.some(function(r){return r.customer_id===party.id;}):o.rows.some(function(r){return r.supplier_id===party.id;});
       if(!idMatch&&o.party.trim().toLowerCase()!==party.name.trim().toLowerCase())return false;
       return true;
     }
-    // Sem cliente/fornecedor escolhido: so pedidos em aberto
-    return dir==='saida'?o.rows.some(function(r){return !r.delivered;}):o.open;
+    // Sem cliente/fornecedor e sem busca: vendas mais recentes (entregue nao filtra, pois costuma ser marcado no envio); compras pendentes
+    return dir==='saida'?true:o.open;
   });
   if(q)orders=orders.filter(function(o){
     if(isOrderQuery(q))return orderMatches(kind,o.no,q);
