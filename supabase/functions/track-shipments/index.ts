@@ -1,5 +1,5 @@
 // Atualiza o rastreio dos envios em aberto do usuario logado.
-// Fonte: API publica usada pelo site Melhor Rastreio (nao oficial, sem chave).
+// Fontes: rastreio publico da SuperFrete (etiquetas SuperFrete) e API publica usada pelo site Melhor Rastreio (nao oficial, sem chave).
 // Nao muda o status do envio: grava o ultimo evento e um "status sugerido";
 // o app aplica a mudanca (assim os fluxos de Entregue continuam pedindo confirmacao).
 import { createClient } from "npm:@supabase/supabase-js@2";
@@ -78,6 +78,46 @@ async function fetchTracking(code: string, type: string) {
   return j.data?.result;
 }
 
+// ---- SuperFrete (rastreio publico, sem token). Guardamos so cidades e eventos: a resposta traz dados pessoais do destinatario.
+const SF_URL = "https://rastreamento.superfrete.com/public/tracking/";
+function sfUnit(u: string): string | null {
+  const t = (u || "").trim();
+  if (!t) return null;
+  return t.toLowerCase().split(/\s+/).map((w) => (w.length <= 2 || /\d/.test(w)) ? w.toUpperCase() : w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+}
+function sfDedupe(d: string): string {
+  const t = (d || "").trim(); const h = t.length / 2;
+  return (t.length % 2 === 1 && t.slice(0, Math.floor(h)) === t.slice(Math.ceil(h))) ? t.slice(0, Math.floor(h)) : t;
+}
+function sfIso(d: string): string | null {
+  // "2026-11-03 17:16:15" (horario de Brasilia)
+  const m = /^(\d{4}-\d{2}-\d{2})[ T](\d{2}:\d{2}(?::\d{2})?)/.exec(d || "");
+  return m ? new Date(m[1] + "T" + m[2] + "-03:00").toISOString() : null;
+}
+async function fetchSuperFrete(code: string) {
+  const res = await fetch(SF_URL + encodeURIComponent(code), { headers: { "Accept": "application/json", "User-Agent": "VCards-Manager/1.0" } });
+  if (!res.ok) throw new Error("SuperFrete HTTP " + res.status);
+  const j = await res.json();
+  const pt = j?.provider_tracking?.tracking;
+  const tag = j?.tracking?.order_data?.tag || j?.tracking?.orders_api_data?.data?.tag || {};
+  const place = (o: any) => (o && o.city) ? o.city + (o.region ? "/" + o.region : "") : null;
+  const events = (pt?.eventos || []).map((e: any) => ({
+    createdAt: sfIso(e.data), title: e.status || sfDedupe(e.descricao), description: sfDedupe(e.descricao || ""),
+    from: sfUnit(e.unidade), to: null, location: null,
+  })).filter((e: any) => e.createdAt);
+  if (!events.length && !j?.tracking) throw new Error("SuperFrete: código não encontrado");
+  const chrono = events.slice().sort((a: any, b: any) => (a.createdAt < b.createdAt ? -1 : 1));
+  const postedEv = chrono.find((e: any) => /depositado|coleta efetuada|postad/i.test(e.description + " " + e.title));
+  return {
+    lastStatus: /entregue/i.test(pt?.status || "") && !/nao|não/i.test(pt?.status || "") ? "DELIVERED" : "",
+    postedAt: postedEv?.createdAt || j?.tracking?.orders_api_data?.service_posted?.date || null,
+    estimatedDelivery: j?.promised_delivery_at ? j.promised_delivery_at + "T15:00:00.000Z" : null,
+    trackingEvents: events,
+    origin: place(tag.origin),
+    destination: place(tag.destiny),
+  };
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
   const json = (b: unknown, s = 200) => new Response(JSON.stringify(b), { status: s, headers: { ...CORS, "Content-Type": "application/json" } });
@@ -102,17 +142,25 @@ Deno.serve(async (req) => {
       const type = trackerType(code, s.carrier, s.platform);
       const now = new Date().toISOString();
       try {
-        const r = await fetchTracking(code, type);
+        // SuperFrete primeiro quando a etiqueta e de la (ou codigo numerico de 14 digitos); se falhar, tenta o Melhor Rastreio
+        let r: any = null, sfErr: string | null = null;
+        if (s.platform === "SuperFrete" || /^\d{14}$/.test(code)) {
+          try { r = await fetchSuperFrete(code); } catch (e) { sfErr = (e as Error).message; }
+        }
+        if (!r) {
+          try { r = await fetchTracking(code, type); }
+          catch (e) { throw new Error(sfErr && /bad request/i.test((e as Error).message) ? sfErr : (e as Error).message); }
+        }
         const evs = (r?.trackingEvents || []).slice().sort((a: any, b: any) => (a.createdAt < b.createdAt ? 1 : -1));
         const last = evs[0] || null;
         const loc = evPlace(last) || "";
         const suggested = suggestStatus(r?.lastStatus || "", last, evs.length);
         // Origem: primeiro evento com local; destino: ultimo "to" informado ou local da entrega
         const chrono = evs.slice().reverse();
-        const origin = evPlace(chrono.find((e: any) => evPlace(e))) ;
+        const origin = r?.origin || evPlace(chrono.find((e: any) => evPlace(e)));
         const toEv = evs.find((e: any) => e.to);
         const deliveredEv = suggested === "Entregue" ? last : null;
-        const destination = cleanPlace(toEv && toEv.to) || evPlace(deliveredEv);
+        const destination = r?.destination || cleanPlace(toEv && toEv.to) || evPlace(deliveredEv);
         const posted = localDate(r?.postedAt) || localDate(chrono.find((e: any) => /coletad|postad/i.test(e.title || ""))?.createdAt);
         const eta = localDate(r?.estimatedDelivery);
         const upd: Record<string, unknown> = {
@@ -134,7 +182,7 @@ Deno.serve(async (req) => {
       } catch (e) {
         let msg = (e as Error).message || String(e);
         if (/bad request/i.test(msg)) msg = type === "jadlog" || s.carrier === "Jadlog"
-          ? "Jadlog sem rastreio automático (o site exige captcha) — use o link"
+          ? "Jadlog fora da SuperFrete sem rastreio automático — use o link"
           : "Código não encontrado no rastreio automático — confira o código ou use o link";
         await sb.from("shipments").update({ tracking_synced_at: now, tracking_error: msg }).eq("id", s.id);
         results.push({ id: s.id, ok: false, error: msg });
