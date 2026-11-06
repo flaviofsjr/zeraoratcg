@@ -672,7 +672,7 @@ tr:hover td{background:var(--bg2)}
       <div class="form-field"><label>Data</label><input type="date" id="p-date"></div>
       <div class="form-field"><label>Preco de venda sugerido (R$)</label><input type="number" id="p-saleprice" placeholder="0.00" step="0.01"></div>
       <div class="form-field"><label>Extras</label>
-        <select id="p-extras"><option value="">Nenhum</option><option>Foil</option><option>Reverse Foil</option><option>Pokeball Foil</option><option>Masterball Foil</option><option>Full Art</option><option>Secret Rare</option><option>Holo</option><option>Shiny</option><option>Promo</option><option>Outro</option></select>
+        <select id="p-extras"><option value="">Nenhum</option><option>Foil</option><option>Reverse Foil</option><option>Pokeball Foil</option><option>Masterball Foil</option><option>Full Art</option><option>Secret Rare</option><option>Holo</option><option>Shiny</option><option>Shattered Holo</option><option>Edition One</option><option>Promo</option><option>Outro</option></select>
       </div>
       <div class="form-field"><label>Link Liga Pokemon</label>
         <input type="text" id="p-liga" placeholder="https://www.ligapokemon.com.br/..."></div>
@@ -779,7 +779,7 @@ tr:hover td{background:var(--bg2)}
       <div class="form-field"><label>Status</label><select id="inv-edit-status" onchange="invEditStatusChange()"><option value="A venda">A venda</option><option value="Reservado">Reservado</option><option value="Em estoque">Em estoque</option><option value="A Caminho">A Caminho</option><option value="Pokedex">Pokedex</option></select></div>
       <div class="form-field"><label>Categoria</label><select id="inv-edit-category"><option value="">Sem categoria</option><option>Pokemon Comum</option><option>Treinador Comum</option><option>Energia</option><option>EX</option><option>Arte Rara</option><option>Promo</option></select></div>
       <div class="form-field"><label>Data de recebimento</label><input type="date" id="inv-edit-received" title="Quando o item chegou. Em branco enquanto estiver A Caminho."></div>
-      <div class="form-field"><label>Extras</label><select id="inv-edit-extras"><option value="">Nenhum</option><option>Foil</option><option>Reverse Foil</option><option>Pokeball Foil</option><option>Masterball Foil</option><option>Full Art</option><option>Secret Rare</option><option>Holo</option><option>Shiny</option><option>Promo</option><option>Outro</option></select></div>
+      <div class="form-field"><label>Extras</label><select id="inv-edit-extras"><option value="">Nenhum</option><option>Foil</option><option>Reverse Foil</option><option>Pokeball Foil</option><option>Masterball Foil</option><option>Full Art</option><option>Secret Rare</option><option>Holo</option><option>Shiny</option><option>Shattered Holo</option><option>Edition One</option><option>Promo</option><option>Outro</option></select></div>
       <div class="form-field full"><label>Link Liga Pokemon</label><input type="text" id="inv-edit-liga" placeholder="https://www.ligapokemon.com.br/..."></div>
       <div class="form-field full">
         <label>Foto (URL da imagem)</label>
@@ -1059,7 +1059,7 @@ tr:hover td{background:var(--bg2)}
       <div class="form-field"><label>Data</label><input type="date" id="ep-date"></div>
       <div class="form-field"><label>Preco de venda (R$)</label><input type="number" id="ep-saleprice" step="0.01"></div>
       <div class="form-field"><label>Extras</label>
-        <select id="ep-extras"><option value="">Nenhum</option><option>Foil</option><option>Reverse Foil</option><option>Pokeball Foil</option><option>Masterball Foil</option><option>Full Art</option><option>Secret Rare</option><option>Holo</option><option>Shiny</option><option>Promo</option><option>Outro</option></select>
+        <select id="ep-extras"><option value="">Nenhum</option><option>Foil</option><option>Reverse Foil</option><option>Pokeball Foil</option><option>Masterball Foil</option><option>Full Art</option><option>Secret Rare</option><option>Holo</option><option>Shiny</option><option>Shattered Holo</option><option>Edition One</option><option>Promo</option><option>Outro</option></select>
       </div>
       <div class="form-field full"><label>Link Liga Pokemon</label><input type="text" id="ep-liga" placeholder="https://www.ligapokemon.com.br/..."></div>
       <div class="form-field full">
@@ -2804,7 +2804,7 @@ function addMpPurchaseRow(){
     '<td data-label="Qtd"><input type="number" class="mp-qty" value="1" min="1" oninput="renderMpPurchaseSummary()"></td>'+
     '<td data-label="Total pago"><input type="number" class="mp-amount" placeholder="0.00" step="0.01" min="0" oninput="renderMpPurchaseSummary()"></td>'+
     '<td data-label="Venda sug."><input type="number" class="mp-saleprice" placeholder="0.00" step="0.01" min="0"></td>'+
-    '<td data-label="Extras"><select class="mp-extras"><option value="">Nenhum</option><option>Foil</option><option>Reverse Foil</option><option>Pokeball Foil</option><option>Masterball Foil</option><option>Full Art</option><option>Secret Rare</option><option>Holo</option><option>Shiny</option><option>Promo</option><option>Outro</option></select></td>'+
+    '<td data-label="Extras"><select class="mp-extras"><option value="">Nenhum</option><option>Foil</option><option>Reverse Foil</option><option>Pokeball Foil</option><option>Masterball Foil</option><option>Full Art</option><option>Secret Rare</option><option>Holo</option><option>Shiny</option><option>Shattered Holo</option><option>Edition One</option><option>Promo</option><option>Outro</option></select></td>'+
     '<td><button class="mp-rm" onclick="removeMpPurchaseRow(this)" title="Remover linha"><i class="ti ti-trash"></i></button></td>';
   document.getElementById('mpPurchaseRows').appendChild(tr);
 }
