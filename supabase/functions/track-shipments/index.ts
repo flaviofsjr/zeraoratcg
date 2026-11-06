@@ -17,10 +17,26 @@ const CARRIER_TYPE: Record<string, string> = { "Correios": "correios", "Loggi": 
 const MAX_PER_RUN = 40;
 
 function trackerType(code: string, carrier: string | null, platform: string | null): string {
-  if (/^ME[A-Z0-9]{8,}$/.test(code) || platform === "Melhor Envio") return "melhorenvio";
-  if (carrier && CARRIER_TYPE[carrier]) return CARRIER_TYPE[carrier];
+  // O formato do codigo manda: AA123456789BR e sempre Correios, mesmo comprado no Melhor Envio
   if (S10.test(code)) return "correios";
+  if (/^ME[A-Z0-9]{8,}$/.test(code)) return "melhorenvio";
+  if (carrier && CARRIER_TYPE[carrier]) return CARRIER_TYPE[carrier];
+  if (platform === "Melhor Envio") return "melhorenvio";
   return "unknown";
+}
+
+// "01 - SAO BERNARDO DO CAMPO/SP" -> "Sao Bernardo do Campo/SP"
+function cleanPlace(p: string | null | undefined): string | null {
+  if (!p) return null;
+  let t = String(p).replace(/^\s*\d+\s*-\s*/, "").trim();
+  if (!t) return null;
+  const parts = t.split("/");
+  let city = parts[0].trim();
+  const uf = (parts[1] || "").trim().toUpperCase();
+  if (city === city.toUpperCase()) {
+    city = city.toLowerCase().split(/\s+/).map((w, i) => (i > 0 && /^(de|da|do|das|dos|e)$/.test(w)) ? w : w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+  }
+  return city + (uf ? "/" + uf : "");
 }
 
 // Data local (Brasil, UTC-3) a partir de um ISO
@@ -31,8 +47,8 @@ function localDate(iso: string | null | undefined): string | null {
 }
 function evPlace(e: any): string | null {
   if (!e) return null;
-  if (e.location?.city) return e.location.city + (e.location.state ? "/" + e.location.state : "");
-  return e.from || null;
+  if (e.location?.city) return cleanPlace(e.location.city + (e.location.state ? "/" + e.location.state : ""));
+  return cleanPlace(e.from);
 }
 
 function norm(s: string) { return (s || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, ""); }
@@ -89,14 +105,14 @@ Deno.serve(async (req) => {
         const r = await fetchTracking(code, type);
         const evs = (r?.trackingEvents || []).slice().sort((a: any, b: any) => (a.createdAt < b.createdAt ? 1 : -1));
         const last = evs[0] || null;
-        const loc = last ? (last.location?.city ? last.location.city + (last.location.state ? "/" + last.location.state : "") : (last.from || "")) : "";
+        const loc = evPlace(last) || "";
         const suggested = suggestStatus(r?.lastStatus || "", last, evs.length);
         // Origem: primeiro evento com local; destino: ultimo "to" informado ou local da entrega
         const chrono = evs.slice().reverse();
         const origin = evPlace(chrono.find((e: any) => evPlace(e))) ;
         const toEv = evs.find((e: any) => e.to);
         const deliveredEv = suggested === "Entregue" ? last : null;
-        const destination = (toEv && toEv.to) || evPlace(deliveredEv);
+        const destination = cleanPlace(toEv && toEv.to) || evPlace(deliveredEv);
         const posted = localDate(r?.postedAt) || localDate(chrono.find((e: any) => /coletad|postad/i.test(e.title || ""))?.createdAt);
         const eta = localDate(r?.estimatedDelivery);
         const upd: Record<string, unknown> = {
@@ -116,7 +132,10 @@ Deno.serve(async (req) => {
         await sb.from("shipments").update(upd).eq("id", s.id);
         results.push({ id: s.id, ok: true, events: evs.length, suggested, title: upd.tracking_last_title, at: upd.tracking_last_at, shipped_date: upd.shipped_date ?? null, expected_date: upd.expected_date ?? null });
       } catch (e) {
-        const msg = (e as Error).message || String(e);
+        let msg = (e as Error).message || String(e);
+        if (/bad request/i.test(msg)) msg = type === "jadlog" || s.carrier === "Jadlog"
+          ? "Jadlog sem rastreio automático (o site exige captcha) — use o link"
+          : "Código não encontrado no rastreio automático — confira o código ou use o link";
         await sb.from("shipments").update({ tracking_synced_at: now, tracking_error: msg }).eq("id", s.id);
         results.push({ id: s.id, ok: false, error: msg });
       }
