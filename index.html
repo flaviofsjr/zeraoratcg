@@ -483,7 +483,7 @@ tr:hover td{background:var(--bg2)}
     <div class="page" id="page-envios">
       <div class="section-header">
         <h3>Envios e chegadas</h3>
-        <button class="btn-primary" style="width:auto" onclick="openShipmentModal()"><i class="ti ti-plus"></i> Novo envio</button>
+        <div style="display:flex;gap:8px"><button class="btn-secondary" id="shipRefreshBtn" style="width:auto" onclick="refreshShipmentTracking(false)" title="Consulta o rastreio de todos os envios em aberto"><i class="ti ti-refresh"></i> Atualizar rastreios</button><button class="btn-primary" style="width:auto" onclick="openShipmentModal()"><i class="ti ti-plus"></i> Novo envio</button></div>
       </div>
 
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin-bottom:1.25rem">
@@ -502,7 +502,7 @@ tr:hover td{background:var(--bg2)}
         <table><thead><tr><th></th><th>Para / De</th><th>Itens</th><th>Transportadora</th><th>Rastreio</th><th>Status</th><th>Postado</th><th>Previsão</th><th>Dias</th><th></th></tr></thead>
         <tbody id="shipmentsTable"><tr><td colspan="10"><div class="empty-state"><i class="ti ti-truck"></i>Nenhum envio registrado</div></td></tr></tbody></table>
       </div>
-      <div style="font-size:11px;color:var(--text3);margin-top:8px;line-height:1.5">Clique no código para copiar; o ícone <i class="ti ti-external-link"></i> abre o rastreio no 17TRACK (Correios, China Post e outras). Mudar o status para <b>Entregue</b> marca as vendas como entregues ou dá entrada das compras no estoque.</div>
+      <div style="font-size:11px;color:var(--text3);margin-top:8px;line-height:1.5">Clique no código para copiar; o ícone <i class="ti ti-external-link"></i> abre o rastreio no 17TRACK. <b>Atualizar rastreios</b> consulta Correios, Loggi, Jadlog e Melhor Envio automaticamente (também roda sozinho ao abrir a aba, se a última consulta tiver mais de 6h); passe o mouse no último evento para ver o histórico. Mudar o status para <b>Entregue</b> marca as vendas como entregues ou dá entrada das compras no estoque.</div>
     </div>
 
     <!-- DESEJOS (WISHLIST) -->
@@ -1927,7 +1927,7 @@ function showPage(p,el){
     if(p==='dashboard')renderStockEvolution();
     if(p==='dre')renderDRE();
     if(p==='despesas'){loadExpenses();}
-    if(p==='envios'){loadShipments();}
+    if(p==='envios'){loadShipments().then(maybeAutoRefreshTracking);}
     if(p==='cadastros'){loadSuppliers();loadCustomers();loadProducts();setTimeout(runMigration,1000);}
     if(p==='colecao'){currentCollectionId=null;document.getElementById('colecaoDetailView').style.display='none';document.getElementById('colecaoListView').style.display='block';loadPersonalCollections().then(renderCollectionsList);}
   }catch(err){console.error('showPage error:',err);}
@@ -2111,7 +2111,7 @@ function shipNeedsAttention(s){
   if(s.status==='Problema')return true;
   var today=shipToday();
   if(s.expected_date&&s.expected_date<today)return true;
-  if(s.status!=='Preparando'&&shipDaysBetween(s.updated_at||s.created_at,today)>=SHIP_STALE_DAYS)return true;
+  if(s.status!=='Preparando'&&shipDaysBetween(s.tracking_last_at||s.updated_at||s.created_at,today)>=SHIP_STALE_DAYS)return true;
   return false;
 }
 
@@ -2203,7 +2203,7 @@ function renderShipments(){
       +'<td style="max-width:220px">'+itemsHtml+'</td>'
       +'<td>'+escShip(s.carrier||'-')+(s.platform?'<br><span style="font-size:11px;color:var(--text3)">via '+escShip(s.platform)+'</span>':'')+'</td>'
       +'<td>'+codeHtml+'</td>'
-      +'<td>'+stSel+'</td>'
+      +'<td>'+stSel+shipTrackingCell(s)+'</td>'
       +'<td>'+shipFmtDate(s.shipped_date)+'</td>'
       +'<td'+(late?' style="color:var(--danger);font-weight:600"':'')+'>'+shipFmtDate(s.expected_date)+'</td>'
       +'<td style="text-align:center">'+days+alertIcon+'</td>'
@@ -2465,6 +2465,88 @@ async function confirmShipReceive(doStock){
   closeModal('shipReceiveModal');
   showToast(errors?'Concluído com '+errors+' erro(s) — confira o estoque':(doStock?'Chegada registrada e estoque atualizado!':'Envio marcado como entregue'),errors?'error':'success');
   if(doStock)loadAll();else loadShipments();
+}
+
+// ---- Rastreio automatico (Edge Function track-shipments) ----
+var SHIP_RANK={'Preparando':0,'Postado':1,'Em trânsito':2,'Na alfândega':3,'Saiu para entrega':4,'Aguardando retirada':4,'Entregue':5};
+var SHIP_AUTO_REFRESH_HOURS=6;
+var shipTrackingBusy=false, shipAutoRefreshDone=false;
+
+function shipCanAutoApply(cur,sug){
+  if(!sug||sug===cur||sug==='Entregue')return false;
+  if(sug==='Problema')return true;
+  if(cur==='Problema'||cur==='Na alfândega')return true;
+  return (SHIP_RANK[sug]||0)>=(SHIP_RANK[cur]||0);
+}
+function shipFmtDateTime(iso){
+  if(!iso)return '';
+  var d=new Date(iso);
+  function p(n){return (n<10?'0':'')+n;}
+  return p(d.getDate())+'/'+p(d.getMonth()+1)+' '+p(d.getHours())+':'+p(d.getMinutes());
+}
+function shipTrackingCell(s){
+  if(!s.tracking_code||s.carrier==='Entrega local')return '';
+  var out='';
+  if(s.tracking_last_title){
+    var hist=(s.tracking_events||[]).slice(0,10).map(function(e){return shipFmtDateTime(e.at)+' — '+e.title+(e.city?' ('+e.city+(e.state?'/'+e.state:'')+')':'');}).join('\n');
+    out+='<div style="font-size:11px;color:var(--text2);margin-top:3px;line-height:1.3;cursor:help" title="'+escShip(hist||s.tracking_last_desc||'')+'"><i class="ti ti-map-pin" style="font-size:11px"></i> '+escShip(s.tracking_last_title)+(s.tracking_last_location?' · '+escShip(s.tracking_last_location):'')+'<br><span style="color:var(--text3)">'+shipFmtDateTime(s.tracking_last_at)+'</span></div>';
+  }else if(s.tracking_error){
+    out+='<div style="font-size:11px;color:var(--text3);margin-top:3px">'+escShip(s.tracking_error)+'</div>';
+  }
+  var sug=s.tracking_suggested_status;
+  if(sug&&sug!==s.status&&shipIsOpen(s)&&!shipCanAutoApply(s.status,sug)){
+    out+='<button class="btn-small" style="margin-top:3px;font-size:10px;padding:1px 6px" onclick="changeShipmentStatus(\''+s.id+'\',\''+sug+'\')" title="O rastreio indica '+escShip(sug)+'">Rastreio: '+escShip(sug)+' — aplicar</button>';
+  }
+  return out;
+}
+
+async function refreshShipmentTracking(silent){
+  if(shipTrackingBusy)return;
+  var btn=document.getElementById('shipRefreshBtn');
+  var hasAny=shipments.some(function(s){return shipIsOpen(s)&&s.tracking_code&&s.carrier!=='Entrega local';});
+  if(!hasAny){if(!silent)showToast('Nenhum envio em aberto com código de rastreio','error');return;}
+  shipTrackingBusy=true;
+  if(btn){btn.disabled=true;btn.innerHTML='<i class="ti ti-loader-2"></i> Atualizando...';}
+  try{
+    var ss=await sb.auth.getSession();
+    var token=ss&&ss.data&&ss.data.session?ss.data.session.access_token:null;
+    if(!token)throw new Error('Sessão expirada: faça login de novo');
+    var resp=await fetch(SUPA_URL+'/functions/v1/track-shipments',{method:'POST',headers:{'Authorization':'Bearer '+token,'apikey':SUPA_KEY,'Content-Type':'application/json'},body:'{}'});
+    var json={};try{json=await resp.json();}catch(e){}
+    if(!resp.ok)throw new Error(json.error||('HTTP '+resp.status));
+    var before={};shipments.forEach(function(s){before[s.id]=s.status;});
+    await loadShipments();
+    var applied=0,delivered=0,failed=0;
+    for(var i=0;i<(json.results||[]).length;i++){
+      var r=json.results[i];
+      if(!r.ok){failed++;continue;}
+      var s=shipments.filter(function(x){return x.id===r.id;})[0];
+      if(!s||!r.suggested)continue;
+      if(shipCanAutoApply(before[r.id],r.suggested)){await changeShipmentStatus(r.id,r.suggested);applied++;}
+      else if(r.suggested==='Entregue'&&before[r.id]!=='Entregue')delivered++;
+    }
+    renderShipments();
+    var msg=(json.checked||0)+' rastreio(s) consultado(s)';
+    if(applied)msg+=' · '+applied+' status atualizado(s)';
+    if(delivered)msg+=' · '+delivered+' entregue(s): confirme na lista';
+    if(failed)msg+=' · '+failed+' com erro';
+    if(!silent||applied||delivered)showToast(msg,failed&&!applied?'error':'success');
+  }catch(e){
+    console.error('track-shipments',e);
+    if(!silent)showToast('Erro ao atualizar rastreios: '+(e.message||e),'error');
+  }finally{
+    shipTrackingBusy=false;
+    if(btn){btn.disabled=false;btn.innerHTML='<i class="ti ti-refresh"></i> Atualizar rastreios';}
+  }
+}
+
+// Ao abrir a aba, atualiza sozinho se a ultima consulta tiver mais de 6h
+function maybeAutoRefreshTracking(){
+  if(shipAutoRefreshDone)return;
+  var limit=Date.now()-SHIP_AUTO_REFRESH_HOURS*3600000;
+  var stale=shipments.some(function(s){return shipIsOpen(s)&&s.tracking_code&&s.carrier!=='Entrega local'&&(!s.tracking_synced_at||new Date(s.tracking_synced_at).getTime()<limit);});
+  shipAutoRefreshDone=true;
+  if(stale)refreshShipmentTracking(true);
 }
 
 // ---- Avisar cliente pelo WhatsApp ----
