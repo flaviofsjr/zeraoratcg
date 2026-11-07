@@ -930,8 +930,28 @@ tr:hover td{background:var(--bg2)}
     <div id="gr-result" style="margin-top:12px"></div>
     <div class="modal-actions">
       <button class="btn-secondary" onclick="closeModal('gradeModal')">Fechar</button>
+      <button class="btn-secondary" style="width:auto;display:none" id="grRealBtn" onclick="grSaveAsReal()"><i class="ti ti-camera"></i> Usar fotos no anúncio</button>
       <button class="btn-secondary" style="width:auto;display:none" id="grApplyBtn" onclick="grApply()"></button>
       <button class="btn-primary" style="width:auto" id="grRunBtn" onclick="grRun()"><i class="ti ti-sparkles"></i> Avaliar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL FOTOS REAIS -->
+<div class="modal-bg" id="realPhotosModal">
+  <div class="modal" style="max-width:640px">
+    <h3><i class="ti ti-camera"></i> Fotos reais da unidade</h3>
+    <input type="hidden" id="rp-inv-id">
+    <div style="background:var(--bg2);border-radius:var(--radius);padding:10px 12px;font-size:13px;margin-bottom:10px">
+      <strong id="rp-name"></strong>
+      <div style="color:var(--text2);margin-top:2px" id="rp-info"></div>
+    </div>
+    <p style="font-size:12px;color:var(--text2);margin:0 0 10px">Aparecem no seu fichário público com o selo "Foto real". A primeira é a capa. Até 6 fotos.</p>
+    <div id="rp-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:10px"></div>
+    <div id="rp-status" style="font-size:12px;color:var(--text2);margin-top:8px"></div>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeModal('realPhotosModal')">Fechar</button>
+      <label class="btn-primary" style="width:auto;display:inline-flex;align-items:center;gap:6px;cursor:pointer"><i class="ti ti-upload"></i> Adicionar fotos<input type="file" accept="image/*" multiple id="rp-file" style="display:none" onchange="rpAddFromInput()"></label>
     </div>
   </div>
 </div>
@@ -3833,6 +3853,7 @@ function renderInventory(){
       +'<td><div class="actions-cell">'
       +'<button class="btn-small" onclick="openInvEdit(\''+inv.id+'\')" title="Editar"><i class="ti ti-tag"></i></button>'
       +((!inv.product_type||inv.product_type==='Carta Avulsa')?'<button class="btn-small" onclick="openGradeModal(\''+inv.id+'\')" title="Avaliar condicao por foto (IA)"><i class="ti ti-zoom-scan"></i></button>':'')
+      +'<button class="btn-small" onclick="openRealPhotos(\''+inv.id+'\')" title="Fotos reais da unidade (aparecem no fichario publico)" style="'+((inv.real_photos||[]).length?'color:#1B5E20;border-color:#7FB77E':'')+'"><i class="ti ti-camera"></i>'+((inv.real_photos||[]).length?' '+inv.real_photos.length:'')+'</button>'
       +(inv.purchase_id?'':'<button class="btn-small" onclick="openSplitInv(\''+inv.id+'\')" title="Dividir estoque (item sem compra vinculada)"><i class="ti ti-arrows-split"></i></button>')
       +((!inv.product_type||inv.product_type==='Carta Avulsa')&&invLiga?'<button class="btn-small" onclick="mpOpenLowest(\''+inv.id+'\')" title="Menor na Liga: abre a carta na Liga; clique no favorito Atualizar ZeraoraTCG para destacar a menor oferta na sua condicao"><i class="ti ti-zoom-money"></i></button>':'')
       +'</div></td>'
@@ -7817,6 +7838,7 @@ function openGradeModal(invId){
   document.getElementById('gr-prev-extra').innerHTML='<i class="ti ti-photo-plus" style="font-size:28px"></i>';
   document.getElementById('gr-result').innerHTML='';
   document.getElementById('grApplyBtn').style.display='none';
+  var rbr=document.getElementById('grRealBtn');rbr.style.display='none';rbr.disabled=false;rbr.innerHTML='<i class="ti ti-camera"></i> Usar fotos no anúncio';
   var rb=document.getElementById('grRunBtn');rb.disabled=false;rb.innerHTML='<i class="ti ti-sparkles"></i> Avaliar';
   document.getElementById('gr-inv-id').value=invId||'';
   var inv=invId?inventory.find(function(i){return i.id===invId;}):null;
@@ -7921,7 +7943,8 @@ function grRender(r,inv){
   if(inv){
     ab.style.display='inline-flex';
     ab.innerHTML='<i class="ti ti-check"></i> '+((inv.quantity_available||0)>1?'Separar 1 unid. como ':'Aplicar ')+grEsc(r.condicao_sugerida);
-  }else ab.style.display='none';
+    var rbr=document.getElementById('grRealBtn');rbr.style.display=(inv.quantity_available||0)>1?'none':'inline-flex';
+  }else{ab.style.display='none';document.getElementById('grRealBtn').style.display='none';}
 }
 async function grApply(){
   if(!grLast||!grLast.invId)return;
@@ -7952,6 +7975,91 @@ async function grApply(){
   showToast('Condição alterada para '+cond);
   closeModal('gradeModal');
   loadAll();
+}
+
+// ===== FOTOS REAIS DA UNIDADE (bucket real-photos, coluna inventory.real_photos) =====
+var RP_MAX=6;
+function rpList(inv){return inv&&Array.isArray(inv.real_photos)?inv.real_photos.slice():[];}
+function rpResize(file){
+  return new Promise(function(resolve,reject){
+    var img=new Image();
+    img.onload=function(){
+      var max=1600,w=img.naturalWidth,h=img.naturalHeight,sc=Math.min(1,max/Math.max(w,h));
+      var c=document.createElement('canvas');c.width=Math.round(w*sc);c.height=Math.round(h*sc);
+      c.getContext('2d').drawImage(img,0,0,c.width,c.height);URL.revokeObjectURL(img.src);
+      c.toBlob(function(b){b?resolve(b):reject(new Error('Falha ao converter a imagem'));},'image/jpeg',0.88);
+    };
+    img.onerror=function(){reject(new Error('Nao consegui ler '+file.name));};
+    img.src=URL.createObjectURL(file);
+  });
+}
+async function rpUpload(invId,files){
+  var inv=inventory.find(function(i){return i.id===invId;});if(!inv)throw new Error('Item nao encontrado');
+  var list=rpList(inv),room=RP_MAX-list.length;
+  if(room<=0)throw new Error('Esse item ja tem '+RP_MAX+' fotos');
+  files=Array.prototype.slice.call(files,0,room);
+  for(var k=0;k<files.length;k++){
+    var blob=await rpResize(files[k]);
+    var path=currentUser.id+'/'+invId+'/'+Date.now()+'-'+k+'.jpg';
+    var up=await sb.storage.from('real-photos').upload(path,blob,{contentType:'image/jpeg',upsert:false});
+    if(up.error)throw new Error('Erro no upload: '+up.error.message);
+    list.push(sb.storage.from('real-photos').getPublicUrl(path).data.publicUrl);
+  }
+  var r=await sb.from('inventory').update({real_photos:list}).eq('id',invId);
+  if(r.error)throw new Error('Erro ao salvar no item: '+r.error.message);
+  inv.real_photos=list;
+  return files.length;
+}
+function rpPathFromUrl(u){var m=String(u).split('/real-photos/');return m[1]?decodeURIComponent(m[1].split('?')[0]):null;}
+function openRealPhotos(invId){
+  var inv=inventory.find(function(i){return i.id===invId;});if(!inv)return;
+  document.getElementById('rp-inv-id').value=invId;
+  document.getElementById('rp-name').textContent=inv.name;
+  document.getElementById('rp-info').textContent=[inv.set_name,inv.condition,inv.language,fmt(inv.sale_price||0)].filter(Boolean).join(' • ');
+  document.getElementById('rp-status').textContent='';
+  rpRenderGrid();openModal('realPhotosModal');
+}
+function rpRenderGrid(){
+  var invId=document.getElementById('rp-inv-id').value;
+  var inv=inventory.find(function(i){return i.id===invId;});var list=rpList(inv);
+  document.getElementById('rp-grid').innerHTML=list.length?list.map(function(u,k){
+    return '<div style="position:relative;border:1px solid var(--border2);border-radius:var(--radius);overflow:hidden;aspect-ratio:2.5/3.5;background:var(--bg2)">'
+      +'<img src="'+u+'" style="width:100%;height:100%;object-fit:cover;cursor:zoom-in" onclick="openLightbox(event,\''+u+'\')">'
+      +(k===0?'<span style="position:absolute;left:4px;top:4px;background:#1B5E20;color:#fff;font-size:10px;font-weight:700;padding:1px 6px;border-radius:8px">Capa</span>':'<button class="btn-small" style="position:absolute;left:4px;top:4px;padding:2px 5px" title="Usar como capa" onclick="rpMakeCover('+k+')"><i class="ti ti-star"></i></button>')
+      +'<button class="btn-danger" style="position:absolute;right:4px;top:4px;padding:2px 5px" title="Remover" onclick="rpRemove('+k+')"><i class="ti ti-trash"></i></button></div>';
+  }).join(''):'<div style="grid-column:1/-1;text-align:center;color:var(--text3);font-size:13px;padding:20px">Nenhuma foto real ainda</div>';
+}
+async function rpAddFromInput(){
+  var el=document.getElementById('rp-file');var files=el.files;if(!files||!files.length)return;
+  var invId=document.getElementById('rp-inv-id').value;var st=document.getElementById('rp-status');
+  st.textContent='Enviando '+files.length+' foto(s)...';
+  try{var n=await rpUpload(invId,files);st.textContent='';showToast(n+' foto(s) adicionada(s)');rpRenderGrid();renderInventory();}
+  catch(e){st.textContent='';showToast(e.message||String(e),'error');}
+  el.value='';
+}
+async function rpSave(invId,list){
+  var r=await sb.from('inventory').update({real_photos:list}).eq('id',invId);
+  if(r.error){showToast('Erro ao salvar','error');return false;}
+  var inv=inventory.find(function(i){return i.id===invId;});if(inv)inv.real_photos=list;
+  rpRenderGrid();renderInventory();return true;
+}
+async function rpRemove(k){
+  if(!confirm('Remover esta foto?'))return;
+  var invId=document.getElementById('rp-inv-id').value;var inv=inventory.find(function(i){return i.id===invId;});
+  var list=rpList(inv);var url=list.splice(k,1)[0];
+  if(await rpSave(invId,list)){var p=rpPathFromUrl(url);if(p)sb.storage.from('real-photos').remove([p]).then(function(){});}
+}
+async function rpMakeCover(k){
+  var invId=document.getElementById('rp-inv-id').value;var inv=inventory.find(function(i){return i.id===invId;});
+  var list=rpList(inv);var u=list.splice(k,1)[0];list.unshift(u);await rpSave(invId,list);
+}
+// Da tela de avaliacao: reaproveita as fotos enviadas como fotos reais do anuncio
+async function grSaveAsReal(){
+  if(!grLast||!grLast.invId)return;
+  var files=[grFiles.front,grFiles.back].concat(grFiles.extra||[]).filter(Boolean);
+  var btn=document.getElementById('grRealBtn');if(btn){btn.disabled=true;btn.innerHTML='<i class="ti ti-loader-2"></i> Salvando...';}
+  try{var n=await rpUpload(grLast.invId,files);showToast(n+' foto(s) salva(s) no anuncio');if(btn)btn.innerHTML='<i class="ti ti-check"></i> Fotos salvas';renderInventory();}
+  catch(e){showToast(e.message||String(e),'error');if(btn){btn.disabled=false;btn.innerHTML='<i class="ti ti-camera"></i> Usar fotos no anúncio';}}
 }
 </script>
 </body>
