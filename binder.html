@@ -177,10 +177,11 @@ function updateStats(){
   document.getElementById('statTypes').textContent=types.length;
 }
 
-function condBadge(c){
+function condBadge(c,mod){
   if(!c||c==='N/A')return '';
   var m={M:'badge-nm',NM:'badge-nm',SP:'badge-lp',MP:'badge-mp',HP:'badge-hp',D:'badge-hp'};
-  return '<span class="badge '+(m[c]||'badge-nm')+'">'+c+'</span>';
+  var t=mod==='+'?'Topo da faixa: quase a condicao de cima':mod==='-'?'No limite: perto da condicao de baixo':'';
+  return '<span class="badge '+(m[c]||'badge-nm')+'"'+(t?' title="'+t+'"':'')+'>'+c+(t?mod:'')+'</span>';
 }
 function langBadge(l){
   if(!l||l==='N/A')return '';
@@ -199,7 +200,7 @@ function mergeIdenticalItems(items){
   var map={},order=[];
   for(var idx=0;idx<items.length;idx++){
     var i=items[idx];
-    var key=[(i.name||'').toLowerCase(),(i.set_name||'').toLowerCase(),(i.condition||''),(i.language||''),(i.product_type||''),(i.extras||'').toLowerCase(),(i.sale_price||0)].join('|');
+    var key=[(i.name||'').toLowerCase(),(i.set_name||'').toLowerCase(),(i.condition||''),(i.condition_mod||''),(i.language||''),(i.product_type||''),(i.extras||'').toLowerCase(),(i.sale_price||0)].join('|');
     if(realPhotos(i).length)key='real|'+i.id;
     if(!map[key]){
       var merged={};
@@ -274,7 +275,7 @@ function renderItems(items){
     html+='<div class="card-name">'+nameHtml+'</div>';
     html+='<div class="card-set-wrap">'+(i.set_name?'<span class="card-set">'+i.set_name+'</span>':'')+'</div>';
     html+='<div class="card-extras-wrap">'+(i.extras?'<span class="badge badge-extra">'+i.extras+'</span>':'')+'</div>';
-    html+='<div class="card-badges">'+typeBadge(i.product_type)+' '+condBadge(i.condition)+' '+langBadge(i.language)+'</div>';
+    html+='<div class="card-badges">'+typeBadge(i.product_type)+' '+condBadge(i.condition,i.condition_mod)+' '+langBadge(i.language)+'</div>';
     html+='<div class="card-price">'+fmt(i.sale_price)+'</div>';
     html+='<div class="card-qty">'+i.quantity_available+' disponivel(is)</div>';
     if(rp.length) html+='<button class="real-link" onclick="openGal(\''+i.id+'\',0)"><i class="ti ti-photo"></i> Ver fotos desta unidade</button>';
@@ -297,7 +298,7 @@ function openGal(id,idx){
   var i=galItems[id];if(!i)return;
   galList=realPhotos(i).map(function(u,k){return {url:u,cap:'Foto real '+(k+1)+' de '+realPhotos(i).length};});
   if(i.image_url)galList.push({url:i.image_url,cap:'Imagem oficial da carta'});
-  galName=i.name+(i.condition?' · '+i.condition:'');
+  galName=i.name+(i.condition?' · '+i.condition+(i.condition_mod==='+'||i.condition_mod==='-'?i.condition_mod:''):'');
   galIdx=idx||0;galShow();document.getElementById('gal').classList.add('open');
 }
 function galShow(){
