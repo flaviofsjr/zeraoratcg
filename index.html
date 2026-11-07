@@ -276,7 +276,7 @@ tr:hover td{background:var(--bg2)}
         <div style="display:flex;gap:8px">
           <button class="btn-secondary" style="width:auto" onclick="openModal('verifyStockModal')"><i class="ti ti-shield-check"></i> Verificar estoque</button>
           <button class="btn-secondary" style="width:auto" onclick="openMarketModal()"><i class="ti ti-refresh"></i> Preços de mercado</button>
-          <button class="btn-secondary" style="width:auto" onclick="openGradeModal()" title="Avaliar a condicao de uma carta por foto"><i class="ti ti-zoom-scan"></i> Avaliar carta</button>
+          <button class="btn-secondary gr-ai-btn" style="width:auto;display:none" onclick="openGradeModal()" title="Avaliar a condicao de uma carta por foto"><i class="ti ti-zoom-scan"></i> Avaliar carta</button>
           <a class="btn-secondary" style="width:auto;text-decoration:none;display:inline-flex;align-items:center;gap:4px" href="/anuncio" target="_blank" title="Gerar imagens e texto para anunciar no WhatsApp"><i class="ti ti-speakerphone"></i> Modo anúncio</a><button class="btn-secondary" style="width:auto" onclick="exportInventory()"><i class="ti ti-download"></i> CSV</button>
           <button class="btn-secondary" style="width:auto" id="toggleZeroBtn" onclick="toggleZeroStock()"><i class="ti ti-eye-off"></i> Ocultar esgotados</button>
         </div>
@@ -3856,7 +3856,7 @@ function renderInventory(){
       +'<td><span class="badge '+statusClass+'">'+statusLabel+'</span></td>'
       +'<td><div class="actions-cell">'
       +'<button class="btn-small" onclick="openInvEdit(\''+inv.id+'\')" title="Editar"><i class="ti ti-tag"></i></button>'
-      +((!inv.product_type||inv.product_type==='Carta Avulsa')?'<button class="btn-small" onclick="openGradeModal(\''+inv.id+'\')" title="Avaliar condicao por foto (IA)"><i class="ti ti-zoom-scan"></i></button>':'')
+      +(GRADE_AI_ENABLED&&(!inv.product_type||inv.product_type==='Carta Avulsa')?'<button class="btn-small" onclick="openGradeModal(\''+inv.id+'\')" title="Avaliar condicao por foto (IA)"><i class="ti ti-zoom-scan"></i></button>':'')
       +'<button class="btn-small" onclick="openRealPhotos(\''+inv.id+'\')" title="Fotos reais da unidade (aparecem no fichario publico)" style="'+((inv.real_photos||[]).length?'color:#1B5E20;border-color:#7FB77E':'')+'"><i class="ti ti-camera"></i>'+((inv.real_photos||[]).length?' '+inv.real_photos.length:'')+'</button>'
       +(inv.purchase_id?'':'<button class="btn-small" onclick="openSplitInv(\''+inv.id+'\')" title="Dividir estoque (item sem compra vinculada)"><i class="ti ti-arrows-split"></i></button>')
       +((!inv.product_type||inv.product_type==='Carta Avulsa')&&invLiga?'<button class="btn-small" onclick="mpOpenLowest(\''+inv.id+'\')" title="Menor na Liga: abre a carta na Liga; clique no favorito Atualizar ZeraoraTCG para destacar a menor oferta na sua condicao"><i class="ti ti-zoom-money"></i></button>':'')
@@ -7833,6 +7833,9 @@ document.addEventListener('click',function(e){
 init();
 
 // ===== AVALIAR CONDICAO COM IA (Edge Function grade-card) =====
+// Avaliador por IA desligado ate configurar o segredo ANTHROPIC_API_KEY no Supabase. Para religar: true
+var GRADE_AI_ENABLED=false;
+if(GRADE_AI_ENABLED)document.querySelectorAll('.gr-ai-btn').forEach(function(b){b.style.display='';});
 var grFiles={front:null,back:null,extra:[]},grLast=null;
 var GR_COND_COLORS={M:'#1B5E20',NM:'#2E7D32',SP:'#7A5200',MP:'#E65100',HP:'#B71C1C',D:'#4A148C'};
 function grEsc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
