@@ -258,7 +258,6 @@ function renderItems(items){
     var imgHtml='<i class="ti ti-photo-off" style="font-size:32px;opacity:0.3"></i>';
     var rp=realPhotos(i);
     if(rp.length) galItems[i.id]=i;
-    var realBadge=rp.length?'<span class="real-badge" onclick="event.preventDefault();event.stopPropagation();openGal(\''+i.id+'\',0)"><i class="ti ti-camera"></i> Foto real'+(rp.length>1?' · '+rp.length:'')+'</span>':'';
     // Capa: imagem oficial quando existe; foto real so vira capa se nao houver imagem
     if(rp.length&&!imgSrc){
       imgHtml='<img src="'+rp[0]+'" alt="'+i.name+'" loading="lazy" decoding="async" style="width:100%;height:100%;object-fit:cover;border-radius:6px;cursor:zoom-in" onclick="openGal(\''+i.id+'\',0)">';
@@ -273,14 +272,14 @@ function renderItems(items){
     var nameHtml=i.liga_url?'<a href="'+i.liga_url+'" target="_blank" style="color:inherit;text-decoration:none">'+i.name+'</a>':i.name;
     
     html+='<div class="card">';
-    html+='<div class="card-img" style="cursor:'+(i.liga_url?'pointer':'default')+'">'+imgHtml+realBadge+'</div>';
+    html+='<div class="card-img" style="cursor:'+(i.liga_url?'pointer':'default')+'">'+imgHtml+'</div>';
     html+='<div class="card-name">'+nameHtml+'</div>';
     html+='<div class="card-set-wrap">'+(i.set_name?'<span class="card-set">'+i.set_name+'</span>':'')+'</div>';
     html+='<div class="card-extras-wrap">'+(i.extras?'<span class="badge badge-extra">'+i.extras+'</span>':'')+'</div>';
     html+='<div class="card-badges">'+typeBadge(i.product_type)+' '+condBadge(i.condition,i.condition_mod)+' '+langBadge(i.language)+'</div>';
     html+='<div class="card-price">'+fmt(i.sale_price)+'</div>';
     html+='<div class="card-qty">'+i.quantity_available+' disponivel(is)</div>';
-    if(rp.length) html+='<button class="real-link" onclick="openGal(\''+i.id+'\',0)"><i class="ti ti-photo"></i> Ver fotos desta unidade</button>';
+    if(rp.length) html+='<button class="real-link" onclick="openGal(\''+i.id+'\',0)"><i class="ti ti-camera"></i> Foto real'+(rp.length>1?' · '+rp.length:'')+'</button>';
     if(waLink) html+='<a class="card-wa" href="'+waLink+'" target="_blank"><i class="ti ti-brand-whatsapp"></i> Tenho interesse</a>';
     if(i.liga_url) html+='<a href="'+i.liga_url+'" target="_blank" class="card-liga"><i class="ti ti-external-link"></i> Ver na Liga Pokemon</a>';
     html+='</div>';
