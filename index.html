@@ -808,6 +808,7 @@ tr:hover td{background:var(--bg2)}
       <div class="form-field"><label>Preco de venda (R$)</label><input type="number" id="inv-edit-price" placeholder="0.00" step="0.01" oninput="updateInvMarginPreview()"></div>
       <div class="form-field"><label>Margem estimada</label><input type="text" id="inv-edit-margin" readonly style="background:var(--bg2)"></div>
       <div class="form-field"><label>Status</label><select id="inv-edit-status" onchange="invEditStatusChange()"><option value="A venda">A venda</option><option value="Reservado">Reservado</option><option value="Em estoque">Em estoque</option><option value="A Caminho">A Caminho</option><option value="Pokedex">Pokedex</option></select></div>
+      <div class="form-field"><label>Ajuste da condição <span id="inv-edit-cond-base" style="color:var(--text3);font-weight:400"></span></label><select id="inv-edit-cond-mod"><option value="">Sem ajuste</option><option value="+">+ (topo da faixa)</option><option value="-">− (no limite)</option></select></div>
       <div class="form-field"><label>Categoria</label><select id="inv-edit-category"><option value="">Sem categoria</option><option>Pokemon Comum</option><option>Treinador Comum</option><option>Energia</option><option>EX</option><option>Arte Rara</option><option>Promo</option></select></div>
       <div class="form-field"><label>Data de recebimento</label><input type="date" id="inv-edit-received" title="Quando o item chegou. Em branco enquanto estiver A Caminho."></div>
       <div class="form-field"><label>Extras</label><select id="inv-edit-extras"><option value="">Nenhum</option><option>Foil</option><option>Reverse Foil</option><option>Pokeball Foil</option><option>Masterball Foil</option><option>Full Art</option><option>Secret Rare</option><option>Holo</option><option>Shiny</option><option>Shattered Holo</option><option>Edition One</option><option>Promo</option><option>Outro</option></select></div>
@@ -3426,11 +3427,14 @@ function typeBadge(t){
   var m={'Carta Avulsa':'badge-carta','Lacrado':'badge-lacrado','Acessorio':'badge-acessorio','Lote':'badge-lote'};
   return '<span class="badge '+(m[t]||'badge-carta')+'">'+(t||'Carta')+'</span>';
 }
-function condBadge(c){
+function condBadge(c,mod){
   if(!c||c==='N/A')return '<span style="color:var(--text3)">N/A</span>';
   var m={M:'badge-nm',NM:'badge-nm',SP:'badge-lp',MP:'badge-mp',HP:'badge-hp',D:'badge-hp'};
-  return '<span class="badge '+(m[c]||'badge-nm')+'">'+c+'</span>';
+  var t=mod==='+'?'Topo da faixa: quase a condicao de cima':mod==='-'?'No limite: perto da condicao de baixo':'';
+  return '<span class="badge '+(m[c]||'badge-nm')+'"'+(t?' title="'+t+'"':'')+'>'+c+(mod==='+'||mod==='-'?mod:'')+'</span>';
 }
+// Condicao com ajuste em texto (ex.: NM-); o ajuste e so visual, a Liga continua usando a condicao base
+function condText(i){return (i&&i.condition||'')+(i&&(i.condition_mod==='+'||i.condition_mod==='-')?i.condition_mod:'');}
 function langBadge(l){
   if(!l||l==='N/A')return '<span style="color:var(--text3)">N/A</span>';
   var m={'PT-BR':'badge-ptbr','EN':'badge-en','JP':'badge-jp','FR':'badge-fr','CH':'badge-ch'};
@@ -3840,7 +3844,7 @@ function renderInventory(){
       +'<td>'+catBadge(inv.card_category)+'</td>'
       +'<td style="color:var(--text2);font-size:12px">'+(inv.set_name||'-')+'</td>'
       +'<td>'+langBadge(inv.language)+'</td>'
-      +'<td>'+condBadge(inv.condition)+'</td>'
+      +'<td>'+condBadge(inv.condition,inv.condition_mod)+'</td>'
       +'<td><span class="qty-badge '+qtyClass+'">'+avail+'</span></td>'
       +'<td style="color:var(--text2)">'+inv.quantity_total+'</td>'
       +'<td>'+fmt(inv.cost_price)+'</td>'
@@ -4249,6 +4253,8 @@ function openInvEdit(id){
   document.getElementById('inv-edit-status').value=inv.status||'A venda';
   document.getElementById('inv-edit-received').value=inv.received_at?String(inv.received_at).slice(0,10):'';
   document.getElementById('inv-edit-category').value=inv.card_category||'';
+  document.getElementById('inv-edit-cond-mod').value=inv.condition_mod||'';
+  document.getElementById('inv-edit-cond-base').textContent='('+(inv.condition||'-')+')';
   document.getElementById('inv-edit-extras').value=inv.extras||'';
   document.getElementById('inv-edit-liga').value=inv.liga_url||'';
   var imgUrl=inv.image_url||'';
@@ -4307,7 +4313,7 @@ function saveInvPrice(){
   var invStatus=document.getElementById('inv-edit-status').value;
   var received=document.getElementById('inv-edit-received').value||null;
   // A Caminho = ainda nao chegou; ao sair de A Caminho sem data, o banco grava a data de hoje
-  var updatePayload={sale_price:price,extras:extras,liga_url:liga,status:invStatus,received_at:invStatus==='A Caminho'?null:received,card_category:document.getElementById('inv-edit-category').value||null};
+  var updatePayload={sale_price:price,extras:extras,liga_url:liga,status:invStatus,received_at:invStatus==='A Caminho'?null:received,card_category:document.getElementById('inv-edit-category').value||null,condition_mod:document.getElementById('inv-edit-cond-mod').value||null};
   if(finalImg) updatePayload.image_url=finalImg;
   sb.from('inventory').update(updatePayload).eq('id',id).then(function(r){
     if(r.error){showToast('Erro ao salvar','error');return;}
@@ -4590,7 +4596,7 @@ function filterInvSuggestions(){
     return '<div class="suggest-item" onclick="selectInvItem(\''+i.id+'\')">'
       +'<div class="suggest-item-info">'
       +'<span class="suggest-item-name">'+i.name+'</span>'
-      +'<span class="suggest-item-sub">'+typeBadge(i.product_type)+' '+(i.set_name||'')+' '+condBadge(i.condition)+'</span>'
+      +'<span class="suggest-item-sub">'+typeBadge(i.product_type)+' '+(i.set_name||'')+' '+condBadge(i.condition,i.condition_mod)+'</span>'
       +'</div>'
       +'<div style="text-align:right">'
       +'<div style="color:var(--amber-dark);font-weight:700">'+fmt(i.sale_price)+'</div>'
@@ -4714,7 +4720,7 @@ function filterMpSaleSuggestions(rid){
     return '<div class="suggest-item" onclick="selectMpSaleItem('+rid+',\''+i.id+'\')">'
       +'<div class="suggest-item-info">'
       +'<span class="suggest-item-name">'+i.name+'</span>'
-      +'<span class="suggest-item-sub">'+typeBadge(i.product_type)+' '+(i.set_name||'')+' '+condBadge(i.condition)+'</span>'
+      +'<span class="suggest-item-sub">'+typeBadge(i.product_type)+' '+(i.set_name||'')+' '+condBadge(i.condition,i.condition_mod)+'</span>'
       +'</div>'
       +'<div style="text-align:right">'
       +'<div style="color:var(--amber-dark);font-weight:700">'+fmt(i.sale_price)+'</div>'
@@ -5260,7 +5266,7 @@ function mergeIdenticalItems(items){
   var map={},order=[];
   for(var idx=0;idx<items.length;idx++){
     var i=items[idx];
-    var key=[(i.name||'').toLowerCase(),(i.set_name||'').toLowerCase(),(i.condition||''),(i.language||''),(i.product_type||''),(i.extras||'').toLowerCase(),(i.sale_price||0)].join('|');
+    var key=[(i.name||'').toLowerCase(),(i.set_name||'').toLowerCase(),(i.condition||''),(i.condition_mod||''),(i.language||''),(i.product_type||''),(i.extras||'').toLowerCase(),(i.sale_price||0)].join('|');
     if(!map[key]){
       var merged={};
       for(var k in i){merged[k]=i[k];}
@@ -5288,7 +5294,7 @@ function loadBinder(){
     return '<div class="card-item">'
       +'<div class="card-item-img">'+img+'</div>'
       +'<div class="card-item-name">'+i.name+'</div>'
-      +'<div class="card-item-sub">'+typeBadge(i.product_type)+' '+condBadge(i.condition)+' '+langFlag(i.language)+'</div>'
+      +'<div class="card-item-sub">'+typeBadge(i.product_type)+' '+condBadge(i.condition,i.condition_mod)+' '+langFlag(i.language)+'</div>'
       +'<div class="card-item-price">'+fmt(i.sale_price)+'</div>'
       +'<div style="font-size:11px;color:var(--text3)">'+i.quantity_available+' disponivel(is)</div>'
       +'</div>';
@@ -5300,7 +5306,7 @@ function loadBinder(){
 function copyBinderText(){
   var forSale=inventory.filter(function(i){return (i.quantity_available||0)>0&&i.sale_price>0;});
   if(!forSale.length){showToast('Nenhum item disponivel','error');return;}
-  var lines=forSale.map(function(i){return '- '+i.name+(i.set_name?' ('+i.set_name+')':'')+' | '+i.condition+' | '+i.language+' | '+fmt(i.sale_price)+' | '+i.quantity_available+' unid.';});
+  var lines=forSale.map(function(i){return '- '+i.name+(i.set_name?' ('+i.set_name+')':'')+' | '+condText(i)+' | '+i.language+' | '+fmt(i.sale_price)+' | '+i.quantity_available+' unid.';});
   var text='ZERAORA TCG - '+forSale.length+' item(s) disponivel(is)\n\n'+lines.join('\n')+'\n\nInteresse? Me chame no WhatsApp!';
   navigator.clipboard.writeText(text).then(function(){showToast('Lista copiada! Cole no WhatsApp');}).catch(function(){showToast('Nao foi possivel copiar','error');});
 }
@@ -5337,7 +5343,7 @@ function exportInventory(){
     var prod=i.product_id?products.filter(function(p){return p.id===i.product_id;})[0]:null;
     var mkt=i.market_price!=null?i.market_price:(prod&&prod.market_price?prod.market_price:'');
     var forn=invSupplierName(i);
-    rows.push([i.id,i.name,i.product_type||'',i.set_name||'',i.language,i.condition,i.extras||'',i.quantity_total,i.quantity_available,i.cost_price,i.sale_price,mg,mkt,i.status||'A venda',forn,invLigaUrl(i),i.market_sold_qty!=null?i.market_sold_qty:'',i.market_last_sale_date||'',i.card_category||'',i.received_at||'',custoTot,vendaTot]);
+    rows.push([i.id,i.name,i.product_type||'',i.set_name||'',i.language,condText(i),i.extras||'',i.quantity_total,i.quantity_available,i.cost_price,i.sale_price,mg,mkt,i.status||'A venda',forn,invLigaUrl(i),i.market_sold_qty!=null?i.market_sold_qty:'',i.market_last_sale_date||'',i.card_category||'',i.received_at||'',custoTot,vendaTot]);
   });
   exportCSV(rows,'estoque_zeraora.csv');
 }
@@ -7891,7 +7897,7 @@ async function grRun(){
     for(var i=0;i<list.length;i++){images.push({label:list[i].label,media_type:'image/jpeg',data:await grToB64(list[i].f)});}
     var invId=document.getElementById('gr-inv-id').value||null;
     var inv=invId?inventory.find(function(x){return x.id===invId;}):null;
-    var card=inv?{name:inv.name,set:inv.set_name,language:inv.language,current_condition:inv.condition,notes:inv.notes}:{name:document.getElementById('gr-name').value.trim()||null};
+    var card=inv?{name:inv.name,set:inv.set_name,language:inv.language,current_condition:condText(inv),notes:inv.notes}:{name:document.getElementById('gr-name').value.trim()||null};
     var ss=await sb.auth.getSession();
     var token=ss&&ss.data&&ss.data.session?ss.data.session.access_token:null;
     if(!token)throw new Error('Sessão expirada: faça login de novo');
@@ -7906,19 +7912,21 @@ async function grRun(){
     btn.disabled=false;btn.innerHTML='<i class="ti ti-refresh"></i> Avaliar de novo';
   }
 }
-function grCondPill(c,big){var col=GR_COND_COLORS[c]||'#555';return '<span style="display:inline-block;background:'+col+';color:#fff;font-weight:700;border-radius:8px;padding:'+(big?'4px 12px;font-size:20px':'1px 7px;font-size:11px')+'">'+grEsc(c)+'</span>';}
+function grMod(r){return r&&(r.ajuste==='+'||r.ajuste==='-')?r.ajuste:'';}
+function grCondPill(c,big){var col=GR_COND_COLORS[String(c).replace(/[+-]$/,'')]||'#555';return '<span style="display:inline-block;background:'+col+';color:#fff;font-weight:700;border-radius:8px;padding:'+(big?'4px 12px;font-size:20px':'1px 7px;font-size:11px')+'">'+grEsc(c)+'</span>';}
 function grRender(r,inv){
   var p=Math.max(0,Math.min(100,Math.round(r.probabilidade_sugerida||0)));
   var alt=r.condicao_alternativa&&r.condicao_alternativa!==r.condicao_sugerida?r.condicao_alternativa:null;
   var h='<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:8px">'
-    +'<div>'+grCondPill(r.condicao_sugerida,true)+'</div>'
+    +'<div>'+grCondPill(r.condicao_sugerida+grMod(r),true)+'</div>'
     +'<div style="flex:1;min-width:200px">'
     +(alt?'<div style="font-size:12px;color:var(--text2);margin-bottom:3px">Entre <b>'+grEsc(r.condicao_sugerida)+'</b> ('+p+'%) e <b>'+grEsc(alt)+'</b> ('+(100-p)+'%)</div>'
       +'<div style="display:flex;height:8px;border-radius:4px;overflow:hidden;background:var(--bg2)"><div style="width:'+p+'%;background:'+(GR_COND_COLORS[r.condicao_sugerida]||'#555')+'"></div><div style="width:'+(100-p)+'%;background:'+(GR_COND_COLORS[alt]||'#999')+';opacity:.55"></div></div>'
       :'<div style="font-size:12px;color:var(--text2)">Confiança: '+p+'%</div>')
     +'</div></div>'
     +'<div style="font-size:13px;margin-bottom:8px">'+grEsc(r.resumo)+'</div>';
-  if(inv&&inv.condition&&inv.condition!==r.condicao_sugerida)h+='<div style="font-size:12px;background:#FFF3E0;color:#7A3E00;border-radius:6px;padding:6px 10px;margin-bottom:8px">Está cadastrada como <b>'+grEsc(inv.condition)+'</b>; a IA sugere <b>'+grEsc(r.condicao_sugerida)+'</b>.</div>';
+  if(grMod(r))h+='<div style="font-size:12px;color:var(--text2);margin-bottom:8px">'+(grMod(r)==='+'?'<b>+</b> = topo da faixa, quase '+grEsc(alt||'a condição de cima'):'<b>−</b> = no limite, perto de '+grEsc(alt||'a condição de baixo'))+'.</div>';
+  if(inv&&inv.condition&&condText(inv)!==r.condicao_sugerida+grMod(r))h+='<div style="font-size:12px;background:#FFF3E0;color:#7A3E00;border-radius:6px;padding:6px 10px;margin-bottom:8px">Está cadastrada como <b>'+grEsc(condText(inv))+'</b>; a IA sugere <b>'+grEsc(r.condicao_sugerida+grMod(r))+'</b>.</div>';
   if(r.alerta_autenticidade)h+='<div style="font-size:12px;background:#FFEBEE;color:#B71C1C;border-radius:6px;padding:6px 10px;margin-bottom:8px"><i class="ti ti-alert-triangle"></i> <b>Autenticidade:</b> '+grEsc(r.alerta_autenticidade)+'</div>';
   if(r.o_que_desempata)h+='<div style="font-size:12px;background:var(--amber-bg);border-radius:6px;padding:6px 10px;margin-bottom:8px"><b>O que desempata:</b> '+grEsc(r.o_que_desempata)+'</div>';
   var crit=r.criterios||[];
@@ -7942,15 +7950,15 @@ function grRender(r,inv){
   var ab=document.getElementById('grApplyBtn');
   if(inv){
     ab.style.display='inline-flex';
-    ab.innerHTML='<i class="ti ti-check"></i> '+((inv.quantity_available||0)>1?'Separar 1 unid. como ':'Aplicar ')+grEsc(r.condicao_sugerida);
+    ab.innerHTML='<i class="ti ti-check"></i> '+((inv.quantity_available||0)>1?'Separar 1 unid. como ':'Aplicar ')+grEsc(r.condicao_sugerida+grMod(r));
     var rbr=document.getElementById('grRealBtn');rbr.style.display=(inv.quantity_available||0)>1?'none':'inline-flex';
   }else{ab.style.display='none';document.getElementById('grRealBtn').style.display='none';}
 }
 async function grApply(){
   if(!grLast||!grLast.invId)return;
   var inv=inventory.find(function(i){return i.id===grLast.invId;});if(!inv)return;
-  var cond=grLast.result.condicao_sugerida;
-  if(grLast.id)sb.from('card_gradings').update({applied_condition:cond}).eq('id',grLast.id).then(function(){});
+  var cond=grLast.result.condicao_sugerida,mod=grMod(grLast.result)||null;
+  if(grLast.id)sb.from('card_gradings').update({applied_condition:cond+(mod||'')}).eq('id',grLast.id).then(function(){});
   if((inv.quantity_available||0)>1){
     // Mais de uma unidade na linha: abre o Dividir ja preenchido com 1 unidade na condicao sugerida
     closeModal('gradeModal');
@@ -7966,13 +7974,13 @@ async function grApply(){
     }
     return;
   }
-  if(inv.condition===cond){showToast('Já está como '+cond);closeModal('gradeModal');return;}
-  var r=await sb.from('inventory').update({condition:cond}).eq('id',inv.id);
+  if(inv.condition===cond&&(inv.condition_mod||null)===mod){showToast('Já está como '+cond+(mod||''));closeModal('gradeModal');return;}
+  var r=await sb.from('inventory').update({condition:cond,condition_mod:mod}).eq('id',inv.id);
   if(r.error){showToast('Erro ao atualizar a condição','error');return;}
   // Mantem a compra vinculada coerente quando ela e de uma unidade so
   var pur=inv.purchase_id?purchases.find(function(p){return p.id===inv.purchase_id;}):null;
   if(pur&&(pur.quantity||0)===1)await sb.from('purchases').update({condition:cond}).eq('id',pur.id);
-  showToast('Condição alterada para '+cond);
+  showToast('Condição alterada para '+cond+(mod||''));
   closeModal('gradeModal');
   loadAll();
 }

@@ -20,7 +20,7 @@ const RUBRIC = `Escala de condicao (padrao Liga Pokemon, do melhor ao pior):
 - MP (Moderately Played): desgaste evidente: whitening continuo em bordas/cantos, cantos levemente arredondados, riscos claros, marcas de manuseio, pequena dobra sem vinco forte.
 - HP (Heavily Played): desgaste pesado: dobras/vincos, cantos bem gastos, superficie muito riscada ou manchada, mas carta integra.
 - D (Damaged): rasgos, dobras fortes, agua, escrita, adesivo, perda de material, empenamento serio.
-Regras: o pior criterio limita a nota final. O verso conta tanto quanto a frente (whitening aparece mais no verso de borda azul). Centralizacao ruim por si so nao derruba abaixo de NM na Liga, mas registre. Nao confunda reflexo, poeira, sleeve ou compressao da foto com defeito: quando nao der para ter certeza, diga e peca a foto que resolveria.`;
+Regras: o pior criterio limita a nota final. O verso conta tanto quanto a frente (whitening aparece mais no verso de borda azul). Centralizacao ruim por si so nao derruba abaixo de NM na Liga, mas registre. Ajuste +/-: use "+" quando a carta esta no topo da faixa (quase a condicao de cima, ex.: SP+ = quase NM) e "-" quando esta no limite inferior (perto da de baixo, ex.: NM- = quase SP, com detalhes minimos que um comprador exigente notaria). Deixe vazio quando estiver claramente no meio da faixa. Use o ajuste justamente nos casos de fronteira entre duas condicoes. Nao confunda reflexo, poeira, sleeve ou compressao da foto com defeito: quando nao der para ter certeza, diga e peca a foto que resolveria.`;
 
 const TOOL = {
   name: "registrar_avaliacao",
@@ -29,6 +29,7 @@ const TOOL = {
     type: "object",
     properties: {
       condicao_sugerida: { type: "string", enum: SCALE },
+      ajuste: { type: "string", enum: ["+", "-", ""], description: "+ topo da faixa (quase a de cima), - limite inferior (perto da de baixo), vazio se no meio." },
       condicao_alternativa: { type: "string", enum: SCALE, description: "Condicao vizinha mais provavel (a outra ponta da duvida)." },
       probabilidade_sugerida: { type: "number", description: "0 a 100: chance de a condicao sugerida ser a correta frente a alternativa." },
       resumo: { type: "string", description: "1-2 frases em portugues explicando a nota." },
@@ -63,7 +64,7 @@ const TOOL = {
       fotos_extras: { type: "array", items: { type: "string" }, description: "Fotos que aumentariam a certeza (vazio se nao precisar)." },
       alerta_autenticidade: { type: "string", description: "Preencha so se algo parecer fora do padrao de uma carta original; senao string vazia." },
     },
-    required: ["condicao_sugerida", "condicao_alternativa", "probabilidade_sugerida", "resumo", "criterios", "defeitos", "o_que_desempata", "fotos_extras", "alerta_autenticidade"],
+    required: ["condicao_sugerida", "ajuste", "condicao_alternativa", "probabilidade_sugerida", "resumo", "criterios", "defeitos", "o_que_desempata", "fotos_extras", "alerta_autenticidade"],
   },
 };
 
@@ -128,6 +129,7 @@ Deno.serve(async (req) => {
       inventory_id: body.inventory_id || null,
       card_name: card.name || null,
       suggested_condition: r.condicao_sugerida,
+      suggested_mod: r.ajuste === "+" || r.ajuste === "-" ? r.ajuste : null,
       alt_condition: r.condicao_alternativa,
       confidence: r.probabilidade_sugerida,
       result: r,

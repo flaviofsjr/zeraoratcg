@@ -107,7 +107,7 @@ async function fetchAll(makeQuery){
 function mergeIdentical(list){
   var map={},order=[];
   list.forEach(function(i){
-    var key=[(i.name||'').toLowerCase(),(i.set_name||'').trim().toLowerCase(),i.condition||'',i.language||'',(i.extras||'').toLowerCase(),i.sale_price||0].join('|');
+    var key=[(i.name||'').toLowerCase(),(i.set_name||'').trim().toLowerCase(),i.condition||'',i.condition_mod||'',i.language||'',(i.extras||'').toLowerCase(),i.sale_price||0].join('|');
     if(!map[key]){map[key]=Object.assign({},i);order.push(key);}
     else{
       var m=map[key];
@@ -129,7 +129,7 @@ async function init(){
   try{
     var pr=await sb.from('public_profiles').select('*').eq('user_id',user.id).limit(1);
     profile=(pr.data&&pr.data[0])||{};
-    var inv=await fetchAll(function(){return sb.from('inventory').select('id,name,set_name,language,condition,extras,quantity_available,sale_price,image_url,card_category,received_at,product_type,status')
+    var inv=await fetchAll(function(){return sb.from('inventory').select('id,name,set_name,language,condition,condition_mod,extras,quantity_available,sale_price,image_url,card_category,received_at,product_type,status')
       .eq('user_id',user.id).eq('status','A venda').gt('quantity_available',0).gt('sale_price',0).order('id');});
     items=mergeIdentical(inv);
     fillFilters();
@@ -272,9 +272,10 @@ async function drawPage(list,pageIdx,totalPages,rows){
     if(fl){ctx.drawImage(fl,lx,ly-19,30,22);lx+=36;}
     else if(it.language){ctx.fillStyle='#555';ctx.font='700 17px sans-serif';ctx.fillText(it.language,lx,ly);lx+=ctx.measureText(it.language).width+8;}
     if(it.condition){
-      ctx.font='800 17px sans-serif';var cwid=ctx.measureText(it.condition).width+14;
+      var cLbl=it.condition+(it.condition_mod==='+'||it.condition_mod==='-'?it.condition_mod:'');
+      ctx.font='800 17px sans-serif';var cwid=ctx.measureText(cLbl).width+14;
       roundRect(ctx,lx,ly-20,cwid,24,6);ctx.fillStyle=(it.condition==='NM'||it.condition==='M')?'#dcfce7':'#fef3c7';ctx.fill();
-      ctx.fillStyle=(it.condition==='NM'||it.condition==='M')?'#166534':'#92400e';ctx.fillText(it.condition,lx+7,ly-1);lx+=cwid+8;
+      ctx.fillStyle=(it.condition==='NM'||it.condition==='M')?'#166534':'#92400e';ctx.fillText(cLbl,lx+7,ly-1);lx+=cwid+8;
     }
     ctx.fillStyle='#1a1a1a';ctx.font='600 19px -apple-system,Segoe UI,sans-serif';
     var label=shortName(it.name).replace(/\s*\([^()]*\/[^()]*\)\s*$/,'');
