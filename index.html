@@ -6727,11 +6727,27 @@ async function saveProduct(){
     image_url:document.getElementById('prod-img-url').value||null,
     notes:document.getElementById('prod-notes').value||null
   };
+  var oldProd=id?products.filter(function(p){return p.id===id;})[0]:null;
+  var oldImg=oldProd?(oldProd.image_url||''):'';
   var r=id?await sb.from('products').update(payload).eq('id',id):await sb.from('products').insert(payload);
   if(r.error){console.error('Erro ao salvar produto:',r.error);showToast('Erro ao salvar: '+(r.error.message||r.error.code||'ver console'),'error');return;}
+  // Imagem nova no cadastro: replica para compras e estoque vinculados ao produto
+  // que estavam sem imagem ou ainda com a imagem antiga do cadastro.
+  var imgPropagated=false;
+  if(id&&payload.image_url&&payload.image_url!==oldImg){
+    var orFilter=oldImg?'image_url.is.null,image_url.eq.,image_url.eq."'+oldImg.replace(/"/g,'\\"')+'"':'image_url.is.null,image_url.eq.';
+    var upd={image_url:payload.image_url};
+    var res=await Promise.all([
+      sb.from('inventory').update(upd).eq('user_id',currentUser.id).eq('product_id',id).or(orFilter),
+      sb.from('purchases').update(upd).eq('user_id',currentUser.id).eq('product_id',id).or(orFilter)
+    ]);
+    res.forEach(function(x){if(x.error)console.error('Erro ao replicar imagem:',x.error);});
+    imgPropagated=true;
+  }
   showToast(id?'Produto atualizado!':'Produto criado!');
   closeModal('productModal');
   await loadProducts();
+  if(imgPropagated){await Promise.all([loadInventory(),loadPurchases()]);}
 }
 
 async function deleteProduct(id){
