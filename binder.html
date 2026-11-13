@@ -73,8 +73,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .card-add{background:var(--amber);color:#2C1A00;border:none;border-radius:var(--radius);padding:7px;font-size:12px;font-weight:700;cursor:pointer;width:100%;margin-top:4px;display:flex;align-items:center;justify-content:center;gap:5px}
 .card-add:hover{background:#D4A01E}
 .card-add.in{background:#1B5E20;color:#fff}
-.card-ask{display:block;text-align:center;font-size:11px;color:var(--text2);margin-top:5px;text-decoration:none}
-.card-ask:hover{text-decoration:underline}
 .cart-fab{position:fixed;right:18px;bottom:18px;z-index:900;background:#0a0a0a;color:#fff;border:2px solid var(--amber);border-radius:30px;padding:12px 18px;font-size:14px;font-weight:700;cursor:pointer;display:none;align-items:center;gap:8px;box-shadow:0 6px 20px rgba(0,0,0,.25)}
 .cart-fab .n{background:var(--amber);color:#2C1A00;border-radius:12px;padding:1px 8px;font-size:12px}
 #cartBg{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:950;display:none}
@@ -313,8 +311,6 @@ function renderItems(items){
     var i=items[idx];
     shownItems[i._key]=i;
     var imgSrc=i.image_url||'';
-    var waMsg=encodeURIComponent('Ola! Tenho interesse em: '+i.name+(i.set_name?' ('+i.set_name+')':'')+' - '+fmt(i.sale_price));
-    var waLink=waNumber?'https://wa.me/'+waNumber+'?text='+waMsg:'';
     
     var imgHtml='<i class="ti ti-photo-off" style="font-size:32px;opacity:0.3"></i>';
     var rp=realPhotos(i);
@@ -342,7 +338,6 @@ function renderItems(items){
     html+='<div class="card-qty">'+i.quantity_available+' disponivel(is)</div>';
     if(rp.length) html+='<button class="real-link" onclick="openGal(\''+i.id+'\',0)"><i class="ti ti-camera"></i> Foto real'+(rp.length>1?' · '+rp.length:'')+'</button>';
     html+=addBtnHtml(i._key);
-    if(waLink) html+='<a class="card-ask" href="'+waLink+'" target="_blank"><i class="ti ti-brand-whatsapp"></i> Tirar dúvida</a>';
     if(i.liga_url) html+='<a href="'+i.liga_url+'" target="_blank" class="card-liga"><i class="ti ti-external-link"></i> Ver na Liga Pokemon</a>';
     html+='</div>';
   }
