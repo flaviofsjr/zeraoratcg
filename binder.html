@@ -69,6 +69,45 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 #gal .gal-thumbs{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;justify-content:center}
 #gal .gal-thumbs img{width:44px;height:60px;object-fit:cover;border-radius:4px;opacity:.5;cursor:pointer}
 #gal .gal-thumbs img.on{opacity:1;outline:2px solid #E8B422}
+/* ===== Pedido (carrinho) ===== */
+.card-add{background:var(--amber);color:#2C1A00;border:none;border-radius:var(--radius);padding:7px;font-size:12px;font-weight:700;cursor:pointer;width:100%;margin-top:4px;display:flex;align-items:center;justify-content:center;gap:5px}
+.card-add:hover{background:#D4A01E}
+.card-add.in{background:#1B5E20;color:#fff}
+.card-ask{display:block;text-align:center;font-size:11px;color:var(--text2);margin-top:5px;text-decoration:none}
+.card-ask:hover{text-decoration:underline}
+.cart-fab{position:fixed;right:18px;bottom:18px;z-index:900;background:#0a0a0a;color:#fff;border:2px solid var(--amber);border-radius:30px;padding:12px 18px;font-size:14px;font-weight:700;cursor:pointer;display:none;align-items:center;gap:8px;box-shadow:0 6px 20px rgba(0,0,0,.25)}
+.cart-fab .n{background:var(--amber);color:#2C1A00;border-radius:12px;padding:1px 8px;font-size:12px}
+#cartBg{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:950;display:none}
+#cartBg.open{display:block}
+#cart{position:fixed;top:0;right:0;bottom:0;width:420px;max-width:100%;background:var(--bg);z-index:960;display:flex;flex-direction:column;transform:translateX(100%);transition:transform .2s}
+#cart.open{transform:none}
+.cart-head{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--border)}
+.cart-head h3{font-size:16px}
+.cart-head button{background:none;border:none;font-size:24px;cursor:pointer;color:var(--text2)}
+.cart-body{flex:1;overflow-y:auto;padding:12px 16px}
+.cart-item{display:flex;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);align-items:center}
+.cart-item img,.cart-item .ph{width:44px;height:62px;object-fit:cover;border-radius:4px;background:var(--bg2);flex-shrink:0}
+.cart-item-info{flex:1;min-width:0}
+.cart-item-name{font-size:13px;font-weight:600;line-height:1.3}
+.cart-item-sub{font-size:11px;color:var(--text2);margin-top:2px}
+.cart-item-price{font-size:13px;font-weight:700;color:var(--amber-dark);margin-top:3px}
+.qty{display:flex;align-items:center;gap:4px;margin-top:4px}
+.qty button{width:24px;height:24px;border:1px solid var(--border);background:var(--bg2);color:var(--text);border-radius:6px;cursor:pointer;font-size:14px;line-height:1}
+.qty span{min-width:20px;text-align:center;font-size:13px;font-weight:600}
+.cart-rm{background:none;border:none;color:var(--text3);cursor:pointer;font-size:18px}
+.cart-foot{border-top:1px solid var(--border);padding:14px 16px;display:flex;flex-direction:column;gap:8px}
+.cart-total{display:flex;justify-content:space-between;font-size:15px;font-weight:700}
+.cart-foot input,.cart-foot textarea{width:100%;padding:9px 11px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg);color:var(--text);font-size:14px;font-family:inherit}
+.cart-foot textarea{min-height:56px;resize:vertical}
+.cart-send{background:var(--amber);color:#2C1A00;border:none;border-radius:var(--radius);padding:12px;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px}
+.cart-send:disabled{opacity:.6;cursor:wait}
+.cart-note{font-size:11px;color:var(--text3);line-height:1.4}
+.cart-err{font-size:12px;color:#b91c1c;min-height:0}
+.cart-done{text-align:center;padding:30px 10px;line-height:1.5}
+.cart-done i.big{font-size:52px;color:#1B5E20}
+.cart-done h4{font-size:18px;margin:8px 0}
+.cart-wa{display:inline-flex;align-items:center;gap:6px;background:#25D366;color:#fff;border-radius:var(--radius);padding:12px 18px;font-weight:700;text-decoration:none;margin-top:12px}
+@media(max-width:600px){.cart-fab{right:12px;bottom:12px;left:12px;justify-content:center}}
 </style>
 </head>
 <body>
@@ -111,6 +150,21 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     </div>
     <div class="grid" id="itemsGrid"></div>
   </div>
+  <button class="cart-fab" id="cartFab" onclick="openCart()"><i class="ti ti-shopping-cart"></i> Meu pedido <span class="n" id="cartFabN">0</span> <span id="cartFabTotal"></span></button>
+  <div id="cartBg" onclick="closeCart()"></div>
+  <aside id="cart" aria-label="Meu pedido">
+    <div class="cart-head"><h3><i class="ti ti-shopping-cart"></i> Meu pedido</h3><button onclick="closeCart()" aria-label="Fechar">&times;</button></div>
+    <div class="cart-body" id="cartBody"></div>
+    <div class="cart-foot" id="cartFoot">
+      <div class="cart-total"><span>Total</span><span id="cartTotal">R$ 0,00</span></div>
+      <input type="text" id="cartName" placeholder="Seu nome" maxlength="80" autocomplete="name">
+      <input type="tel" id="cartWa" placeholder="Seu WhatsApp com DDD" maxlength="20" autocomplete="tel">
+      <textarea id="cartNotes" placeholder="Observação (opcional)" maxlength="500"></textarea>
+      <div class="cart-err" id="cartErr"></div>
+      <button class="cart-send" id="cartSend" onclick="sendOrder()"><i class="ti ti-send"></i> Enviar pedido</button>
+      <div class="cart-note">O pedido não é uma compra finalizada: o vendedor confirma disponibilidade, frete e pagamento com você pelo WhatsApp.</div>
+    </div>
+  </aside>
   <footer class="legal">Pokémon e os nomes, imagens e marcas das cartas são propriedade da The Pokémon Company, Nintendo, Creatures Inc. e GAME FREAK. As imagens são usadas apenas para identificar os itens à venda. Este site não é afiliado nem endossado por essas empresas.</footer>
 </div>
 
@@ -140,6 +194,7 @@ function init(){
       document.getElementById('headerWa').style.display='inline-flex';
       document.getElementById('headerWa').href='https://wa.me/'+profile.whatsapp;
     }
+    loadCart();
     loadItems(profile.user_id);
   }).catch(function(){showNotFound();});
 }
@@ -152,6 +207,7 @@ function loadItems(userId){
     document.getElementById('mainContent').style.display='block';
     updateStats();
     filterItems();
+    syncCartWithStock();
   }).catch(function(){showNotFound();});
 }
 
@@ -205,9 +261,12 @@ function mergeIdenticalItems(items){
     if(!map[key]){
       var merged={};
       for(var k in i){merged[k]=i[k];}
+      merged._ids=[i.id];
+      merged._key=key;
       map[key]=merged;
       order.push(key);
     } else {
+      map[key]._ids.push(i.id);
       map[key].quantity_available=(map[key].quantity_available||0)+(i.quantity_available||0);
       if(!map[key].liga_url&&i.liga_url)map[key].liga_url=i.liga_url;
       if(!map[key].image_url&&i.image_url)map[key].image_url=i.image_url;
@@ -249,8 +308,10 @@ function renderItems(items){
     return;
   }
   var html='';
+  shownItems={};
   for(var idx=0;idx<items.length;idx++){
     var i=items[idx];
+    shownItems[i._key]=i;
     var imgSrc=i.image_url||'';
     var waMsg=encodeURIComponent('Ola! Tenho interesse em: '+i.name+(i.set_name?' ('+i.set_name+')':'')+' - '+fmt(i.sale_price));
     var waLink=waNumber?'https://wa.me/'+waNumber+'?text='+waMsg:'';
@@ -280,7 +341,8 @@ function renderItems(items){
     html+='<div class="card-price">'+fmt(i.sale_price)+'</div>';
     html+='<div class="card-qty">'+i.quantity_available+' disponivel(is)</div>';
     if(rp.length) html+='<button class="real-link" onclick="openGal(\''+i.id+'\',0)"><i class="ti ti-camera"></i> Foto real'+(rp.length>1?' · '+rp.length:'')+'</button>';
-    if(waLink) html+='<a class="card-wa" href="'+waLink+'" target="_blank"><i class="ti ti-brand-whatsapp"></i> Tenho interesse</a>';
+    html+=addBtnHtml(i._key);
+    if(waLink) html+='<a class="card-ask" href="'+waLink+'" target="_blank"><i class="ti ti-brand-whatsapp"></i> Tirar dúvida</a>';
     if(i.liga_url) html+='<a href="'+i.liga_url+'" target="_blank" class="card-liga"><i class="ti ti-external-link"></i> Ver na Liga Pokemon</a>';
     html+='</div>';
   }
@@ -311,6 +373,124 @@ function galShow(){
 function galMove(d){if(!galList.length)return;galIdx=(galIdx+d+galList.length)%galList.length;galShow();}
 function closeGal(){document.getElementById('gal').classList.remove('open');}
 document.addEventListener('keydown',function(e){if(!document.getElementById('gal').classList.contains('open'))return;if(e.key==='Escape')closeGal();if(e.key==='ArrowLeft')galMove(-1);if(e.key==='ArrowRight')galMove(1);});
+
+// ===== Pedido pelo fichário (carrinho) =====
+// O cliente monta o pedido aqui; ao enviar, o servidor confere estoque/preço,
+// grava o pedido para o vendedor e o cliente manda a lista pronta no WhatsApp.
+var shownItems={},cart={};
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+function jsArg(k){return esc("'"+String(k).replace(/\\/g,'\\\\').replace(/'/g,"\\'")+"'");}
+function cartStoreKey(){return 'vcards_cart_'+getSlug();}
+function saveCart(){try{localStorage.setItem(cartStoreKey(),JSON.stringify(cart));}catch(e){}}
+function loadCart(){
+  try{cart=JSON.parse(localStorage.getItem(cartStoreKey())||'{}')||{};}catch(e){cart={};}
+  try{var c=JSON.parse(localStorage.getItem('vcards_customer')||'{}');document.getElementById('cartName').value=c.name||'';document.getElementById('cartWa').value=c.wa||'';}catch(e){}
+  renderCartBadge();
+}
+function cartFromItem(i){
+  return {ids:i._ids.slice(),name:i.name,set_name:i.set_name||'',condition:i.condition||'',condition_mod:i.condition_mod||'',language:i.language||'',extras:i.extras||'',image_url:i.image_url||'',price:parseFloat(i.sale_price)||0,max:i.quantity_available||1,qty:1};
+}
+// Ao carregar o estoque, atualiza preço/quantidade dos itens do carrinho e tira o que saiu do fichário
+function syncCartWithStock(){
+  var byKey={};mergeIdenticalItems(allItems).forEach(function(i){byKey[i._key]=i;});
+  var changed=false;
+  Object.keys(cart).forEach(function(k){
+    var i=byKey[k];
+    if(!i){delete cart[k];changed=true;return;}
+    var c=cart[k];var keep=c.qty;
+    cart[k]=cartFromItem(i);cart[k].qty=Math.min(keep,cart[k].max);
+  });
+  if(changed)saveCart();
+  renderCartBadge();
+}
+function addBtnHtml(key){
+  var c=cart[key];
+  if(c)return '<button class="card-add in" onclick="openCart()"><i class="ti ti-check"></i> No pedido'+(c.qty>1?' ('+c.qty+')':'')+'</button>';
+  return '<button class="card-add" onclick="addToCart('+jsArg(key)+')"><i class="ti ti-shopping-cart-plus"></i> Adicionar ao pedido</button>';
+}
+function addToCart(key){
+  var i=shownItems[key];if(!i)return;
+  if(cart[key]){cart[key].qty=Math.min(cart[key].qty+1,cart[key].max);}
+  else cart[key]=cartFromItem(i);
+  saveCart();renderCartBadge();filterItems();
+}
+function changeQty(key,d){
+  var c=cart[key];if(!c)return;
+  c.qty=Math.max(1,Math.min(c.max,c.qty+d));
+  saveCart();renderCart();renderCartBadge();filterItems();
+}
+function removeFromCart(key){delete cart[key];saveCart();renderCart();renderCartBadge();filterItems();}
+function cartTotals(){
+  var n=0,t=0;Object.keys(cart).forEach(function(k){n+=cart[k].qty;t+=cart[k].qty*cart[k].price;});return {n:n,t:t};
+}
+function renderCartBadge(){
+  var s=cartTotals();var fab=document.getElementById('cartFab');
+  fab.style.display=s.n?'flex':'none';
+  document.getElementById('cartFabN').textContent=s.n;
+  document.getElementById('cartFabTotal').textContent=s.n?fmt(s.t):'';
+}
+function itemSub(c){
+  return [c.set_name,c.condition?(c.condition+(c.condition_mod==='+'||c.condition_mod==='-'?c.condition_mod:'')):'',c.language,c.extras].filter(Boolean).join(' · ');
+}
+function renderCart(){
+  var body=document.getElementById('cartBody');
+  document.getElementById('cartFoot').style.display='';
+  var keys=Object.keys(cart);
+  if(!keys.length){
+    body.innerHTML='<div class="empty"><i class="ti ti-shopping-cart"></i>Seu pedido está vazio.<br>Use "Adicionar ao pedido" nas cartas.</div>';
+    document.getElementById('cartFoot').style.display='none';
+    return;
+  }
+  body.innerHTML=keys.map(function(k){
+    var c=cart[k];var kk=jsArg(k);
+    return '<div class="cart-item">'+(c.image_url?'<img src="'+esc(c.image_url)+'" alt="">':'<div class="ph"></div>')+
+      '<div class="cart-item-info"><div class="cart-item-name">'+esc(c.name)+'</div><div class="cart-item-sub">'+esc(itemSub(c))+'</div>'+
+      '<div class="cart-item-price">'+fmt(c.price)+(c.qty>1?' × '+c.qty+' = '+fmt(c.price*c.qty):'')+'</div>'+
+      (c.max>1?'<div class="qty"><button onclick="changeQty('+kk+',-1)">−</button><span>'+c.qty+'</span><button onclick="changeQty('+kk+',1)">+</button><span style="font-size:11px;color:var(--text3);font-weight:400">de '+c.max+'</span></div>':'')+
+      '</div><button class="cart-rm" title="Remover" onclick="removeFromCart('+kk+')"><i class="ti ti-trash"></i></button></div>';
+  }).join('');
+  document.getElementById('cartTotal').textContent=fmt(cartTotals().t);
+}
+function openCart(){renderCart();document.getElementById('cartErr').textContent='';document.getElementById('cartBg').classList.add('open');document.getElementById('cart').classList.add('open');}
+function closeCart(){document.getElementById('cartBg').classList.remove('open');document.getElementById('cart').classList.remove('open');}
+
+function sendOrder(){
+  var name=document.getElementById('cartName').value.trim();
+  var wa=document.getElementById('cartWa').value.trim();
+  var notes=document.getElementById('cartNotes').value.trim();
+  var err=document.getElementById('cartErr');
+  if(name.length<2){err.textContent='Informe seu nome.';return;}
+  if(wa.replace(/\D/g,'').length<10){err.textContent='Informe seu WhatsApp com DDD.';return;}
+  var keys=Object.keys(cart);if(!keys.length)return;
+  err.textContent='';
+  try{localStorage.setItem('vcards_customer',JSON.stringify({name:name,wa:wa}));}catch(e){}
+  var btn=document.getElementById('cartSend');btn.disabled=true;btn.innerHTML='Enviando...';
+  var items=keys.map(function(k){return {ids:cart[k].ids,qty:cart[k].qty,name:cart[k].name};});
+  sb.rpc('submit_order_request',{p_slug:getSlug(),p_name:name,p_whatsapp:wa,p_items:items,p_notes:notes||null}).then(function(r){
+    btn.disabled=false;btn.innerHTML='<i class="ti ti-send"></i> Enviar pedido';
+    if(r.error){err.textContent=(r.error.message||'Não foi possível enviar o pedido. Tente novamente.');return;}
+    showOrderDone(r.data,name,notes);
+    cart={};saveCart();renderCartBadge();filterItems();
+  }).catch(function(){btn.disabled=false;btn.innerHTML='<i class="ti ti-send"></i> Enviar pedido';err.textContent='Sem conexão. Tente novamente.';});
+}
+function showOrderDone(res,name,notes){
+  var items=res.items||[],unav=res.unavailable||[];
+  var lines=['Olá! Sou '+name+' e fiz o pedido #'+res.request_no+' pelo fichário:',''];
+  items.forEach(function(it){lines.push('• '+it.qty+'x '+it.name+(itemSub(it)?' ('+itemSub(it)+')':'')+' — '+fmt(it.unit_price*it.qty));});
+  lines.push('','Total: '+fmt(res.total));
+  if(notes)lines.push('Obs.: '+notes);
+  var waHref=waNumber?'https://wa.me/'+waNumber+'?text='+encodeURIComponent(lines.join('\n')):'';
+  var adj=items.filter(function(it){return it.qty<it.requested_qty;});
+  var html='<div class="cart-done"><i class="ti ti-circle-check big"></i><h4>Pedido #'+res.request_no+' enviado!</h4>'+
+    '<div>'+items.length+' item(ns) · <b>'+fmt(res.total)+'</b></div>';
+  if(unav.length)html+='<div style="font-size:12px;color:#b45309;margin-top:8px">Saíram do fichário e ficaram fora do pedido: '+esc(unav.map(function(u){return u.name;}).join(', '))+'</div>';
+  if(adj.length)html+='<div style="font-size:12px;color:#b45309;margin-top:6px">Quantidade ajustada ao disponível: '+esc(adj.map(function(a){return a.name+' ('+a.qty+')';}).join(', '))+'</div>';
+  html+=waHref?'<div style="margin-top:14px;font-size:13px">Agora é só mandar a lista no WhatsApp para combinar frete e pagamento:</div><a class="cart-wa" href="'+waHref+'" target="_blank"><i class="ti ti-brand-whatsapp"></i> Enviar no WhatsApp</a>'
+              :'<div style="margin-top:14px;font-size:13px">O vendedor vai entrar em contato pelo seu WhatsApp.</div>';
+  html+='</div>';
+  document.getElementById('cartBody').innerHTML=html;
+  document.getElementById('cartFoot').style.display='none';
+}
 
 init();
 </script>

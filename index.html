@@ -202,6 +202,7 @@ tr:hover td{background:var(--bg2)}
     <div class="nav-tab" onclick="showPage('compras',this)"><i class="ti ti-shopping-bag"></i> Compras</div>
     <div class="nav-tab" onclick="showPage('estoque',this)"><i class="ti ti-package"></i> Estoque</div>
     <div class="nav-tab" onclick="showPage('vendas',this)"><i class="ti ti-receipt"></i> Vendas</div>
+    <div class="nav-tab" onclick="showPage('pedidos',this)"><i class="ti ti-shopping-cart"></i> Pedidos<span id="orderReqBadge" class="nav-badge" style="display:none" title="Pedidos novos do fichário">0</span></div>
     <div class="nav-tab" onclick="showPage('envios',this)"><i class="ti ti-truck"></i> Envios<span id="shipmentsBadge" class="nav-badge" style="display:none" title="Clientes a avisar">0</span></div>
     <div class="nav-tab" onclick="showPage('dre',this)"><i class="ti ti-chart-bar"></i> DRE</div>
     <div class="nav-tab" onclick="showPage('binder',this)"><i class="ti ti-layout-grid"></i> Binder</div>
@@ -367,6 +368,28 @@ tr:hover td{background:var(--bg2)}
         <table><thead><tr><th style="width:26px"><input type="checkbox" id="selectAllSales" onchange="toggleSelectAllSales(this)"></th><th onclick="sortTable('sal','order_no')" style="cursor:pointer;user-select:none">Pedido ↕</th><th>Foto</th><th onclick="sortTable('sal','card_name')" style="cursor:pointer;user-select:none">Item ↕</th><th onclick="sortTable('sal','quantity')" style="cursor:pointer;user-select:none">Qtd ↕</th><th onclick="sortTable('sal','platform')" style="cursor:pointer;user-select:none">Plataforma ↕</th><th onclick="sortTable('sal','buyer')" style="cursor:pointer;user-select:none">Comprador ↕</th><th onclick="sortTable('sal','sale_price')" style="cursor:pointer;user-select:none">Venda ↕</th><th onclick="sortTable('sal','cost_price')" style="cursor:pointer;user-select:none">Custo ↕</th><th onclick="sortTable('sal','lucro')" style="cursor:pointer;user-select:none">Lucro ↕</th><th>Margem</th><th onclick="sortTable('sal','sale_date')" style="cursor:pointer;user-select:none">Data ↕</th><th>Pago</th><th>Entregue</th><th></th></tr></thead>
         <tbody id="salesTable"><tr><td colspan="15"><div class="empty-state"><i class="ti ti-receipt-off"></i>Nenhuma venda registrada</div></td></tr></tbody></table>
       </div>
+    </div>
+
+    <!-- PEDIDOS DO FICHARIO -->
+    <div class="page" id="page-pedidos">
+      <div class="section-header">
+        <h3>Pedidos do fichário</h3>
+        <div style="display:flex;gap:8px"><button class="btn-secondary" style="width:auto" onclick="loadOrderRequests()"><i class="ti ti-refresh"></i> Atualizar</button></div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin-bottom:1.25rem">
+        <div class="metric" style="cursor:pointer" onclick="setOrderReqFilter('Novo')"><div class="metric-label"><i class="ti ti-bell"></i> Novos</div><div class="metric-value amber" id="oreq-m-new">0</div></div>
+        <div class="metric" style="cursor:pointer" onclick="setOrderReqFilter('Em contato')"><div class="metric-label"><i class="ti ti-brand-whatsapp"></i> Em contato</div><div class="metric-value" id="oreq-m-contact">0</div></div>
+        <div class="metric" style="cursor:pointer" onclick="setOrderReqFilter('abertos')"><div class="metric-label"><i class="ti ti-cash"></i> Valor em aberto</div><div class="metric-value" id="oreq-m-value">R$ 0,00</div></div>
+      </div>
+      <div class="table-wrap">
+        <div class="filters" style="padding:12px 12px 0">
+          <input type="text" id="filterOrderReqText" placeholder="Buscar cliente, carta..." oninput="renderOrderRequests()" style="width:220px">
+          <select id="filterOrderReqStatus" onchange="renderOrderRequests()"><option value="abertos">Em aberto (novos e em contato)</option><option value="Novo">Novos</option><option value="Em contato">Em contato</option><option value="Fechado">Fechados</option><option value="Cancelado">Cancelados</option><option value="">Todos</option></select>
+        </div>
+        <table><thead><tr><th>Nº</th><th>Recebido</th><th>Cliente</th><th>Itens</th><th>Total</th><th>Status</th><th></th></tr></thead>
+        <tbody id="orderReqTable"><tr><td colspan="7"><div class="empty-state"><i class="ti ti-shopping-cart"></i>Nenhum pedido recebido</div></td></tr></tbody></table>
+      </div>
+      <div style="font-size:11px;color:var(--text3);margin-top:8px;line-height:1.5">Pedidos enviados pelos clientes no seu fichário público. Nada sai do estoque sozinho: combine com o cliente pelo WhatsApp e use <b>Lançar venda</b> para abrir a venda múltipla já preenchida (o pedido é marcado como <b>Fechado</b> ao salvar). Itens marcados em vermelho não estão mais disponíveis no estoque.</div>
     </div>
 
     <!-- DRE -->
@@ -1986,6 +2009,7 @@ function showPage(p,el){
     if(p==='dre')renderDRE();
     if(p==='despesas'){loadExpenses();}
     if(p==='envios'){loadShipments().then(maybeAutoRefreshTracking);}
+    if(p==='pedidos'){loadOrderRequests();}
     if(p==='cadastros'){loadSuppliers();loadCustomers();loadProducts();setTimeout(runMigration,1000);}
     if(p==='colecao'){currentCollectionId=null;document.getElementById('colecaoDetailView').style.display='none';document.getElementById('colecaoListView').style.display='block';loadPersonalCollections().then(renderCollectionsList);}
   }catch(err){console.error('showPage error:',err);}
@@ -2160,6 +2184,124 @@ async function loadShipments(){
   if(r.error){console.error('shipments',r.error);shipments=[];}
   else shipments=r.data||[];
   renderShipments();
+}
+
+// ==================== PEDIDOS DO FICHARIO ====================
+// Criados pelos clientes no binder.html (RPC submit_order_request). Nao mexem no estoque.
+var orderRequests=[],pendingOrderRequestId=null;
+var ORDER_REQ_STATUS=['Novo','Em contato','Fechado','Cancelado'];
+
+async function loadOrderRequests(){
+  if(!currentUser)return;
+  var r=await sb.from('order_requests').select('*').eq('user_id',currentUser.id).order('created_at',{ascending:false});
+  if(r.error){console.error('order_requests',r.error);orderRequests=[];}
+  else orderRequests=r.data||[];
+  renderOrderRequests();
+}
+
+function orderReqWaLink(o,text){
+  var n=String(o.customer_whatsapp||'').replace(/\D/g,'');
+  if(n.length<=11)n='55'+n;
+  return 'https://wa.me/'+n+(text?'?text='+encodeURIComponent(text):'');
+}
+
+// Quanto de cada item do pedido ainda esta "A venda" no estoque agora
+function orderReqItemAvail(it){
+  var ids=it.ids||[];
+  return inventory.filter(function(i){return ids.indexOf(i.id)!==-1&&isSellable(i);})
+    .reduce(function(a,i){return a+(i.quantity_available||0);},0);
+}
+
+function setOrderReqFilter(v){document.getElementById('filterOrderReqStatus').value=v;renderOrderRequests();}
+
+function renderOrderRequests(){
+  var open=orderRequests.filter(function(o){return o.status==='Novo'||o.status==='Em contato';});
+  var nNew=orderRequests.filter(function(o){return o.status==='Novo';}).length;
+  var badge=document.getElementById('orderReqBadge');
+  if(badge){badge.textContent=nNew;badge.style.display=nNew?'inline-block':'none';}
+  var el=function(id){return document.getElementById(id);};
+  if(!el('orderReqTable'))return;
+  el('oreq-m-new').textContent=nNew;
+  el('oreq-m-contact').textContent=orderRequests.filter(function(o){return o.status==='Em contato';}).length;
+  el('oreq-m-value').textContent=fmt(open.reduce(function(a,o){return a+parseFloat(o.total||0);},0));
+
+  var st=el('filterOrderReqStatus').value;
+  var q=(el('filterOrderReqText').value||'').toLowerCase();
+  var list=orderRequests.filter(function(o){
+    if(st==='abertos'&&!(o.status==='Novo'||o.status==='Em contato'))return false;
+    if(st&&st!=='abertos'&&o.status!==st)return false;
+    if(q){
+      var hay=(o.customer_name+' '+o.customer_whatsapp+' '+(o.items||[]).map(function(i){return i.name;}).join(' ')).toLowerCase();
+      if(hay.indexOf(q)===-1)return false;
+    }
+    return true;
+  });
+  if(!list.length){el('orderReqTable').innerHTML='<tr><td colspan="7"><div class="empty-state"><i class="ti ti-shopping-cart"></i>Nenhum pedido '+(st==='abertos'?'em aberto':'encontrado')+'</div></td></tr>';return;}
+
+  el('orderReqTable').innerHTML=list.map(function(o){
+    var items=o.items||[];
+    var itemsHtml=items.map(function(it){
+      var av=orderReqItemAvail(it);
+      var bad=(o.status==='Novo'||o.status==='Em contato')&&av<it.qty;
+      return '<div style="font-size:12px;line-height:1.45'+(bad?';color:var(--danger)':'')+'" title="'+(bad?'Disponivel agora: '+av:'')+'">'+it.qty+'x '+escShip(it.name)+' <span style="color:var(--text3)">'+escShip([it.condition?(it.condition+(it.condition_mod==='+'||it.condition_mod==='-'?it.condition_mod:'')):'',it.language,it.extras].filter(Boolean).join(' · '))+'</span> — '+fmt(it.unit_price*it.qty)+(bad?' <b>(disp.: '+av+')</b>':'')+'</div>';
+    }).join('');
+    if(o.notes)itemsHtml+='<div style="font-size:11px;color:var(--text2);margin-top:4px"><i class="ti ti-message"></i> '+escShip(o.notes)+'</div>';
+    var d=new Date(o.created_at);
+    var dt=d.toLocaleDateString('pt-BR')+' '+d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+    var hello='Olá, '+o.customer_name+'! Recebi seu pedido #'+o.request_no+' do fichário ('+items.length+' item(ns), '+fmt(o.total)+').';
+    var sel='<select onchange="setOrderReqStatus(\''+o.id+'\',this.value)" style="font-size:12px;padding:4px 6px">'+ORDER_REQ_STATUS.map(function(s){return '<option'+(s===o.status?' selected':'')+'>'+s+'</option>';}).join('')+'</select>';
+    var actions='<a class="btn-small" style="text-decoration:none;display:inline-flex;align-items:center;gap:4px" href="'+orderReqWaLink(o,hello)+'" target="_blank" onclick="markOrderReqContact(\''+o.id+'\')"><i class="ti ti-brand-whatsapp"></i> WhatsApp</a>';
+    if(o.status==='Novo'||o.status==='Em contato')actions+=' <button class="btn-small" onclick="launchSaleFromOrderReq(\''+o.id+'\')"><i class="ti ti-receipt"></i> Lançar venda</button>';
+    return '<tr'+(o.status==='Novo'?' style="background:var(--amber-bg)"':'')+'>'+
+      '<td style="font-weight:700">#'+o.request_no+'</td>'+
+      '<td style="white-space:nowrap;font-size:12px">'+dt+'</td>'+
+      '<td><div style="font-weight:600">'+escShip(o.customer_name)+'</div><div style="font-size:12px;color:var(--text2)">'+escShip(o.customer_whatsapp)+'</div></td>'+
+      '<td>'+itemsHtml+'</td>'+
+      '<td style="font-weight:700;color:var(--amber-dark);white-space:nowrap">'+fmt(o.total)+'</td>'+
+      '<td>'+sel+'</td>'+
+      '<td style="white-space:nowrap">'+actions+'</td></tr>';
+  }).join('');
+}
+
+async function setOrderReqStatus(id,status){
+  var r=await sb.from('order_requests').update({status:status,updated_at:new Date().toISOString()}).eq('id',id);
+  if(r.error){showToast('Erro ao atualizar o pedido','error');return;}
+  var o=orderRequests.filter(function(x){return x.id===id;})[0];if(o)o.status=status;
+  renderOrderRequests();
+}
+
+// Ao abrir o WhatsApp de um pedido novo, ele passa para "Em contato"
+function markOrderReqContact(id){
+  var o=orderRequests.filter(function(x){return x.id===id;})[0];
+  if(o&&o.status==='Novo')setOrderReqStatus(id,'Em contato');
+}
+
+// Abre a venda multipla com os itens do pedido; ao salvar, o pedido vira "Fechado"
+function launchSaleFromOrderReq(id){
+  var o=orderRequests.filter(function(x){return x.id===id;})[0];if(!o)return;
+  openMpSaleModal();
+  pendingOrderRequestId=o.id;
+  document.getElementById('mpSaleRows').innerHTML='';
+  document.getElementById('mp-s-buyer').value=o.customer_name;
+  document.getElementById('mp-s-platform').value='Fichário';
+  var missing=[];
+  (o.items||[]).forEach(function(it){
+    var need=it.qty;
+    var rows=inventory.filter(function(i){return (it.ids||[]).indexOf(i.id)!==-1&&isSellable(i);});
+    rows.forEach(function(inv){
+      if(need<=0)return;
+      var take=Math.min(need,inv.quantity_available||0);if(take<=0)return;
+      addMpSaleRow();
+      var tr=document.querySelector('#mpSaleRows tr:last-child');
+      selectMpSaleItem(parseInt(tr.getAttribute('data-row-id')),inv.id);
+      tr.querySelector('.mp-s-qty').value=take;
+      need-=take;
+    });
+    if(need>0)missing.push(it.name+(need<it.qty?' ('+need+' de '+it.qty+')':''));
+  });
+  if(!document.querySelectorAll('#mpSaleRows tr').length)addMpSaleRow();
+  renderMpSaleSummary();
+  if(missing.length)showToast('Sem estoque "A venda" para: '+missing.join(', '),'error');
 }
 
 function shipIsOpen(s){return s.status!=='Entregue';}
@@ -3049,7 +3191,7 @@ function selectWishlistProduct(id){
 }
 
 function loadAll(){
-  Promise.all([loadPurchases(),loadInventory(),loadSales(),loadProfile(),loadProducts(),loadExpenses(),loadSuppliers(),loadCustomers(),loadWishlist(),loadPersonalCollections(),loadStockSnapshots(),loadShipments()]).then(function(){updateSupplierFilter();renderSales();renderPurchases();renderInventory();loadDashboard();renderStockEvolution();saveDailySnapshot();renderShipments();});
+  Promise.all([loadPurchases(),loadInventory(),loadSales(),loadProfile(),loadProducts(),loadExpenses(),loadSuppliers(),loadCustomers(),loadWishlist(),loadPersonalCollections(),loadStockSnapshots(),loadShipments(),loadOrderRequests()]).then(function(){updateSupplierFilter();renderSales();renderPurchases();renderInventory();loadDashboard();renderStockEvolution();saveDailySnapshot();renderShipments();});
 }
 
 // ==================== COLECAO PESSOAL (FICHARIO) ====================
@@ -4663,6 +4805,7 @@ function saveSale(){
 var mpSaleRowCounter=0;
 
 function openMpSaleModal(){
+  pendingOrderRequestId=null;
   document.getElementById('mpSaleRows').innerHTML='';
   mpSaleRowCounter=0;
   document.getElementById('mp-s-buyer').value='';
@@ -4920,6 +5063,8 @@ async function saveMpSales(){
   btn.textContent='Registrar vendas';btn.disabled=false;
   if(fail){showToast(ok+' venda(s) registrada(s), '+fail+' com erro','error');}
   else{showToast(ok+' venda(s) registrada(s) com sucesso! Estoque atualizado.');}
+  if(ok&&pendingOrderRequestId){await sb.from('order_requests').update({status:'Fechado',updated_at:new Date().toISOString()}).eq('id',pendingOrderRequestId);}
+  pendingOrderRequestId=null;
   closeModal('mpSaleModal');
   loadAll();
 }
