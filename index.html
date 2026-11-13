@@ -1005,6 +1005,7 @@ tr:hover td{background:var(--bg2)}
 </div>
 
 <!-- MODAL VENDA -->
+<datalist id="customerNamesList"></datalist>
 <div class="modal-bg" id="saleModal">
   <div class="modal">
     <h3>Registrar venda</h3>
@@ -1024,7 +1025,7 @@ tr:hover td{background:var(--bg2)}
       </div>
       <div class="form-field"><label>Quantidade *</label><input type="number" id="s-qty" value="1" min="1"></div>
       <div class="form-field"><label>Plataforma</label><input type="text" id="s-platform" placeholder="ex: WhatsApp, MYP Cards"></div>
-      <div class="form-field"><label>Comprador</label><input type="text" id="s-buyer" placeholder="ex: Joao"></div>
+      <div class="form-field"><label>Comprador *</label><div style="display:flex;gap:6px"><input type="text" id="s-buyer" list="customerNamesList" autocomplete="off" placeholder="Buscar cliente cadastrado..." style="flex:1" onchange="lockCustomerInput(this)" onblur="lockCustomerInput(this)"><button type="button" class="btn-small" title="Cadastrar novo cliente" onmousedown="event.preventDefault()" onclick="openNewCustomerFor('s-buyer')"><i class="ti ti-user-plus"></i></button></div></div>
       <div class="form-field"><label>Preco de venda (R$) *</label><input type="number" id="s-price" placeholder="0.00" step="0.01"></div>
       <div class="form-field"><label>Custo unitario (R$)</label><input type="number" id="s-cost" placeholder="0.00" step="0.01" readonly style="background:var(--bg2)"></div>
       <div class="form-field"><label>Data</label><input type="date" id="s-date"></div>
@@ -1047,7 +1048,7 @@ tr:hover td{background:var(--bg2)}
   <div class="modal modal-wide">
     <h3>Venda multipla</h3>
     <div class="modal-grid">
-      <div class="form-field"><label>Comprador</label><input type="text" id="mp-s-buyer" placeholder="ex: Joao"></div>
+      <div class="form-field"><label>Comprador *</label><div style="display:flex;gap:6px"><input type="text" id="mp-s-buyer" list="customerNamesList" autocomplete="off" placeholder="Buscar cliente cadastrado..." style="flex:1" onchange="lockCustomerInput(this)" onblur="lockCustomerInput(this)"><button type="button" class="btn-small" title="Cadastrar novo cliente" onmousedown="event.preventDefault()" onclick="openNewCustomerFor('mp-s-buyer')"><i class="ti ti-user-plus"></i></button></div></div>
       <div class="form-field"><label>Plataforma</label><input type="text" id="mp-s-platform" placeholder="ex: WhatsApp, MYP Cards"></div>
       <div class="form-field"><label>Data</label><input type="date" id="mp-s-date"></div>
       <div class="form-field"><label>Pedido</label><select id="mp-s-order" style="width:100%" title="Itens do mesmo pedido ficam juntos (ex: para vincular a um envio)"><option value="">Novo pedido</option></select></div>
@@ -1246,7 +1247,7 @@ tr:hover td{background:var(--bg2)}
     <h3>Editar <span id="bulkEditCount">0</span> venda(s) selecionada(s)</h3>
     <p style="font-size:12px;color:var(--text2);margin-top:-6px">Deixe um campo em branco (ou "Nao alterar") para manter o valor atual daquela venda.</p>
     <div class="modal-grid">
-      <div class="form-field"><label>Comprador</label><input type="text" id="be-buyer" placeholder="Nao alterar"></div>
+      <div class="form-field"><label>Comprador</label><input type="text" id="be-buyer" list="customerNamesList" autocomplete="off" placeholder="Nao alterar (buscar cliente)" onchange="lockCustomerInput(this)" onblur="lockCustomerInput(this)"></div>
       <div class="form-field"><label>Plataforma</label><input type="text" id="be-platform" placeholder="Nao alterar"></div>
       <div class="form-field"><label>Data</label><input type="date" id="be-date"></div>
       <div class="form-field"><label>Pago</label>
@@ -2277,12 +2278,23 @@ function markOrderReqContact(id){
 }
 
 // Abre a venda multipla com os itens do pedido; ao salvar, o pedido vira "Fechado"
-function launchSaleFromOrderReq(id){
+async function launchSaleFromOrderReq(id){
   var o=orderRequests.filter(function(x){return x.id===id;})[0];if(!o)return;
+  // Comprador precisa estar no cadastro: acha pelo WhatsApp ou nome; se nao existir, cadastra com os dados do pedido
+  var digits=function(t){return String(t||'').replace(/\D/g,'');};
+  var w=digits(o.customer_whatsapp);
+  var cust=(w?customers.filter(function(c){var cw=digits(c.whatsapp);return cw&&(cw===w||cw.slice(-11)===w.slice(-11));})[0]:null)||findCustomerByName(o.customer_name);
+  if(!cust&&o.customer_name){
+    var ins=await sb.from('customers').insert({user_id:currentUser.id,name:String(o.customer_name).trim(),whatsapp:o.customer_whatsapp||null,contact_frequency_days:30}).select().single();
+    if(ins.error){showToast('Erro ao cadastrar cliente do pedido: '+ins.error.message,'error');return;}
+    await loadCustomers();
+    cust=ins.data;
+    showToast('Cliente "'+cust.name+'" cadastrado a partir do pedido');
+  }
   openMpSaleModal();
   pendingOrderRequestId=o.id;
   document.getElementById('mpSaleRows').innerHTML='';
-  document.getElementById('mp-s-buyer').value=o.customer_name;
+  document.getElementById('mp-s-buyer').value=cust?cust.name:'';
   document.getElementById('mp-s-platform').value='Fichário';
   var missing=[];
   (o.items||[]).forEach(function(it){
@@ -4714,6 +4726,7 @@ function openSaleModal(){
   document.getElementById('s-price').value='';
   document.getElementById('s-cost').value='';
   ['s-platform','s-buyer','s-notes'].forEach(function(id){document.getElementById(id).value='';});
+  document.getElementById('s-buyer').style.borderColor='';
   openModal('saleModal');
 }
 
@@ -4767,8 +4780,8 @@ function saveSale(){
   var qty=parseInt(document.getElementById('s-qty').value)||1;
   var price=parseFloat(document.getElementById('s-price').value);
   if(!invId){showToast('Selecione um item do estoque','error');return;}
-  var buyerName=document.getElementById('s-buyer').value;
-  if(!buyerName){showToast('Selecione um comprador','error');return;}
+  var buyerCust=findCustomerByName(document.getElementById('s-buyer').value);
+  if(!buyerCust){showToast('Selecione um comprador do cadastro de clientes','error');return;}
   if(!price){showToast('Informe o preco de venda','error');return;}
   var inv=inventory.filter(function(i){return i.id===invId;})[0];
   if(!inv){showToast('Item nao encontrado','error');return;}
@@ -4783,8 +4796,8 @@ function saveSale(){
     sale_price:price,
     cost_price:parseFloat(inv.cost_price||0),
     platform:document.getElementById('s-platform').value,
-    buyer:document.getElementById('s-buyer').value,
-    customer_id:(customers.filter(function(c){return c.name===document.getElementById('s-buyer').value;})[0]||{}).id||null,
+    buyer:buyerCust.name,
+    customer_id:buyerCust.id,
     sale_date:document.getElementById('s-date').value,
     notes:document.getElementById('s-notes').value,
     is_trade:document.getElementById('s-is-trade').checked
@@ -4808,7 +4821,7 @@ function openMpSaleModal(){
   pendingOrderRequestId=null;
   document.getElementById('mpSaleRows').innerHTML='';
   mpSaleRowCounter=0;
-  document.getElementById('mp-s-buyer').value='';
+  document.getElementById('mp-s-buyer').value='';document.getElementById('mp-s-buyer').style.borderColor='';
   document.getElementById('mp-s-platform').value='';
   document.getElementById('mp-s-date').value=new Date().toISOString().split('T')[0];
   document.getElementById('mp-s-is-trade').checked=false;
@@ -4995,11 +5008,12 @@ function resetMpSaleDiscount(){
 }
 
 async function saveMpSales(){
-  var buyer=document.getElementById('mp-s-buyer').value;
+  var customerObj=findCustomerByName(document.getElementById('mp-s-buyer').value);
+  if(!customerObj){showToast('Selecione um comprador do cadastro de clientes','error');return;}
+  var buyer=customerObj.name;
   var platform=document.getElementById('mp-s-platform').value;
   var saleDate=document.getElementById('mp-s-date').value;
   var isTrade=document.getElementById('mp-s-is-trade').checked;
-  var customerObj=(customers.filter(function(c){return c.name===buyer;})[0]||{});
 
   var rows=document.querySelectorAll('#mpSaleRows tr');
   var availMap={};
@@ -5229,7 +5243,11 @@ async function saveBulkEditSales(){
   var date=document.getElementById('be-date').value;
   var paid=document.getElementById('be-paid').value;
   var delivered=document.getElementById('be-delivered').value;
-  if(buyer)payload.buyer=buyer;
+  if(buyer){
+    var beCust=findCustomerByName(buyer);
+    if(!beCust){showToast('Comprador precisa estar no cadastro de clientes','error');return;}
+    payload.buyer=beCust.name;payload.customer_id=beCust.id;
+  }
   if(platform)payload.platform=platform;
   if(date)payload.sale_date=date;
   if(paid!=='')payload.paid=(paid==='true');
@@ -6123,7 +6141,7 @@ function editSale(id){
   document.getElementById('es-card').value=s.card_name||'';
   document.getElementById('es-qty').value=s.quantity||1;
   document.getElementById('es-platform').value=s.platform||'';
-  document.getElementById('es-buyer').value=s.buyer||'';
+  (function(el,b){el.value=b;if(b&&el.value!==b){var o=document.createElement('option');o.value=b;o.textContent=b+' (nao cadastrado)';el.appendChild(o);el.value=b;}})(document.getElementById('es-buyer'),s.buyer||'');
   document.getElementById('es-price').value=s.sale_price||'';
   document.getElementById('es-cost').value=s.cost_price||'';
   document.getElementById('es-date').value=s.sale_date||'';
@@ -6145,6 +6163,7 @@ function saveEditSale(){
     cost_price:parseFloat(document.getElementById('es-cost').value)||0,
     platform:document.getElementById('es-platform').value||null,
     buyer:document.getElementById('es-buyer').value||null,
+    customer_id:(findCustomerByName(document.getElementById('es-buyer').value)||{}).id||null,
     sale_date:document.getElementById('es-date').value,
     notes:document.getElementById('es-notes').value||null,
     is_trade:document.getElementById('es-is-trade').checked
@@ -6601,6 +6620,7 @@ function renderSuppliers(){
 
 
 function openNewCustomer(){
+  customerPickTarget=null;
   document.getElementById('customerModalTitle').textContent='Novo Cliente';
   document.getElementById('cus-id').value='';
   document.getElementById('cus-name').value='';
@@ -6785,6 +6805,8 @@ async function saveCustomer(){
   showToast(id?'Cliente atualizado!':'Cliente criado!');
   closeModal('customerModal');
   await loadCustomers();
+  if(customerPickTarget&&!id){var t=document.getElementById(customerPickTarget);if(t){t.value=name;t.style.borderColor='';}}
+  customerPickTarget=null;
 }
 
 async function deleteCustomer(id){
@@ -7826,19 +7848,51 @@ function populateSupplierSelects(){
   });
 }
 
+// ---- Comprador: so aceita clientes do cadastro ----
+function findCustomerByName(name){
+  var n=String(name||'').trim().toLowerCase();if(!n)return null;
+  return customers.filter(function(c){return (c.name||'').trim().toLowerCase()===n;})[0]||null;
+}
+// Ao sair do campo: se o texto nao for um cliente cadastrado, limpa; se for, padroniza o nome
+function lockCustomerInput(el){
+  var v=el.value.trim();
+  if(!v){el.style.borderColor='';return;}
+  var c=findCustomerByName(v);
+  if(c){el.value=c.name;el.style.borderColor='';return;}
+  el.value='';el.style.borderColor='var(--danger)';
+  showToast('"'+v+'" nao esta no cadastro de clientes. Selecione da lista ou cadastre com o botao +','error');
+}
+var customerPickTarget=null;
+function openNewCustomerFor(targetId){
+  openNewCustomer();
+  customerPickTarget=targetId;
+  var typed=document.getElementById(targetId).value.trim();
+  if(typed&&!findCustomerByName(typed))document.getElementById('cus-name').value=typed;
+}
+
 function populateCustomerSelects(){
-  var selects = ['s-buyer', 'es-buyer', 'vr-buyer'];
+  var dl=document.getElementById('customerNamesList');
+  if(dl)dl.innerHTML=customers.map(function(c){
+    var extra=[c.whatsapp,c.city].filter(Boolean).join(' · ');
+    return '<option value="'+escHtmlAttr(c.name)+'">'+escHtmlAttr(extra)+'</option>';
+  }).join('');
+  var selects = ['es-buyer', 'vr-buyer'];
   selects.forEach(function(id){
     var el = document.getElementById(id);
     if(!el) return;
     var cur = el.value;
     el.innerHTML = '<option value="">Selecionar cliente...</option>'
       + customers.map(function(c){
-          return '<option value="'+c.name+'">'+c.name+'</option>';
+          return '<option value="'+escHtmlAttr(c.name)+'">'+escHtmlAttr(c.name)+'</option>';
         }).join('');
-    if(cur) el.value = cur;
+    if(cur){
+      el.value = cur;
+      // venda antiga com comprador fora do cadastro: mantem visivel em vez de apagar
+      if(el.value!==cur){var o=document.createElement('option');o.value=cur;o.textContent=cur+' (nao cadastrado)';el.appendChild(o);el.value=cur;}
+    }
   });
 }
+function escHtmlAttr(t){return String(t==null?'':t).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 
 // Close autocomplete when clicking outside
 document.addEventListener('click', function(e){
