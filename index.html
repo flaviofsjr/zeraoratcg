@@ -1543,7 +1543,7 @@ tr:hover td{background:var(--bg2)}
 <div class="modal-bg" id="publicDbImportModal">
   <div class="modal" style="max-width:640px">
     <h3>Importar do banco público de cartas</h3>
-    <p style="font-size:12px;color:var(--text2);margin-top:-8px">Fonte: TCGdex (nome, set, número, raridade e imagem, no idioma de busca escolhido abaixo). A imagem é copiada uma vez para o seu Storage, então o site não depende da TCGdex para exibi-la. Se a carta não tiver imagem no idioma escolhido, usamos a imagem em inglês. Preço de venda não é importado. Link de busca na Liga Pokémon é preenchido automaticamente.</p>
+    <p style="font-size:12px;color:var(--text2);margin-top:-8px">Fonte: TCGdex (nome, set, número, raridade e imagem, no idioma de busca escolhido abaixo). A imagem é copiada uma vez para o seu Storage, então o site não depende da TCGdex para exibi-la. Se a carta não tiver imagem no idioma escolhido, usamos a imagem em inglês. Preço de venda não é importado. Link de busca na Liga Pokémon é preenchido automaticamente.<br><strong>Atualizar:</strong> cartas que já estão no cadastro aparecem marcadas como "já cadastrada"; se você selecioná-las, elas são buscadas de novo e recebem a imagem/raridade que faltava (fotos próprias não são trocadas).</p>
     <div class="modal-grid">
       <div class="form-field"><label>Nome da carta</label>
         <input type="text" id="pd-search-name" placeholder="Ex: Charizard" onkeydown="if(event.key==='Enter')searchPublicDb()">
@@ -1570,7 +1570,10 @@ tr:hover td{background:var(--bg2)}
     <button class="btn-primary" style="width:auto" onclick="searchPublicDb()"><i class="ti ti-search"></i> Buscar</button>
     <div id="pd-status" style="font-size:12px;color:var(--text2)"></div>
     <div id="pd-results-controls" style="display:none;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
-      <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer"><input type="checkbox" id="pd-select-all" onchange="togglePdSelectAll(this.checked)"> Selecionar todos</label>
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+        <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer"><input type="checkbox" id="pd-select-all" onchange="togglePdSelectAll(this.checked)"> Selecionar todos (novas)</label>
+        <button type="button" class="btn-small" id="pd-select-linked" style="display:none" onclick="selectPdLinked()" title="Busca de novo na TCGdex as cartas que já estão no cadastro e atualiza imagem, raridade e número"><i class="ti ti-refresh"></i> Selecionar já cadastradas (atualizar)</button>
+      </div>
       <div style="display:flex;align-items:center;gap:8px">
         <label style="font-size:12px;color:var(--text2)">Idioma ao importar:</label>
         <select id="pd-import-lang" style="padding:5px 8px;border:1px solid var(--border2);border-radius:6px;background:var(--bg);color:var(--text);font-size:12px">
@@ -7074,20 +7077,58 @@ function pdAlreadyInCatalog(card,existing){
   return false;
 }
 
+// Produtos do cadastro ja vinculados a uma carta da TCGdex (catalog_key -> [produtos])
+function pdLinkedProducts(){
+  var map={};
+  products.forEach(function(p){
+    if(!p.catalog_key)return;
+    (map[p.catalog_key]=map[p.catalog_key]||[]).push(p);
+  });
+  return map;
+}
+
+function pdCatalogKey(card){return pdSearchLang+':'+card.id;}
+
 function renderPdResults(){
   var existing=pdExistingNames();
+  var linked=pdLinkedProducts();
+  var nLinked=0;
   var box=document.getElementById('pd-results');
   box.innerHTML=pdSearchResults.map(function(card){
-    var maybeDup=pdAlreadyInCatalog(card,existing);
-    var img=card.image?'<img src="'+card.image+'/low.webp" style="width:32px;height:44px;object-fit:cover;border-radius:3px;margin-right:10px">':'';
+    var links=linked[pdCatalogKey(card)];
+    var maybeDup=!links&&pdAlreadyInCatalog(card,existing);
+    var sub='ID: '+card.id;
+    if(links){
+      nLinked++;
+      var semImg=links.some(function(p){return !p.image_url;});
+      sub='<span style="color:#27500A">✓ já cadastrada'+(semImg?' (sem imagem)':'')+'</span> — selecione para atualizar imagem/dados — ID: '+card.id;
+    }else if(maybeDup){
+      sub='⚠ possível duplicata (número igual já existe, confira o set) — ID: '+card.id;
+    }
+    var img=card.image?'<img src="'+card.image+'/low.webp" style="width:32px;height:44px;object-fit:cover;border-radius:3px;margin-right:10px">':'<div style="width:32px;height:44px;background:var(--bg2);border-radius:3px;margin-right:10px;flex-shrink:0" title="Sem imagem na TCGdex"></div>';
     return '<div class="suggest-item">'
       +'<label style="display:flex;align-items:center;flex:1;cursor:pointer">'
-      +'<input type="checkbox" style="margin-right:10px" onchange="togglePdCard(\''+card.id+'\',this.checked)">'
+      +'<input type="checkbox" style="margin-right:10px" '+(pdSelectedIds[card.id]?'checked ':'')+'onchange="togglePdCard(\''+card.id+'\',this.checked)">'
       +img
       +'<span class="suggest-item-info"><span class="suggest-item-name">'+pdBriefLabel(card)+'</span>'
-      +'<span class="suggest-item-sub">'+(maybeDup?'⚠ possível duplicata (número igual já existe, confira o set) — ID: '+card.id:'ID: '+card.id)+'</span></span>'
+      +'<span class="suggest-item-sub">'+sub+'</span></span>'
       +'</label></div>';
   }).join('');
+  var linkBtn=document.getElementById('pd-select-linked');
+  if(linkBtn){
+    linkBtn.style.display=nLinked?'inline-flex':'none';
+    linkBtn.innerHTML='<i class="ti ti-refresh"></i> Selecionar já cadastradas ('+nLinked+')';
+  }
+}
+
+// Seleciona so as cartas que ja estao no cadastro, para buscar de novo imagem/dados
+function selectPdLinked(){
+  var linked=pdLinkedProducts();
+  pdSearchResults.forEach(function(card){
+    if(linked[pdCatalogKey(card)])pdSelectedIds[card.id]=true;
+  });
+  renderPdResults();
+  updatePdImportBtn();
 }
 
 function togglePdCard(id,checked){
@@ -7097,23 +7138,28 @@ function togglePdCard(id,checked){
 
 function togglePdSelectAll(checked){
   var existing=pdExistingNames();
+  var linked=pdLinkedProducts();
   pdSearchResults.forEach(function(card){
-    if(pdAlreadyInCatalog(card,existing))return;
+    if(linked[pdCatalogKey(card)]||pdAlreadyInCatalog(card,existing))return;
     if(checked)pdSelectedIds[card.id]=true;else delete pdSelectedIds[card.id];
   });
   renderPdResults();
-  document.querySelectorAll('#pd-results input[type=checkbox]').forEach(function(cb,i){
-    var card=pdSearchResults[i];
-    if(card)cb.checked=!!pdSelectedIds[card.id];
-  });
   updatePdImportBtn();
 }
 
 function updatePdImportBtn(){
-  var n=Object.keys(pdSelectedIds).length;
+  var linked=pdLinkedProducts();
+  var nNew=0,nUpd=0;
+  pdSearchResults.forEach(function(card){
+    if(!pdSelectedIds[card.id])return;
+    if(linked[pdCatalogKey(card)])nUpd++;else nNew++;
+  });
   var btn=document.getElementById('pd-import-btn');
-  btn.textContent='Importar selecionados ('+n+')';
-  btn.disabled=n===0;
+  var parts=[];
+  if(nNew||!nUpd)parts.push('Importar '+nNew);
+  if(nUpd)parts.push((nNew?'atualizar ':'Atualizar ')+nUpd);
+  btn.textContent=parts.join(' e ')+' selecionada(s)';
+  btn.disabled=(nNew+nUpd)===0;
 }
 
 async function pdFetchCardDetail(id){
@@ -7162,15 +7208,17 @@ async function importSelectedPdCards(){
     }
   }
 
-  // 2) Cria os produtos apontando para a imagem no Storage (sem duplicar carta+idioma ja vinculada)
-  var existingKeys={};
-  products.forEach(function(p){if(p.catalog_key)existingKeys[p.catalog_key+'|'+(p.language||'')]=true;});
+  // 2) Cartas ja vinculadas a produtos: atualiza imagem/raridade/numero em vez de duplicar.
+  //    Cartas novas: cria os produtos apontando para a imagem no Storage.
+  var linked=pdLinkedProducts();
   var toInsert=[];
+  var toRefresh=[];
   var skipped=0;
+  var seenKeys={};
   rows.forEach(function(c){
-    var k=c.catalog_key+'|'+lang;
-    if(existingKeys[k]){skipped++;return;}
-    existingKeys[k]=true;
+    if(linked[c.catalog_key]){toRefresh.push(c);return;}
+    if(seenKeys[c.catalog_key]){skipped++;return;}
+    seenKeys[c.catalog_key]=true;
     var displayName=c.name+' ('+pdCardNumberLabel(c.local_id,c.set_total)+')';
     toInsert.push({
       user_id:currentUser.id,
@@ -7186,7 +7234,7 @@ async function importSelectedPdCards(){
     });
   });
 
-  if(!toInsert.length){
+  if(!toInsert.length&&!toRefresh.length){
     showToast(skipped?'Todas as cartas selecionadas já estavam no catálogo':'Não foi possível importar as cartas selecionadas','error');
     updatePdImportBtn();
     return;
@@ -7198,13 +7246,59 @@ async function importSelectedPdCards(){
     var r=await sb.from('products').insert(batch);
     if(!r.error)ok+=batch.length;else console.error('Erro ao importar lote de produtos:',r.error);
   }
-  var msg=ok+' carta(s) importada(s)';
-  if(skipped)msg+=', '+skipped+' já existiam';
-  if(failed)msg+=', '+failed+' falharam';
-  showToast(msg);
+
+  var ref={updated:0,newImages:0,stillNoImage:0,errors:0};
+  for(var q=0;q<toRefresh.length;q++){
+    btn.textContent='Atualizando cadastro ('+(q+1)+'/'+toRefresh.length+')...';
+    await pdRefreshLinkedProducts(toRefresh[q],linked[toRefresh[q].catalog_key],ref);
+  }
+
+  var msgParts=[];
+  if(ok||!toRefresh.length)msgParts.push(ok+' carta(s) importada(s)');
+  if(toRefresh.length){
+    msgParts.push(ref.updated+' atualizada(s)'+(ref.newImages?' ('+ref.newImages+' ganharam imagem)':''));
+    if(ref.stillNoImage)msgParts.push(ref.stillNoImage+' ainda sem imagem na TCGdex');
+  }
+  if(skipped)msgParts.push(skipped+' já existiam');
+  if(failed||ref.errors)msgParts.push((failed+ref.errors)+' falharam');
+  showToast(msgParts.join(', '),(failed||ref.errors)?'error':undefined);
   closeModal('publicDbImportModal');
   await loadProducts();
   renderProducts();
+}
+
+// Atualiza os produtos ja vinculados a uma carta com o que veio de novo da TCGdex.
+// Imagem: preenche se estava vazia (e tambem no estoque/compras/desejos com o mesmo nome e sem imagem);
+// troca se era a imagem antiga do catalogo; nunca troca uma foto propria.
+async function pdRefreshLinkedProducts(c,prods,ref){
+  for(var i=0;i<prods.length;i++){
+    var prod=prods[i];
+    var upd={};
+    if(c.rarity&&c.rarity!==prod.rarity)upd.rarity=c.rarity;
+    if(c.local_id&&!prod.card_number)upd.card_number=c.local_id;
+    var gotImage=false;
+    if(c.image_url&&c.image_url!==prod.image_url){
+      if(!prod.image_url){
+        upd.image_url=c.image_url;
+        gotImage=true;
+        await Promise.all([
+          sb.from('inventory').update({image_url:c.image_url}).eq('user_id',currentUser.id).eq('name',prod.name).is('image_url',null),
+          sb.from('purchases').update({image_url:c.image_url}).eq('user_id',currentUser.id).eq('description',prod.name).is('image_url',null),
+          sb.from('wishlist').update({image_url:c.image_url}).eq('user_id',currentUser.id).eq('name',prod.name).is('image_url',null)
+        ]).then(function(rs){rs.forEach(function(r){if(r.error){ref.errors++;console.error('Erro ao preencher imagem:',r.error);}});});
+      }else if(prod.image_url.indexOf(CARD_IMG_STORAGE_PREFIX)===0){
+        ref.errors+=await replaceImageUrlEverywhere(prod.image_url,c.image_url);
+        gotImage=true;
+      }
+    }
+    if(!c.image_url&&!prod.image_url)ref.stillNoImage++;
+    if(Object.keys(upd).length){
+      var r=await sb.from('products').update(upd).eq('id',prod.id).eq('user_id',currentUser.id);
+      if(r.error){ref.errors++;console.error('Erro ao atualizar produto:',r.error);continue;}
+    }
+    if(gotImage)ref.newImages++;
+    if(gotImage||Object.keys(upd).length)ref.updated++;
+  }
 }
 
 // ---- CACHE DE IMAGENS DO CATALOGO (TCGdex -> Supabase Storage) ----
