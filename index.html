@@ -236,7 +236,7 @@ tr:hover td{background:var(--bg2)}
             <option value="sale">Valor a preço de venda</option>
             <option value="units">Unidades</option>
           </select>
-          <label style="font-size:12px;color:var(--text2);display:flex;gap:5px;align-items:center;cursor:pointer"><input type="checkbox" id="seIncludePokedex" onchange="renderStockEvolution()"> Incluir Pokédex</label>
+          <label style="font-size:12px;color:var(--text2);display:flex;gap:5px;align-items:center;cursor:pointer"><input type="checkbox" id="seIncludePokedex" onchange="renderStockEvolution()"> Incluir coleções pessoais</label>
         </div>
       </div>
       <div class="table-wrap" style="padding:16px;margin-bottom:1.5rem">
@@ -282,56 +282,17 @@ tr:hover td{background:var(--bg2)}
           <button class="btn-secondary" style="width:auto" id="toggleZeroBtn" onclick="toggleZeroStock()"><i class="ti ti-eye-off"></i> Ocultar esgotados</button>
         </div>
       </div>
-      <div id="invSummary" style="display:grid;grid-template-columns:repeat(7,1fr);gap:10px;margin-bottom:1.25rem">
-        <div style="background:var(--bg);border:1px solid #a3c77d;border-radius:var(--radius-lg);padding:14px 16px;min-height:90px">
-          <div style="font-size:11px;color:var(--success);font-weight:700;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px">A venda</div>
-          <div style="font-size:22px;font-weight:700;color:var(--success)" id="inv-sum-avenda-val">R$ 0,00</div>
-          <div style="font-size:12px;color:var(--text2);margin-top:4px"><span id="inv-sum-avenda-qty">0</span> item(s)</div>
-          <div style="font-size:11px;color:var(--text3);margin-top:2px">Custo: <span id="inv-sum-avenda-cost">R$ 0,00</span></div>
-        </div>
-        <div style="background:var(--bg);border:1px solid #F0994A;border-radius:var(--radius-lg);padding:14px 16px;min-height:90px">
-          <div style="font-size:11px;color:#7A5200;font-weight:700;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px">Reservado</div>
-          <div style="font-size:22px;font-weight:700;color:#7A5200" id="inv-sum-reservado-val">R$ 0,00</div>
-          <div style="font-size:12px;color:var(--text2);margin-top:4px"><span id="inv-sum-reservado-qty">0</span> item(s)</div>
-          <div style="font-size:11px;color:var(--text3);margin-top:2px">Custo: <span id="inv-sum-reservado-cost">R$ 0,00</span></div>
-        </div>
-        <div style="background:var(--bg);border:1px solid var(--border2);border-radius:var(--radius-lg);padding:14px 16px;min-height:90px">
-          <div style="font-size:11px;color:var(--text2);font-weight:700;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px">Em estoque</div>
-          <div style="font-size:22px;font-weight:700;color:var(--text)" id="inv-sum-estoque-val">R$ 0,00</div>
-          <div style="font-size:12px;color:var(--text2);margin-top:4px"><span id="inv-sum-estoque-qty">0</span> item(s)</div>
-          <div style="font-size:11px;color:var(--text3);margin-top:2px">Custo: <span id="inv-sum-estoque-cost">R$ 0,00</span></div>
-        </div>
-        <div style="background:var(--bg);border:1px solid #6FA8DC;border-radius:var(--radius-lg);padding:14px 16px;min-height:90px">
-          <div style="font-size:11px;color:#0C447C;font-weight:700;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px">A caminho</div>
-          <div style="font-size:22px;font-weight:700;color:#0C447C" id="inv-sum-caminho-val">R$ 0,00</div>
-          <div style="font-size:12px;color:var(--text2);margin-top:4px"><span id="inv-sum-caminho-qty">0</span> item(s)</div>
-          <div style="font-size:11px;color:var(--text3);margin-top:2px">Custo: <span id="inv-sum-caminho-cost">R$ 0,00</span></div>
-        </div>
-        <div style="background:var(--bg);border:1px solid #C99A7A;border-radius:var(--radius-lg);padding:14px 16px;min-height:90px">
-          <div style="font-size:11px;color:#712B13;font-weight:700;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px">Pokedex</div>
-          <div style="font-size:22px;font-weight:700;color:#712B13" id="inv-sum-pokedex-val">R$ 0,00</div>
-          <div style="font-size:12px;color:var(--text2);margin-top:4px"><span id="inv-sum-pokedex-qty">0</span> item(s)</div>
-          <div style="font-size:11px;color:var(--text3);margin-top:2px">Custo: <span id="inv-sum-pokedex-cost">R$ 0,00</span></div>
-        </div>
-        <div style="background:var(--bg);border:1px solid #C4A3E8;border-radius:var(--radius-lg);padding:14px 16px;min-height:90px" title="Cartas de terceiros que vendemos por eles. Nao entram no Total geral.">
-          <div style="font-size:11px;color:#6B21A8;font-weight:700;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px">Comodato</div>
-          <div style="font-size:22px;font-weight:700;color:#6B21A8" id="inv-sum-comodato-val">R$ 0,00</div>
-          <div style="font-size:12px;color:var(--text2);margin-top:4px"><span id="inv-sum-comodato-qty">0</span> item(s)</div>
-          <div style="font-size:11px;color:var(--text3);margin-top:2px">Repasse: <span id="inv-sum-comodato-cost">R$ 0,00</span></div>
-        </div>
-        <div style="background:var(--bg);border:1px solid var(--amber);border-radius:var(--radius-lg);padding:14px 16px;min-height:90px">
-          <div style="font-size:11px;color:var(--amber-dark);font-weight:700;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px">Total geral</div>
-          <div style="font-size:22px;font-weight:700;color:var(--amber-dark)" id="inv-sum-total-val">R$ 0,00</div>
-          <div style="font-size:12px;color:var(--text2);margin-top:4px"><span id="inv-sum-total-qty">0</span> item(s)</div>
-          <div style="font-size:11px;color:var(--text3);margin-top:2px">Custo: <span id="inv-sum-total-cost">R$ 0,00</span></div>
-        </div>
+      <div style="display:flex;justify-content:flex-end;margin-bottom:6px;position:relative">
+        <button class="btn-secondary" style="width:auto;font-size:12px;padding:4px 10px" onclick="toggleInvSummaryPicker(event)"><i class="ti ti-layout-grid"></i> Caixas do resumo</button>
+        <div id="invSummaryPicker" style="display:none;position:absolute;right:0;top:32px;z-index:50;background:var(--bg);border:1px solid var(--border2);border-radius:var(--radius-lg);padding:10px 12px;box-shadow:0 6px 20px rgba(0,0,0,0.12);min-width:220px"></div>
       </div>
+      <div id="invSummary" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:1.25rem"></div>
       <div class="filters">
         <input type="text" id="filterInvName" placeholder="Buscar por carta, fornecedor, set, condição..." oninput="renderInventory()" style="width:190px">
         <select id="filterInvType" onchange="renderInventory()"><option value="">Todos tipos</option><option>Carta Avulsa</option><option>Lacrado</option><option>Acessorio</option><option>Lote</option></select>
         <select id="filterInvLang" onchange="renderInventory()"><option value="">Todos idiomas</option><option>PT-BR</option><option>EN</option><option>JP</option><option>FR</option><option>CH</option></select>
         <select id="filterInvCond" onchange="renderInventory()"><option value="">Todas condicoes</option><option>M</option><option>NM</option><option>SP</option><option>MP</option><option>HP</option><option>D</option></select>
-        <select id="filterInvStatus" onchange="renderInventory()"><option value="">Todos status</option><option>A venda</option><option>Reservado</option><option>Em estoque</option><option>A Caminho</option><option>Pokedex</option><option>Comodato</option></select>
+        <select id="filterInvStatus" onchange="renderInventory()"><option value="">Todos status</option><option>A venda</option><option>Reservado</option><option>Em estoque</option><option>A Caminho</option><option>Coleção: Zeraora</option><option>Coleção: Verônica</option><option>Coleção: Pokedex</option><option>Comodato</option></select>
         <select id="filterInvSupplier" onchange="renderInventory()"><option value="">Todos fornecedores</option></select>
         <select id="filterInvSet" onchange="renderInventory()" style="max-width:220px"><option value="">Todas coleções</option></select>
         <select id="filterInvCat" onchange="renderInventory()"><option value="">Todas categorias</option><option>Pokemon Comum</option><option>Treinador Comum</option><option>Energia</option><option>EX</option><option>Arte Rara</option><option>Promo</option><option value="__none__">Sem categoria</option></select>
@@ -836,7 +797,7 @@ tr:hover td{background:var(--bg2)}
       <div class="form-field"><label>Custo unitario</label><input type="text" id="inv-edit-cost" readonly style="background:var(--bg2)"></div>
       <div class="form-field"><label>Preco de venda (R$)</label><input type="number" id="inv-edit-price" placeholder="0.00" step="0.01" oninput="updateInvMarginPreview()"></div>
       <div class="form-field"><label>Margem estimada</label><input type="text" id="inv-edit-margin" readonly style="background:var(--bg2)"></div>
-      <div class="form-field"><label>Status</label><select id="inv-edit-status" onchange="invEditStatusChange()"><option value="A venda">A venda</option><option value="Reservado">Reservado</option><option value="Em estoque">Em estoque</option><option value="A Caminho">A Caminho</option><option value="Pokedex">Pokedex</option><option value="Comodato">Comodato</option></select></div>
+      <div class="form-field"><label>Status</label><select id="inv-edit-status" onchange="invEditStatusChange()"><option value="A venda">A venda</option><option value="Reservado">Reservado</option><option value="Em estoque">Em estoque</option><option value="A Caminho">A Caminho</option><option value="Coleção: Zeraora">Coleção: Zeraora</option><option value="Coleção: Verônica">Coleção: Verônica</option><option value="Coleção: Pokedex">Coleção: Pokedex</option><option value="Comodato">Comodato</option></select></div>
       <div class="form-field"><label>Ajuste da condição <span id="inv-edit-cond-base" style="color:var(--text3);font-weight:400"></span></label><select id="inv-edit-cond-mod"><option value="">Sem ajuste</option><option value="+">+ (topo da faixa)</option><option value="-">− (no limite)</option></select></div>
       <div class="form-field"><label>Categoria</label><select id="inv-edit-category"><option value="">Sem categoria</option><option>Pokemon Comum</option><option>Treinador Comum</option><option>Energia</option><option>EX</option><option>Arte Rara</option><option>Promo</option></select></div>
       <div class="form-field"><label>Data de recebimento</label><input type="date" id="inv-edit-received" title="Quando o item chegou. Em branco enquanto estiver A Caminho."></div>
@@ -1290,7 +1251,7 @@ tr:hover td{background:var(--bg2)}
           <option value="Reservado">Reservado</option>
           <option value="Em estoque">Em estoque</option>
           <option value="A Caminho">A Caminho</option>
-          <option value="Pokedex">Pokedex</option>
+          <option value="Coleção: Zeraora">Coleção: Zeraora</option><option value="Coleção: Verônica">Coleção: Verônica</option><option value="Coleção: Pokedex">Coleção: Pokedex</option>
           <option value="Comodato">Comodato</option>
         </select>
       </div>
@@ -1685,7 +1646,7 @@ tr:hover td{background:var(--bg2)}
     <div class="modal-grid">
       <div class="form-field"><label>Data de recebimento</label><input type="date" id="shr-date"></div>
       <div class="form-field"><label>Status no estoque</label>
-        <select id="shr-status"><option value="A venda">A venda</option><option value="Em estoque">Em estoque</option><option value="Pokedex">Pokedex</option><option value="Comodato">Comodato</option></select>
+        <select id="shr-status"><option value="A venda">A venda</option><option value="Em estoque">Em estoque</option><option value="Coleção: Zeraora">Coleção: Zeraora</option><option value="Coleção: Verônica">Coleção: Verônica</option><option value="Coleção: Pokedex">Coleção: Pokedex</option><option value="Comodato">Comodato</option></select>
       </div>
     </div>
     <div style="font-size:11px;color:var(--text3)">Compras pendentes viram "Recebido" e os itens "A Caminho" mudam para o status escolhido. Itens que já estavam no estoque com outro status não são alterados.</div>
@@ -2643,17 +2604,17 @@ function afterShipmentDelivered(s){
 function openShipReceive(s){
   document.getElementById('shr-id').value=s.id;
   document.getElementById('shr-date').value=shipToday();
-  var allPokedex=true;
+  var colStatus=null, allSameCol=true;
   var lines=shipPurchaseIds(s).map(function(pid){
     var p=purchases.filter(function(x){return x.id===pid;})[0];
     if(!p)return '';
     var inv=inventory.filter(function(i){return i.purchase_id===pid;});
-    if(!inv.length||inv.some(function(i){return i.status!=='Pokedex';}))allPokedex=false;
+    if(!inv.length)allSameCol=false; inv.forEach(function(i){var st=normInvStatus(i.status);if(!isCollectionStatus(st)||(colStatus&&colStatus!==st))allSameCol=false;else colStatus=st;});
     var where=inv.length?inv.map(function(i){return i.status||'A venda';}).join(', '):(p.status==='Pendente'?'ainda não está no estoque':'sem item no estoque');
     return '• <b>'+escShip((p.quantity>1?p.quantity+'x ':'')+p.description)+'</b> <span style="color:var(--text3)">('+escShip(where)+')</span>';
   }).filter(Boolean);
   document.getElementById('shr-items').innerHTML=lines.join('<br>')||'Nenhuma compra vinculada.';
-  document.getElementById('shr-status').value=allPokedex?'Pokedex':'A venda';
+  document.getElementById('shr-status').value=(allSameCol&&colStatus)?colStatus:'A venda';
   openModal('shipReceiveModal');
 }
 
@@ -3998,7 +3959,7 @@ function renderInventory(){
       ?'<span title="Ultima venda na Liga'+(inv.market_last_sale_date?' em '+mpFmtDate(inv.market_last_sale_date):'')+(inv.market_note?' - '+mpEsc(inv.market_note):'')+'">'+fmt(inv.market_price)+'</span>'
       :(prod&&prod.market_price?fmt(prod.market_price):'<span style="color:var(--text3)">-</span>');
     var marketQtyCell=inv.market_sold_qty!=null?inv.market_sold_qty:'<span style="color:var(--text3)">-</span>';
-    var extrasBadge=inv.extras?'<span style="font-size:10px;background:#F3E8FF;color:#6B21A8;padding:1px 6px;border-radius:10px;font-weight:600;margin-left:4px">'+inv.extras+'</span>':''; var invLiga=invLigaUrl(inv); var ligaLink=invLiga?'<a href="'+invLiga+'" target="_blank" style="font-size:11px;color:var(--blue);margin-left:4px" title="'+(inv.liga_url?'Ver na Liga Pokemon':'Buscar na Liga Pokemon')+'"><i class="ti ti-external-link"></i></a>':''; var statusClass=inv.status==='Reservado'?'badge-mp':inv.status==='Em estoque'?'badge-nosale':inv.status==='A Caminho'?'badge-lp':inv.status==='Pokedex'?'badge-jp':inv.status==='Comodato'?'badge-comodato':'badge-nm';
+    var extrasBadge=inv.extras?'<span style="font-size:10px;background:#F3E8FF;color:#6B21A8;padding:1px 6px;border-radius:10px;font-weight:600;margin-left:4px">'+inv.extras+'</span>':''; var invLiga=invLigaUrl(inv); var ligaLink=invLiga?'<a href="'+invLiga+'" target="_blank" style="font-size:11px;color:var(--blue);margin-left:4px" title="'+(inv.liga_url?'Ver na Liga Pokemon':'Buscar na Liga Pokemon')+'"><i class="ti ti-external-link"></i></a>':''; var statusClass=inv.status==='Reservado'?'badge-mp':inv.status==='Em estoque'?'badge-nosale':inv.status==='A Caminho'?'badge-lp':isCollectionStatus(inv.status)?'badge-jp':inv.status==='Comodato'?'badge-comodato':'badge-nm';
     var statusLabel=inv.status||'A venda';
     return '<tr>'
       +'<td><input type="checkbox" class="inv-select-box" value="'+inv.id+'" '+(selectedInvIds.has(inv.id)?'checked':'')+' onchange="toggleInvSelect(\''+inv.id+'\',this.checked)"></td>'
@@ -4137,9 +4098,12 @@ function saveDailySnapshot(){
 
 function snapshotValue(s,metric,includePokedex){
   var v=metric==='units'?(s.units||0):metric==='sale'?parseFloat(s.sale_value||0):parseFloat(s.cost_value||0);
-  if(!includePokedex&&s.by_status&&s.by_status.Pokedex){
-    var p=s.by_status.Pokedex;
-    v-=metric==='units'?(p.units||0):metric==='sale'?(p.sale||0):(p.cost||0);
+  if(!includePokedex&&s.by_status){
+    Object.keys(s.by_status).forEach(function(k){
+      if(!isCollectionStatus(k))return;
+      var p=s.by_status[k];
+      v-=metric==='units'?(p.units||0):metric==='sale'?(p.sale||0):(p.cost||0);
+    });
   }
   return v;
 }
@@ -4160,7 +4124,7 @@ function renderStockEvolution(){
   function add(date,key,v){if(!date)return;if(!byDay[date])byDay[date]={in:0,out:0};byDay[date][key]+=v;}
   inventory.forEach(function(i){
     if(i.status==='Comodato')return;
-    if(!includePokedex&&i.status==='Pokedex')return;
+    if(!includePokedex&&isCollectionStatus(i.status))return;
     var pur=purById[i.purchase_id];
     var date=(pur&&pur.purchase_date)||(i.created_at||'').slice(0,10);
     add(date,'in',val(i.quantity_total||0,parseFloat(i.cost_price||0),parseFloat(i.sale_price||0)));
@@ -4168,7 +4132,7 @@ function renderStockEvolution(){
   sales.forEach(function(s){
     var inv=invById[s.inventory_id];
     if(inv&&inv.status==='Comodato')return;
-    if(inv&&!includePokedex&&inv.status==='Pokedex')return;
+    if(inv&&!includePokedex&&isCollectionStatus(inv.status))return;
     var c=inv?parseFloat(inv.cost_price||0):parseFloat(s.cost_price||0);
     var sp=inv?parseFloat(inv.sale_price||0):parseFloat(s.sale_price||0);
     add(s.sale_date,'out',val(s.quantity||0,c,sp));
@@ -4176,7 +4140,7 @@ function renderStockEvolution(){
 
   var actual=inventory.reduce(function(a,i){
     if(i.status==='Comodato')return a;
-    if(!includePokedex&&i.status==='Pokedex')return a;
+    if(!includePokedex&&isCollectionStatus(i.status))return a;
     return a+val(i.quantity_available||0,parseFloat(i.cost_price||0),parseFloat(i.sale_price||0));
   },0);
 
@@ -4743,7 +4707,7 @@ function openSaleModal(){
   openModal('saleModal');
 }
 
-// So itens "A venda" ou "Comodato" (cartas de terceiros vendidas por nos) podem ser vendidos (Reservado, Em estoque, A Caminho e Pokedex nao)
+// So itens "A venda" ou "Comodato" (cartas de terceiros vendidas por nos) podem ser vendidos (Reservado, Em estoque, A Caminho e Colecoes nao)
 function isSellable(i){var st=(i&&i.status)||'A venda';return !!i&&(i.quantity_available||0)>0&&(st==='A venda'||st==='Comodato');}
 function notSellableMsg(i){return '"'+(i&&i.name||'Item')+'" esta como "'+((i&&i.status)||'-')+'". Mude o status para "A venda" antes de vender.';}
 
@@ -8075,45 +8039,73 @@ function updateSupplierFilter(){
 }
 
 
+// ---- Status do estoque ----
+// Colecoes pessoais usam o prefixo "Coleção: ". "Pokedex" (legado) conta como Coleção: Pokedex.
+var INV_STATUS_CARDS=[
+  {st:'A venda',          label:'A venda',           color:'var(--success)', border:'#a3c77d'},
+  {st:'Reservado',        label:'Reservado',         color:'#7A5200', border:'#F0994A'},
+  {st:'Em estoque',       label:'Em estoque',        color:'var(--text)', border:'var(--border2)', labelColor:'var(--text2)'},
+  {st:'A Caminho',        label:'A caminho',         color:'#0C447C', border:'#6FA8DC'},
+  {st:'Coleção: Zeraora', label:'Coleção: Zeraora',  color:'#712B13', border:'#C99A7A'},
+  {st:'Coleção: Verônica',label:'Coleção: Verônica', color:'#712B13', border:'#C99A7A'},
+  {st:'Coleção: Pokedex', label:'Coleção: Pokedex',  color:'#712B13', border:'#C99A7A'},
+  {st:'Comodato',         label:'Comodato',          color:'#6B21A8', border:'#C4A3E8', costLabel:'Repasse', hint:'Cartas de terceiros. Nao entram no Total geral.', notInTotal:true}
+];
+function normInvStatus(st){st=st||'A venda';return st==='Pokedex'?'Coleção: Pokedex':st;}
+function isCollectionStatus(st){return st==='Pokedex'||String(st||'').indexOf('Coleção:')===0;}
+var INV_SUMMARY_KEY='invSummaryHidden';
+function invSummaryHidden(){try{return JSON.parse(localStorage.getItem(INV_SUMMARY_KEY)||'[]');}catch(e){return [];}}
+function setInvSummaryHidden(arr){try{localStorage.setItem(INV_SUMMARY_KEY,JSON.stringify(arr));}catch(e){}}
+function toggleInvSummaryPicker(ev){
+  if(ev)ev.stopPropagation();
+  var box=document.getElementById('invSummaryPicker');
+  if(box.style.display==='block'){box.style.display='none';return;}
+  var hidden=invSummaryHidden();
+  var opts=INV_STATUS_CARDS.map(function(c){return {key:c.st,label:c.label};}).concat([{key:'__total__',label:'Total geral'}]);
+  box.innerHTML='<div style="font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">Mostrar no resumo</div>'
+    +opts.map(function(o){return '<label style="display:flex;gap:6px;align-items:center;font-size:13px;padding:3px 0;cursor:pointer"><input type="checkbox" data-key="'+o.key+'" '+(hidden.indexOf(o.key)===-1?'checked':'')+' onchange="setInvSummaryBox(this.getAttribute(\'data-key\'),this.checked)"> '+o.label+'</label>';}).join('');
+  box.style.display='block';
+}
+function setInvSummaryBox(key,show){
+  var hidden=invSummaryHidden().filter(function(k){return k!==key;});
+  if(!show)hidden.push(key);
+  setInvSummaryHidden(hidden);
+  renderInventory();
+}
+document.addEventListener('click',function(e){
+  var box=document.getElementById('invSummaryPicker');
+  if(box&&box.style.display==='block'&&!box.contains(e.target))box.style.display='none';
+});
+
 function updateInvSummary(list){
   var base=list||inventory;
-  var aVenda=base.filter(function(i){return (i.status||'A venda')==='A venda';});
-  var reservado=base.filter(function(i){return i.status==='Reservado';});
-  var emEstoque=base.filter(function(i){return i.status==='Em estoque';});
-  var aCaminho=base.filter(function(i){return i.status==='A Caminho';});
-  var pokedex=base.filter(function(i){return i.status==='Pokedex';});
-  var comodato=base.filter(function(i){return i.status==='Comodato';});
-
   function sumVal(arr){return arr.reduce(function(a,i){
     var price=i.sale_price>0?i.sale_price:i.cost_price||0;
     return a+price*(i.quantity_available||0);
   },0);}
   function sumQty(arr){return arr.reduce(function(a,i){return a+(i.quantity_available||0);},0);}
   function sumCost(arr){return arr.reduce(function(a,i){return a+(parseFloat(i.cost_price)||0)*(i.quantity_available||0);},0);}
-
   var fmtV=function(v){var n=(parseFloat(v)||0).toFixed(2);var parts=n.split('.');return 'R$ '+parts[0].replace(/\B(?=(\d{3})+(?!\d))/g,'.')+','+parts[1];};
 
-  document.getElementById('inv-sum-avenda-val').textContent=fmtV(sumVal(aVenda));
-  document.getElementById('inv-sum-avenda-qty').textContent=sumQty(aVenda);
-  document.getElementById('inv-sum-reservado-val').textContent=fmtV(sumVal(reservado));
-  document.getElementById('inv-sum-reservado-qty').textContent=sumQty(reservado);
-  document.getElementById('inv-sum-estoque-val').textContent=fmtV(sumVal(emEstoque));
-  document.getElementById('inv-sum-estoque-qty').textContent=sumQty(emEstoque);
-  document.getElementById('inv-sum-caminho-val').textContent=fmtV(sumVal(aCaminho));
-  document.getElementById('inv-sum-caminho-qty').textContent=sumQty(aCaminho);
-  document.getElementById('inv-sum-pokedex-val').textContent=fmtV(sumVal(pokedex));
-  document.getElementById('inv-sum-pokedex-qty').textContent=sumQty(pokedex);
-  document.getElementById('inv-sum-comodato-val').textContent=fmtV(sumVal(comodato));
-  document.getElementById('inv-sum-comodato-qty').textContent=sumQty(comodato);
-  document.getElementById('inv-sum-comodato-cost').textContent=fmtV(sumCost(comodato));
-  var total=sumVal(aVenda)+sumVal(reservado)+sumVal(emEstoque)+sumVal(aCaminho)+sumVal(pokedex);
-  var totalQty=sumQty(aVenda)+sumQty(reservado)+sumQty(emEstoque)+sumQty(aCaminho)+sumQty(pokedex);
-  document.getElementById('inv-sum-total-val').textContent=fmtV(total);
-  document.getElementById('inv-sum-total-qty').textContent=totalQty;
-  [['avenda',aVenda],['reservado',reservado],['estoque',emEstoque],['caminho',aCaminho],['pokedex',pokedex]].forEach(function(x){
-    document.getElementById('inv-sum-'+x[0]+'-cost').textContent=fmtV(sumCost(x[1]));
-  });
-  document.getElementById('inv-sum-total-cost').textContent=fmtV(sumCost(aVenda)+sumCost(reservado)+sumCost(emEstoque)+sumCost(aCaminho)+sumCost(pokedex));
+  var hidden=invSummaryHidden();
+  var tVal=0,tQty=0,tCost=0;
+  function card(c,val,qty,cost){
+    return '<div style="background:var(--bg);border:1px solid '+c.border+';border-radius:var(--radius-lg);padding:14px 16px;min-height:90px"'+(c.hint?' title="'+c.hint+'"':'')+'>'
+      +'<div style="font-size:11px;color:'+(c.labelColor||c.color)+';font-weight:700;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px">'+c.label+'</div>'
+      +'<div style="font-size:22px;font-weight:700;color:'+c.color+'">'+fmtV(val)+'</div>'
+      +'<div style="font-size:12px;color:var(--text2);margin-top:4px">'+qty+' item(s)</div>'
+      +'<div style="font-size:11px;color:var(--text3);margin-top:2px">'+(c.costLabel||'Custo')+': '+fmtV(cost)+'</div></div>';
+  }
+  var html=INV_STATUS_CARDS.map(function(c){
+    var arr=base.filter(function(i){return normInvStatus(i.status)===c.st;});
+    var v=sumVal(arr),q=sumQty(arr),k=sumCost(arr);
+    if(!c.notInTotal){tVal+=v;tQty+=q;tCost+=k;}
+    return hidden.indexOf(c.st)===-1?card(c,v,q,k):'';
+  }).join('');
+  if(hidden.indexOf('__total__')===-1)html+=card({label:'Total geral',color:'var(--amber-dark)',border:'var(--amber)',hint:'Nao inclui Comodato.'},tVal,tQty,tCost);
+  var el=document.getElementById('invSummary');
+  el.innerHTML=html;
+  el.style.display=html?'grid':'none';
 }
 
 function sortTable(table,field){
