@@ -130,7 +130,7 @@ async function init(){
     var pr=await sb.from('public_profiles').select('*').eq('user_id',user.id).limit(1);
     profile=(pr.data&&pr.data[0])||{};
     var inv=await fetchAll(function(){return sb.from('inventory').select('id,name,set_name,language,condition,condition_mod,extras,quantity_available,sale_price,image_url,card_category,received_at,product_type,status')
-      .eq('user_id',user.id).eq('status','A venda').gt('quantity_available',0).gt('sale_price',0).order('id');});
+      .eq('user_id',user.id).in('status',['A venda','Comodato']).gt('quantity_available',0).gt('sale_price',0).order('id');});
     items=mergeIdentical(inv);
     fillFilters();
     setStatus(items.length+' cartas à venda carregadas.');
