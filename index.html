@@ -8049,7 +8049,7 @@ var INV_STATUS_CARDS=[
   {st:'Coleção: Zeraora', label:'Coleção: Zeraora',  color:'#712B13', border:'#C99A7A'},
   {st:'Coleção: Verônica',label:'Coleção: Verônica', color:'#712B13', border:'#C99A7A'},
   {st:'Coleção: Pokedex', label:'Coleção: Pokedex',  color:'#712B13', border:'#C99A7A'},
-  {st:'Comodato',         label:'Comodato',          color:'#6B21A8', border:'#C4A3E8', costLabel:'Repasse', hint:'Cartas de terceiros. Nao entram no Total geral.', notInTotal:true}
+  {st:'Comodato',         label:'Comodato',          color:'#6B21A8', border:'#C4A3E8', costLabel:'Repasse', hint:'Cartas de terceiros vendidas por nos.'}
 ];
 function normInvStatus(st){st=st||'A venda';return st==='Pokedex'?'Coleção: Pokedex':st;}
 function isCollectionStatus(st){return st==='Pokedex'||String(st||'').indexOf('Coleção:')===0;}
@@ -8099,10 +8099,11 @@ function updateInvSummary(list){
   var html=INV_STATUS_CARDS.map(function(c){
     var arr=base.filter(function(i){return normInvStatus(i.status)===c.st;});
     var v=sumVal(arr),q=sumQty(arr),k=sumCost(arr);
-    if(!c.notInTotal){tVal+=v;tQty+=q;tCost+=k;}
-    return hidden.indexOf(c.st)===-1?card(c,v,q,k):'';
+    if(hidden.indexOf(c.st)!==-1)return '';
+    tVal+=v;tQty+=q;tCost+=k; // Total geral = soma so das caixas selecionadas
+    return card(c,v,q,k);
   }).join('');
-  if(hidden.indexOf('__total__')===-1)html+=card({label:'Total geral',color:'var(--amber-dark)',border:'var(--amber)',hint:'Nao inclui Comodato.'},tVal,tQty,tCost);
+  if(hidden.indexOf('__total__')===-1)html+=card({label:'Total geral',color:'var(--amber-dark)',border:'var(--amber)',hint:'Soma apenas as caixas selecionadas.'},tVal,tQty,tCost);
   var el=document.getElementById('invSummary');
   el.innerHTML=html;
   el.style.display=html?'grid':'none';
