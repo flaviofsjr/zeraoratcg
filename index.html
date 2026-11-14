@@ -3940,7 +3940,8 @@ function renderInventory(){
     if(condF&&i.condition!==condF)return false;
     if(statusF&&(i.status||'A venda')!==statusF)return false;
     if(supplierF){
-      var pur=purchases.filter(function(p){return p.id===i.purchase_id||(p.description&&i.name&&p.description.toLowerCase()===i.name.toLowerCase());})[0];
+      // So pelo vinculo real (purchase_id): casar pelo nome puxava cartas de outras compras com o mesmo nome
+      var pur=i.purchase_id?purchases.filter(function(p){return p.id===i.purchase_id;})[0]:null;
       if(!pur||(pur.supplier||'')!==supplierF)return false;
     }
     return true;
