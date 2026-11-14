@@ -610,8 +610,8 @@ tr:hover td{background:var(--bg2)}
         </div>
         <div id="customerContactAlert" style="display:none;background:var(--danger-bg);border:1px solid #F7C1C1;border-radius:var(--radius);padding:10px 14px;margin-bottom:10px;color:var(--danger);font-size:13px;font-weight:600"><i class="ti ti-bell-ringing"></i> <span id="customerContactAlertText"></span></div>
         <div class="table-wrap">
-          <table><thead><tr><th>Nome</th><th>WhatsApp</th><th>Cidade</th><th>Interesses</th><th>Proximo contato</th><th>Vendas</th><th></th></tr></thead>
-          <tbody id="customersTable"><tr><td colspan="7"><div class="empty-state"><i class="ti ti-users"></i>Nenhum cliente</div></td></tr></tbody></table>
+          <table><thead><tr><th onclick="sortCustomers('name')" style="cursor:pointer;user-select:none">Nome ↕</th><th>WhatsApp</th><th>Cidade</th><th>Interesses</th><th onclick="sortCustomers('contact')" style="cursor:pointer;user-select:none">Proximo contato ↕</th><th onclick="sortCustomers('qty')" style="cursor:pointer;user-select:none" title="Quantidade de cartas/itens vendidos">Qtd vendida ↕</th><th onclick="sortCustomers('value')" style="cursor:pointer;user-select:none" title="Soma das vendas (sem trocas)">Valor vendido ↕</th><th></th></tr></thead>
+          <tbody id="customersTable"><tr><td colspan="8"><div class="empty-state"><i class="ti ti-users"></i>Nenhum cliente</div></td></tr></tbody></table>
         </div>
       </div>
       <!-- PRODUCTS -->
@@ -6694,6 +6694,23 @@ function updateCustomerContactAlert(){
   }else{box.style.display='none';}
 }
 
+var custSortField='contact', custSortAsc=true;
+function sortCustomers(field){
+  if(custSortField===field)custSortAsc=!custSortAsc;
+  else{custSortField=field;custSortAsc=(field==='name'||field==='contact');}
+  renderCustomers();
+}
+function customerSalesStats(c){
+  var nm=c.name.toLowerCase(), qty=0, val=0;
+  sales.forEach(function(s){
+    if(!(s.customer_id===c.id||(!s.customer_id&&s.buyer&&s.buyer.toLowerCase()===nm)))return;
+    var q=parseInt(s.quantity,10)||0;
+    qty+=q;
+    if(!s.is_trade)val+=parseFloat(s.sale_price||0)*q;
+  });
+  return {qty:qty,value:val};
+}
+
 function renderCustomers(){
   var q=(document.getElementById('filterCustomerName').value||'').toLowerCase();
   var cf=(document.getElementById('filterCustomerContact')||{}).value||'';
@@ -6705,18 +6722,25 @@ function renderCustomers(){
     return true;
   });
   // Atrasados primeiro, depois quem esta mais perto do contato, depois sem acompanhamento
+  var stats={}; list.forEach(function(c){stats[c.id]=customerSalesStats(c);});
   list.sort(function(a,b){
+    if(custSortField==='name'){var r=a.name.localeCompare(b.name,'pt-BR');return custSortAsc?r:-r;}
+    if(custSortField==='qty'||custSortField==='value'){
+      var d=stats[a.id][custSortField]-stats[b.id][custSortField];
+      if(!d)return a.name.localeCompare(b.name,'pt-BR');
+      return custSortAsc?d:-d;
+    }
     var da=customerDaysUntilContact(a),db=customerDaysUntilContact(b);
     if(da===null&&db===null)return a.name.localeCompare(b.name,'pt-BR');
     if(da===null)return 1;
     if(db===null)return -1;
-    return da-db;
+    return custSortAsc?da-db:db-da;
   });
   updateCustomerContactAlert();
   var tb=document.getElementById('customersTable');
-  if(!list.length){tb.innerHTML='<tr><td colspan="7"><div class="empty-state"><i class="ti ti-users"></i>Nenhum cliente</div></td></tr>';return;}
+  if(!list.length){tb.innerHTML='<tr><td colspan="8"><div class="empty-state"><i class="ti ti-users"></i>Nenhum cliente</div></td></tr>';return;}
   tb.innerHTML=list.map(function(c){
-    var saleCount=sales.filter(function(s){return s.customer_id===c.id||(s.buyer&&s.buyer.toLowerCase()===c.name.toLowerCase());}).length;
+    var st=stats[c.id];
     var d=customerDaysUntilContact(c);
     var contactHtml;
     if(d===null)contactHtml='<span style="color:var(--text3)">-</span>';
@@ -6736,7 +6760,8 @@ function renderCustomers(){
       +'<td>'+(c.city||'-')+'</td>'
       +'<td>'+interestsHtml+'</td>'
       +'<td>'+contactHtml+'</td>'
-      +'<td><span class="badge badge-nm">'+saleCount+'</span></td>'
+      +'<td><span class="badge badge-nm">'+st.qty+'</span></td>'
+      +'<td style="white-space:nowrap;font-weight:600">'+(st.value>0?fmt(st.value):'<span style="color:var(--text3);font-weight:400">-</span>')+'</td>'
       +'<td><div class="actions-cell">'
       +(d!==null?'<button class="btn-success" onclick="registerCustomerContact(\''+c.id+'\')" title="Registrar contato feito hoje"><i class="ti ti-message-check"></i></button>':'')
       +'<button class="btn-small" onclick="editCustomer(\''+c.id+'\')" title="Editar"><i class="ti ti-edit"></i></button>'
