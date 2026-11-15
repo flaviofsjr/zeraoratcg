@@ -496,25 +496,51 @@ tr:hover td{background:var(--bg2)}
       <div style="font-size:11px;color:var(--text3);margin-top:8px;line-height:1.5">Clique no código para copiar; o ícone <i class="ti ti-external-link"></i> abre o rastreio no 17TRACK. <b>Atualizar rastreios</b> consulta Correios, Loggi, Jadlog e Melhor Envio automaticamente (também roda sozinho ao abrir a aba, se a última consulta tiver mais de 6h); passe o mouse no último evento para ver o histórico. Mudar o status para <b>Entregue</b> marca as vendas como entregues ou dá entrada das compras no estoque.</div>
     </div>
 
-    <!-- DESEJOS (WISHLIST) -->
+    <!-- DESEJOS (RADAR LIGA x INTERNACIONAL) -->
     <div class="page" id="page-desejos">
       <div class="section-header">
-        <h3>Lista de desejos</h3>
-        <button class="btn-primary" style="width:auto" onclick="openNewWishlist()"><i class="ti ti-plus"></i> Nova carta</button>
+        <h3>Desejos — Liga x Internacional</h3>
+        <div style="display:flex;gap:8px">
+          <button class="btn-secondary" onclick="openWishSettings()"><i class="ti ti-settings"></i> Câmbio e custos</button>
+          <button class="btn-primary" style="width:auto" onclick="openNewWishlist()"><i class="ti ti-plus"></i> Nova carta</button>
+        </div>
       </div>
 
-      <div id="wishlistAlert" style="display:none;background:var(--danger-bg);border:1px solid #F7C1C1;border-radius:var(--radius);padding:12px 16px;margin-bottom:1rem;color:var(--danger);font-size:13px;font-weight:600">
-        <i class="ti ti-alert-triangle"></i> <span id="wishlistAlertText"></span>
+      <div class="metrics">
+        <div class="metric"><div class="metric-label">Cartas monitoradas</div><div class="metric-value" id="wm-total">-</div></div>
+        <div class="metric"><div class="metric-label">Oportunidades</div><div class="metric-value green" id="wm-opps">-</div></div>
+        <div class="metric"><div class="metric-label">Lucro potencial (1 un. cada)</div><div class="metric-value green" id="wm-profit">-</div></div>
+        <div class="metric"><div class="metric-label">Diferença média das oportunidades</div><div class="metric-value" id="wm-avg">-</div></div>
+        <div class="metric"><div class="metric-label">Câmbio</div><div style="font-size:13px;font-weight:600;line-height:1.5;margin-top:4px" id="wm-fx">-</div></div>
       </div>
 
-      <div class="filters" style="margin-bottom:12px">
+      <div id="wishlistAlert" style="display:none;background:var(--amber-bg);border:1px solid var(--border2);border-radius:var(--radius);padding:10px 14px;margin-bottom:1rem;color:var(--amber-dark);font-size:13px;font-weight:600">
+        <i class="ti ti-clock-exclamation"></i> <span id="wishlistAlertText"></span>
+      </div>
+
+      <div class="filters" style="margin-bottom:12px;display:flex;gap:8px;flex-wrap:wrap">
         <input type="text" id="filterWishName" placeholder="Buscar carta..." oninput="renderWishlist()"
           style="padding:8px 12px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text);font-size:13px;width:220px">
         <select id="filterWishStatus" onchange="renderWishlist()"
           style="padding:8px 12px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text);font-size:13px">
           <option value="">Todas</option>
-          <option value="atrasadas">Atrasadas para revisao</option>
-          <option value="em-dia">Em dia</option>
+          <option value="opp">Oportunidades</option>
+          <option value="low">Margem baixa</option>
+          <option value="neg">Liga mais barata</option>
+          <option value="incomplete">Falta preço</option>
+          <option value="stale">Preço desatualizado</option>
+        </select>
+        <select id="filterWishPlatform" onchange="renderWishlist()"
+          style="padding:8px 12px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text);font-size:13px">
+          <option value="">Todas as plataformas</option>
+        </select>
+        <select id="filterWishSort" onchange="renderWishlist()"
+          style="padding:8px 12px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text);font-size:13px">
+          <option value="pct">Ordenar: maior diferença %</option>
+          <option value="brl">Ordenar: maior diferença R$</option>
+          <option value="liga">Ordenar: maior preço Liga</option>
+          <option value="old">Ordenar: preço mais antigo</option>
+          <option value="name">Ordenar: nome</option>
         </select>
       </div>
 
@@ -522,19 +548,20 @@ tr:hover td{background:var(--bg2)}
         <table>
           <thead><tr>
             <th>Foto</th>
-            <th>Nome</th>
-            <th>Set</th>
-            <th>Cond. / Idioma</th>
-            <th>Preco alvo</th>
-            <th>Ultimo preco visto</th>
-            <th>Revisao</th>
+            <th>Carta</th>
+            <th title="Preço de venda de referência na Liga Pokémon">Liga</th>
+            <th title="Preço visto no eBay / TCGplayer / Cardmarket etc., na moeda original">Internacional</th>
+            <th title="Preço internacional + frete, convertido no câmbio, com IOF e impostos da rota">Custo no Brasil</th>
+            <th title="Liga − custo no Brasil">Diferença</th>
+            <th title="Maior preço a pagar lá fora (já com frete) para ainda bater a diferença mínima configurada — útil para fazer ofertas">Oferta máx.</th>
             <th></th>
           </tr></thead>
           <tbody id="wishlistTable">
-            <tr><td colspan="8"><div class="empty-state"><i class="ti ti-star-off"></i>Nenhuma carta na lista de desejos</div></td></tr>
+            <tr><td colspan="8"><div class="empty-state"><i class="ti ti-star-off"></i>Nenhuma carta monitorada</div></td></tr>
           </tbody>
         </table>
       </div>
+      <div style="font-size:11px;color:var(--text3);margin-top:8px;line-height:1.5">Custo no Brasil = (preço + frete) × câmbio × (1 + IOF/spread do cartão) × (1 + impostos, só na rota <b>Importação</b>). Rota <b>Em mãos</b> = amigo/viagem, sem impostos. <b>Oportunidade</b> = Liga pelo menos <span id="wm-thr-note">30</span>% acima do custo no Brasil.</div>
     </div>
 
     <!-- COLECAO PESSOAL -->
@@ -1695,71 +1722,76 @@ tr:hover td{background:var(--bg2)}
 
 <!-- MODAL DESEJO (CRIAR/EDITAR) -->
 <div class="modal-bg" id="wishlistModal">
-  <div class="modal">
-    <h3 id="wishlistModalTitle">Nova carta desejada</h3>
+  <div class="modal" style="max-width:680px">
+    <h3 id="wishlistModalTitle">Nova carta</h3>
     <input type="hidden" id="w-id">
     <input type="hidden" id="w-product-id">
     <input type="hidden" id="w-img">
     <div class="modal-grid">
-      <div class="form-field full" style="position:relative"><label>Nome *</label>
-        <input type="text" id="w-name" placeholder="Digite para buscar produto..." autocomplete="off" oninput="wishlistAutocomplete(this)">
+      <div class="form-field full" style="position:relative"><label>Carta *</label>
+        <input type="text" id="w-name" placeholder="Digite para buscar no cadastro..." autocomplete="off" oninput="wishlistAutocomplete(this)">
         <div id="w-autocomplete" style="display:none;position:absolute;z-index:100;background:var(--bg);border:1px solid var(--border2);border-radius:var(--radius);width:100%;max-height:200px;overflow-y:auto;box-shadow:0 4px 12px rgba(0,0,0,0.1)"></div>
       </div>
-      <div class="form-field"><label>Tipo</label>
-        <select id="w-type">
-          <option value="Carta Avulsa">Carta Avulsa</option>
-          <option value="Lacrado">Lacrado</option>
-          <option value="Acessorio">Acessorio</option>
-          <option value="Lote">Lote / Bulk</option>
-        </select>
-      </div>
-      <div class="form-field"><label>Idioma</label>
-        <select id="w-lang">
-          <option value="PT-BR">PT-BR</option>
-          <option value="EN">EN</option>
-          <option value="JP">JP</option>
-          <option value="FR">FR</option>
-          <option value="CH">CH</option>
-          <option value="N/A">N/A</option>
-        </select>
-      </div>
-      <div class="form-field"><label>Condicao</label>
-        <select id="w-cond">
-          <option value="NM">NM</option>
-          <option value="M">M</option>
-          <option value="SP">SP</option>
-          <option value="MP">MP</option>
-          <option value="HP">HP</option>
-          <option value="D">D</option>
-          <option value="N/A">N/A</option>
-        </select>
-      </div>
-      <div class="form-field"><label>Set / Expansao</label>
+      <div class="form-field"><label>Set / Expansão</label>
         <input type="text" id="w-set" placeholder="ex: Prismatic Evolutions">
       </div>
-      <div class="form-field"><label>Preco alvo (R$)</label>
-        <input type="number" id="w-target" placeholder="0,00" min="0" step="0.01">
+      <div class="form-field"><label>Idioma / Condição</label>
+        <div style="display:flex;gap:6px">
+          <select id="w-lang" style="flex:1">
+            <option value="PT-BR">PT-BR</option><option value="EN">EN</option><option value="JP">JP</option>
+            <option value="FR">FR</option><option value="CH">CH</option><option value="N/A">N/A</option>
+          </select>
+          <select id="w-cond" style="flex:1">
+            <option value="NM">NM</option><option value="M">M</option><option value="SP">SP</option>
+            <option value="MP">MP</option><option value="HP">HP</option><option value="D">D</option><option value="N/A">N/A</option>
+          </select>
+        </div>
       </div>
-      <div class="form-field"><label>Ultimo preco visto (R$)</label>
-        <input type="number" id="w-lastprice" placeholder="0,00" min="0" step="0.01">
-        <div style="font-size:11px;color:var(--text2);margin-top:4px">Preencher aqui conta como uma revisao feita hoje</div>
+
+      <div class="form-field full" style="margin-top:6px;font-weight:700;font-size:12px;color:var(--text2);text-transform:uppercase;letter-spacing:.4px"><i class="ti ti-flag"></i> Liga Pokémon</div>
+      <div class="form-field"><label>Preço na Liga (R$)</label>
+        <input type="number" id="w-liga-price" placeholder="0,00" min="0" step="0.01">
+        <div id="w-liga-hint" style="font-size:11px;color:var(--text2);margin-top:4px"></div>
       </div>
-      <div class="form-field"><label>Revisar a cada</label>
-        <select id="w-freq">
-          <option value="7">7 dias</option>
-          <option value="15" selected>15 dias</option>
-          <option value="30">30 dias</option>
-          <option value="60">60 dias</option>
-          <option value="90">90 dias</option>
-        </select>
-      </div>
-      <div class="form-field full"><label>Link Liga Pokemon</label>
+      <div class="form-field"><label>Link Liga</label>
         <input type="text" id="w-liga" placeholder="https://www.ligapokemon.com.br/...">
       </div>
-      <div class="form-field full"><label>Observacoes</label>
+
+      <div class="form-field full" style="margin-top:6px;font-weight:700;font-size:12px;color:var(--text2);text-transform:uppercase;letter-spacing:.4px"><i class="ti ti-world"></i> Internacional</div>
+      <div class="form-field"><label>Plataforma</label>
+        <input type="text" id="w-platform" list="w-platform-list" placeholder="eBay, TCGplayer, Cardmarket...">
+        <datalist id="w-platform-list">
+          <option value="eBay"><option value="TCGplayer"><option value="Cardmarket"><option value="Mercari JP"><option value="Yuyu-tei"><option value="Snkrdunk"><option value="Card Rush">
+        </datalist>
+      </div>
+      <div class="form-field"><label>Preço / Frete (na moeda)</label>
+        <div style="display:flex;gap:6px">
+          <select id="w-currency" style="width:78px" onchange="wishPreview()">
+            <option value="USD">US$</option><option value="EUR">€</option><option value="GBP">£</option><option value="JPY">¥</option>
+          </select>
+          <input type="number" id="w-intl-price" placeholder="preço" min="0" step="0.01" style="flex:1" oninput="wishPreview()">
+          <input type="number" id="w-intl-ship" placeholder="frete" min="0" step="0.01" style="flex:1" oninput="wishPreview()">
+        </div>
+      </div>
+      <div class="form-field"><label>Rota até você</label>
+        <select id="w-route" onchange="wishPreview()">
+          <option value="maos">Em mãos (amigo / viagem) — sem impostos</option>
+          <option value="importacao">Importação — com impostos</option>
+        </select>
+      </div>
+      <div class="form-field"><label>Impostos/custos extras (%)</label>
+        <input type="number" id="w-extra-pct" placeholder="padrão da rota" min="0" step="0.1" oninput="wishPreview()">
+        <div style="font-size:11px;color:var(--text2);margin-top:4px">Deixe vazio para usar o padrão da rota</div>
+      </div>
+      <div class="form-field full"><label>Link do anúncio</label>
+        <input type="text" id="w-intl-url" placeholder="https://www.ebay.com/itm/...">
+      </div>
+      <div class="form-field full"><label>Observações</label>
         <textarea id="w-notes" rows="2" placeholder="Opcional..."></textarea>
       </div>
+      <div id="w-preview" style="grid-column:1/-1;line-height:1.6;background:var(--bg2);border-radius:var(--radius);padding:10px 12px;font-size:13px"></div>
     </div>
+    <div style="font-size:11px;color:var(--text2);margin-top:6px">Mudar um preço registra a data de hoje como a data da última checagem daquele preço.</div>
     <div class="modal-actions">
       <button class="btn-secondary" onclick="closeModal('wishlistModal')">Cancelar</button>
       <button class="btn-primary" style="width:auto" onclick="saveWishlistItem()">Salvar</button>
@@ -1767,18 +1799,58 @@ tr:hover td{background:var(--bg2)}
   </div>
 </div>
 
-<!-- MODAL REVISAR PRECO -->
+<!-- MODAL ATUALIZAR PRECOS -->
 <div class="modal-bg" id="wishlistCheckModal">
-  <div class="modal" style="max-width:400px">
-    <h3>Revisar preco</h3>
+  <div class="modal" style="max-width:440px">
+    <h3>Atualizar preços</h3>
     <input type="hidden" id="wc-id">
-    <div style="font-weight:600;margin-bottom:4px" id="wc-name"></div>
-    <div class="form-field"><label>Preco atual encontrado (R$) *</label>
-      <input type="number" id="wc-price" placeholder="0,00" min="0" step="0.01">
+    <div style="font-weight:600;margin-bottom:8px" id="wc-name"></div>
+    <div id="wc-links" style="font-size:12px;margin-bottom:10px;display:flex;gap:12px;flex-wrap:wrap"></div>
+    <div class="form-field"><label>Preço na Liga (R$)</label>
+      <input type="number" id="wc-liga" placeholder="0,00" min="0" step="0.01" oninput="wishCheckPreview()">
     </div>
+    <div class="form-field"><label>Preço internacional / frete (<span id="wc-cur">US$</span>)</label>
+      <div style="display:flex;gap:6px">
+        <input type="number" id="wc-intl" placeholder="preço" min="0" step="0.01" style="flex:1" oninput="wishCheckPreview()">
+        <input type="number" id="wc-ship" placeholder="frete" min="0" step="0.01" style="flex:1" oninput="wishCheckPreview()">
+      </div>
+    </div>
+    <div id="wc-preview" style="background:var(--bg2);border-radius:var(--radius);padding:10px 12px;font-size:13px;margin-top:8px"></div>
     <div class="modal-actions">
       <button class="btn-secondary" onclick="closeModal('wishlistCheckModal')">Cancelar</button>
-      <button class="btn-primary" style="width:auto" onclick="saveWishlistCheck()">Salvar revisao</button>
+      <button class="btn-primary" style="width:auto" onclick="saveWishlistCheck()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CAMBIO E CUSTOS -->
+<div class="modal-bg" id="wishSettingsModal">
+  <div class="modal" style="max-width:480px">
+    <h3>Câmbio e custos</h3>
+    <div class="modal-grid">
+      <div class="form-field"><label>IOF + spread do cartão (%)</label>
+        <input type="number" id="ws-card" step="0.1" min="0">
+        <div style="font-size:11px;color:var(--text2);margin-top:4px">IOF hoje é 3,5%; some o spread do seu cartão</div>
+      </div>
+      <div class="form-field"><label>Impostos na rota Importação (%)</label>
+        <input type="number" id="ws-tax" step="0.1" min="0">
+      </div>
+      <div class="form-field"><label>Diferença mínima p/ oportunidade (%)</label>
+        <input type="number" id="ws-min" step="1" min="0">
+      </div>
+      <div class="form-field"><label>Preço desatualizado após (dias)</label>
+        <input type="number" id="ws-days" step="1" min="1">
+      </div>
+      <div class="form-field full" style="margin-top:6px;font-weight:700;font-size:12px;color:var(--text2);text-transform:uppercase;letter-spacing:.4px">Cotação (R$) — vazio = automática</div>
+      <div class="form-field"><label>US$ <span id="ws-auto-USD" style="color:var(--text3);font-weight:400"></span></label><input type="number" id="ws-fx-USD" step="0.0001" min="0"></div>
+      <div class="form-field"><label>€ <span id="ws-auto-EUR" style="color:var(--text3);font-weight:400"></span></label><input type="number" id="ws-fx-EUR" step="0.0001" min="0"></div>
+      <div class="form-field"><label>£ <span id="ws-auto-GBP" style="color:var(--text3);font-weight:400"></span></label><input type="number" id="ws-fx-GBP" step="0.0001" min="0"></div>
+      <div class="form-field"><label>¥ <span id="ws-auto-JPY" style="color:var(--text3);font-weight:400"></span></label><input type="number" id="ws-fx-JPY" step="0.0001" min="0"></div>
+    </div>
+    <div style="font-size:11px;color:var(--text2);margin-top:6px" id="ws-fx-src"></div>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeModal('wishSettingsModal')">Cancelar</button>
+      <button class="btn-primary" style="width:auto" onclick="saveWishSettings()">Salvar</button>
     </div>
   </div>
 </div>
@@ -2942,89 +3014,247 @@ function exportExpensesCSV(){
 }
 
 // ============================================================
-// LISTA DE DESEJOS (WISHLIST)
+// DESEJOS — RADAR LIGA x INTERNACIONAL
 // ============================================================
+
+var WISH_CUR_SYM={USD:'US$',EUR:'€',GBP:'£',JPY:'¥'};
+var WISH_SETTINGS_DEFAULT={card_fee_pct:3.5,import_tax_pct:60,min_spread_pct:30,review_days:15,fx_manual:null};
+var wishSettings=Object.assign({},WISH_SETTINGS_DEFAULT);
+var wishFxAuto={}; // {USD:5.4,...}
+var wishFxAutoAt=null;
+var WISH_FX_CACHE_KEY='zr_wish_fx';
 
 async function loadWishlist(){
   var r = await sb.from('wishlist').select('*').eq('user_id', currentUser.id).order('name');
   wishlist = r.data || [];
+  var s = await sb.from('wishlist_settings').select('*').eq('user_id', currentUser.id).maybeSingle();
+  wishSettings = Object.assign({}, WISH_SETTINGS_DEFAULT, (s && s.data) || {});
+  await wishLoadFx(false);
   renderWishlist();
-  updateWishlistBadge();
 }
 
-function wishlistDaysUntilReview(w){
-  if(!w.last_checked_date) return -Infinity; // nunca revisado = sempre atrasado
-  var last = new Date(w.last_checked_date+'T00:00:00');
-  var next = new Date(last.getTime() + (w.review_frequency_days||15)*86400000);
-  var today = new Date(); today.setHours(0,0,0,0);
-  return Math.round((next-today)/86400000);
-}
-
-function updateWishlistBadge(){
-  var overdue = wishlist.filter(function(w){ return wishlistDaysUntilReview(w)<=0; }).length;
-  var badge = document.getElementById('wishlistBadge');
-  if(overdue>0){ badge.textContent=overdue; badge.style.display='inline-block'; }
-  else{ badge.style.display='none'; }
-
-  var alertBox = document.getElementById('wishlistAlert');
-  if(alertBox){
-    if(overdue>0){
-      alertBox.style.display='block';
-      document.getElementById('wishlistAlertText').textContent = overdue+' carta(s) atrasada(s) para revisao de preco';
-    } else {
-      alertBox.style.display='none';
-    }
+async function wishLoadFx(force){
+  if(!force){
+    try{
+      var c=JSON.parse(localStorage.getItem(WISH_FX_CACHE_KEY)||'null');
+      if(c && c.at && (Date.now()-c.at)<6*3600*1000 && c.rates && c.rates.USD){ wishFxAuto=c.rates; wishFxAutoAt=c.at; return; }
+    }catch(e){}
   }
+  var rates=null;
+  try{
+    var res=await fetch('https://economia.awesomeapi.com.br/json/last/USD-BRL,EUR-BRL,GBP-BRL,JPY-BRL');
+    if(res.ok){
+      var j=await res.json();
+      rates={};
+      ['USD','EUR','GBP','JPY'].forEach(function(k){ var o=j[k+'BRL']; if(o&&o.bid) rates[k]=parseFloat(o.bid); });
+      if(!rates.USD) rates=null;
+    }
+  }catch(e){}
+  if(!rates){
+    try{
+      var res2=await fetch('https://open.er-api.com/v6/latest/BRL');
+      if(res2.ok){
+        var j2=await res2.json();
+        if(j2 && j2.rates){
+          rates={};
+          ['USD','EUR','GBP','JPY'].forEach(function(k){ if(j2.rates[k]) rates[k]=1/j2.rates[k]; });
+        }
+      }
+    }catch(e){}
+  }
+  if(rates && rates.USD){
+    wishFxAuto=rates; wishFxAutoAt=Date.now();
+    try{ localStorage.setItem(WISH_FX_CACHE_KEY, JSON.stringify({at:wishFxAutoAt,rates:rates})); }catch(e){}
+  } else {
+    // sem internet/API: usa cache antigo se existir
+    try{ var c2=JSON.parse(localStorage.getItem(WISH_FX_CACHE_KEY)||'null'); if(c2&&c2.rates){ wishFxAuto=c2.rates; wishFxAutoAt=c2.at; } }catch(e){}
+  }
+}
+
+function wishFx(cur){
+  var m=wishSettings.fx_manual||{};
+  if(m[cur]) return parseFloat(m[cur]);
+  return wishFxAuto[cur]||null;
+}
+
+function wishRoutePct(w){
+  if(w.extra_cost_pct!=null && w.extra_cost_pct!=='') return parseFloat(w.extra_cost_pct)||0;
+  return w.import_route==='importacao' ? (parseFloat(wishSettings.import_tax_pct)||0) : 0;
+}
+
+// Calcula custo no Brasil, diferenca e oferta maxima de uma carta
+function wishCalc(w){
+  var cur=w.intl_currency||'USD';
+  var fx=wishFx(cur);
+  var liga=w.liga_price!=null&&w.liga_price!==''?parseFloat(w.liga_price):null;
+  var intl=w.intl_price!=null&&w.intl_price!==''?parseFloat(w.intl_price):null;
+  var ship=parseFloat(w.intl_shipping)||0;
+  var mult=(1+(parseFloat(wishSettings.card_fee_pct)||0)/100)*(1+wishRoutePct(w)/100);
+  var out={cur:cur,fx:fx,liga:liga,intl:intl,ship:ship,landed:null,diff:null,pct:null,maxOffer:null,status:'incomplete'};
+  if(intl!=null && fx){ out.landed=(intl+ship)*fx*mult; }
+  var thr=(parseFloat(wishSettings.min_spread_pct)||0)/100;
+  if(liga!=null && fx){ out.maxOffer=liga/(1+thr)/(fx*mult)-ship; }
+  if(out.landed!=null && liga!=null && out.landed>0){
+    out.diff=liga-out.landed;
+    out.pct=out.diff/out.landed;
+    out.status = out.pct>=thr ? 'opp' : (out.pct>=0 ? 'low' : 'neg');
+  }
+  return out;
+}
+
+function wishDaysSince(d){
+  if(!d) return null;
+  var t=new Date(d+'T00:00:00'); var today=new Date(); today.setHours(0,0,0,0);
+  return Math.round((today-t)/86400000);
+}
+function wishIsStale(w){
+  var lim=parseInt(wishSettings.review_days)||15;
+  var a=wishDaysSince(w.liga_checked_at), b=wishDaysSince(w.intl_checked_at);
+  if(w.liga_price!=null && (a==null||a>lim)) return true;
+  if(w.intl_price!=null && (b==null||b>lim)) return true;
+  return false;
+}
+function wishFmtCur(v,cur){
+  if(v==null||isNaN(v)) return '—';
+  var dec=cur==='JPY'?0:2;
+  return (WISH_CUR_SYM[cur]||cur)+' '+Number(v).toLocaleString('pt-BR',{minimumFractionDigits:dec,maximumFractionDigits:dec});
+}
+function wishFmtPct(p){ return (p>=0?'+':'')+Math.round(p*100)+'%'; }
+function wishAgeLabel(d){
+  var n=wishDaysSince(d); if(n==null) return '';
+  var lim=parseInt(wishSettings.review_days)||15;
+  var txt=n===0?'hoje':(n===1?'ontem':'há '+n+'d');
+  return '<div style="font-size:11px;color:'+(n>lim?'var(--danger)':'var(--text3)')+'">'+txt+'</div>';
+}
+function wishSearchQuery(w){
+  // tira o numero entre parenteses para a busca, mas mantem o numero da carta
+  var n=(w.name||'');
+  var m=n.match(/\(([^)]+)\)/);
+  var base=n.replace(/\([^)]*\)/g,'').trim();
+  return (base+(m?' '+m[1].split('/')[0]:'')).trim();
+}
+function wishEbaySoldUrl(w){ return 'https://www.ebay.com/sch/i.html?_nkw='+encodeURIComponent(wishSearchQuery(w))+'&LH_Sold=1&LH_Complete=1'; }
+
+function updateWishlistBadge(opps){
+  var badge=document.getElementById('wishlistBadge');
+  if(!badge) return;
+  if(opps>0){ badge.textContent=opps; badge.style.display='inline-block'; badge.title=opps+' oportunidade(s)'; }
+  else badge.style.display='none';
 }
 
 function renderWishlist(){
-  var tb = document.getElementById('wishlistTable');
-  var q = (document.getElementById('filterWishName').value||'').toLowerCase();
-  var statusFilter = document.getElementById('filterWishStatus').value;
+  var tb=document.getElementById('wishlistTable');
+  if(!tb) return;
+  var q=(document.getElementById('filterWishName').value||'').toLowerCase();
+  var statusFilter=document.getElementById('filterWishStatus').value;
+  var platFilter=document.getElementById('filterWishPlatform').value;
+  var sort=document.getElementById('filterWishSort').value||'pct';
 
-  var list = wishlist.filter(function(w){
-    if(q && w.name.toLowerCase().indexOf(q)===-1) return false;
-    var days = wishlistDaysUntilReview(w);
-    if(statusFilter==='atrasadas' && days>0) return false;
-    if(statusFilter==='em-dia' && days<=0) return false;
+  // filtro de plataformas
+  var plats={}; wishlist.forEach(function(w){ if(w.intl_platform) plats[w.intl_platform]=1; });
+  var ps=document.getElementById('filterWishPlatform');
+  var plist=Object.keys(plats).sort();
+  var cur=ps.value;
+  ps.innerHTML='<option value="">Todas as plataformas</option>'+plist.map(function(p){return '<option'+(p===cur?' selected':'')+'>'+escHtmlAttr(p)+'</option>';}).join('');
+
+  var rows=wishlist.map(function(w){ return {w:w,c:wishCalc(w),stale:wishIsStale(w)}; });
+
+  // metricas
+  var opps=rows.filter(function(r){return r.c.status==='opp';});
+  var profit=opps.reduce(function(s,r){return s+r.c.diff;},0);
+  var avg=opps.length?opps.reduce(function(s,r){return s+r.c.pct;},0)/opps.length:null;
+  var staleN=rows.filter(function(r){return r.stale;}).length;
+  document.getElementById('wm-total').textContent=wishlist.length;
+  document.getElementById('wm-opps').textContent=opps.length;
+  document.getElementById('wm-profit').textContent=fmt(profit);
+  document.getElementById('wm-avg').textContent=avg==null?'—':wishFmtPct(avg);
+  document.getElementById('wm-thr-note').textContent=wishSettings.min_spread_pct;
+  var man=wishSettings.fx_manual||{};
+  document.getElementById('wm-fx').innerHTML=['USD','EUR','GBP','JPY'].map(function(k){
+    var v=wishFx(k); if(!v) return '';
+    return '<span style="margin-right:8px;white-space:nowrap">'+WISH_CUR_SYM[k]+' '+v.toLocaleString('pt-BR',{minimumFractionDigits:k==='JPY'?4:2,maximumFractionDigits:k==='JPY'?4:2})+(man[k]?' <i class="ti ti-pin" title="fixada à mão"></i>':'')+'</span>';
+  }).join('')||'<span style="color:var(--danger)">sem cotação — informe em Câmbio e custos</span>';
+  updateWishlistBadge(opps.length);
+  var alertBox=document.getElementById('wishlistAlert');
+  if(staleN>0){ alertBox.style.display='block'; document.getElementById('wishlistAlertText').textContent=staleN+' carta(s) com preço checado há mais de '+wishSettings.review_days+' dias'; }
+  else alertBox.style.display='none';
+
+  var list=rows.filter(function(r){
+    var w=r.w;
+    if(q && (w.name||'').toLowerCase().indexOf(q)===-1 && (w.set_name||'').toLowerCase().indexOf(q)===-1) return false;
+    if(platFilter && w.intl_platform!==platFilter) return false;
+    if(statusFilter==='stale') return r.stale;
+    if(statusFilter && r.c.status!==statusFilter) return false;
     return true;
   });
 
+  list.sort(function(a,b){
+    if(sort==='name') return (a.w.name||'').localeCompare(b.w.name||'');
+    if(sort==='liga') return (b.c.liga||-1)-(a.c.liga||-1);
+    if(sort==='old'){
+      var da=Math.max(wishDaysSince(a.w.liga_checked_at)||9999,wishDaysSince(a.w.intl_checked_at)||9999);
+      var db=Math.max(wishDaysSince(b.w.liga_checked_at)||9999,wishDaysSince(b.w.intl_checked_at)||9999);
+      return db-da;
+    }
+    var ka=sort==='brl'?a.c.diff:a.c.pct, kb=sort==='brl'?b.c.diff:b.c.pct;
+    if(ka==null&&kb==null) return (a.w.name||'').localeCompare(b.w.name||'');
+    if(ka==null) return 1; if(kb==null) return -1;
+    return kb-ka;
+  });
+
   if(!list.length){
-    tb.innerHTML = '<tr><td colspan="8"><div class="empty-state"><i class="ti ti-star-off"></i>Nenhuma carta na lista de desejos</div></td></tr>';
+    tb.innerHTML='<tr><td colspan="8"><div class="empty-state"><i class="ti ti-star-off"></i>'+(wishlist.length?'Nenhuma carta com esse filtro':'Nenhuma carta monitorada — adicione cartas que você vê mais baratas lá fora')+'</div></td></tr>';
     return;
   }
 
-  tb.innerHTML = list.map(function(w){
-    var days = wishlistDaysUntilReview(w);
-    var revisaoHtml;
-    if(!w.last_checked_date){
-      revisaoHtml = '<span class="badge" style="background:var(--danger-bg);color:var(--danger)">Nunca revisado</span>';
-    } else if(days<=0){
-      revisaoHtml = '<span class="badge" style="background:var(--danger-bg);color:var(--danger)">Atrasado ('+Math.abs(days)+'d)</span>';
-    } else {
-      revisaoHtml = '<span class="badge" style="background:var(--bg2);color:var(--text2)">Revisar em '+days+'d</span>';
-    }
+  var STATUS={
+    opp:{t:'Oportunidade',bg:'rgba(46,160,67,.14)',c:'var(--success)'},
+    low:{t:'Margem baixa',bg:'var(--amber-bg)',c:'var(--amber-dark)'},
+    neg:{t:'Liga mais barata',bg:'var(--bg2)',c:'var(--text2)'},
+    incomplete:{t:'Falta preço',bg:'var(--bg2)',c:'var(--text3)'}
+  };
 
-    var priceHtml = w.last_price ? fmt(w.last_price) : '<span style="color:var(--text3)">—</span>';
-    if(w.last_price && w.target_price){
-      var diff = w.last_price - w.target_price;
-      var color = diff<=0 ? 'var(--success)' : 'var(--text2)';
-      priceHtml += '<div style="font-size:11px;color:'+color+'">'+(diff<=0?'no alvo ou abaixo':'+'+fmt(diff)+' acima')+'</div>';
-    }
+  tb.innerHTML=list.map(function(r){
+    var w=r.w, c=r.c, st=STATUS[c.status];
+    var img=w.image_url?'<img src="'+escHtmlAttr(w.image_url)+'" style="width:36px;height:48px;object-fit:cover;border-radius:4px;cursor:pointer" onclick="openLightbox(event,\''+w.image_url+'\')">':'<div style="width:36px;height:48px;background:var(--bg2);border-radius:4px"></div>';
+    var meta=[w.set_name,(w.condition||'')+' '+(w.language||'')].filter(function(x){return x&&x.trim();}).map(escHtmlAttr).join(' · ');
+    var links=[];
+    if(w.liga_url) links.push('<a href="'+escHtmlAttr(w.liga_url)+'" target="_blank" style="color:var(--amber-dark)">Liga</a>');
+    if(w.intl_url) links.push('<a href="'+escHtmlAttr(w.intl_url)+'" target="_blank" style="color:var(--blue)">'+escHtmlAttr(w.intl_platform||'Anúncio')+'</a>');
+    links.push('<a href="'+wishEbaySoldUrl(w)+'" target="_blank" style="color:var(--text2)" title="Busca de vendidos no eBay">eBay vendidos</a>');
 
-    var img = w.image_url ? '<img src="'+w.image_url+'" style="width:36px;height:48px;object-fit:cover;border-radius:4px;cursor:pointer" onclick="openLightbox(event,\''+w.image_url+'\')">' : '<div style="width:36px;height:48px;background:var(--bg2);border-radius:4px"></div>';
+    var ligaCell=c.liga!=null?'<div style="font-weight:600">'+fmt(c.liga)+'</div>'+wishAgeLabel(w.liga_checked_at):'<span style="color:var(--text3)">—</span>';
+    var intlCell=c.intl!=null
+      ?'<div style="font-weight:600">'+wishFmtCur(c.intl,c.cur)+'</div>'
+        +(c.ship?'<div style="font-size:11px;color:var(--text2)">+ '+wishFmtCur(c.ship,c.cur)+' frete</div>':'')
+        +'<div style="font-size:11px;color:var(--text2)">'+escHtmlAttr(w.intl_platform||'')+(w.import_route==='importacao'?' · importação':' · em mãos')+'</div>'
+        +wishAgeLabel(w.intl_checked_at)
+      :'<span style="color:var(--text3)">—</span>';
+    var landedCell=c.landed!=null?fmt(c.landed):'<span style="color:var(--text3)">—</span>';
+    var diffCell=c.diff!=null
+      ?'<div style="font-weight:700;color:'+st.c+'">'+wishFmtPct(c.pct)+'</div><div style="font-size:11px;color:var(--text2)">'+(c.diff>=0?'+':'')+fmt(c.diff).replace('R$ -','-R$ ')+'</div>'
+      :'';
+    diffCell+='<span class="badge" style="background:'+st.bg+';color:'+st.c+';margin-top:3px;display:inline-block">'+st.t+'</span>'
+      +(r.stale?' <i class="ti ti-clock-exclamation" style="color:var(--danger)" title="Preço desatualizado"></i>':'');
+    var offerCell=c.maxOffer!=null
+      ?(c.maxOffer>0?'<span title="Preço máximo lá fora (sem o frete de '+wishFmtCur(c.ship,c.cur)+') para ter '+wishSettings.min_spread_pct+'% de diferença">'+wishFmtCur(c.maxOffer,c.cur)+'</span>':'<span style="color:var(--text3)">inviável</span>')
+      :'<span style="color:var(--text3)">—</span>';
 
     return '<tr>'
       +'<td>'+img+'</td>'
-      +'<td><div style="font-weight:600">'+w.name+'</div>'+(w.liga_url?'<a href="'+w.liga_url+'" target="_blank" style="font-size:11px;color:var(--amber-dark)">Ver na Liga Pokemon</a>':'')+'</td>'
-      +'<td>'+(w.set_name||'—')+'</td>'
-      +'<td>'+(w.condition||'')+' '+(w.language||'')+'</td>'
-      +'<td>'+(w.target_price?fmt(w.target_price):'<span style="color:var(--text3)">—</span>')+'</td>'
-      +'<td>'+priceHtml+'</td>'
-      +'<td>'+revisaoHtml+'</td>'
+      +'<td><div style="font-weight:600">'+escHtmlAttr(w.name)+'</div>'
+        +(meta?'<div style="font-size:11px;color:var(--text2)">'+meta+'</div>':'')
+        +'<div style="font-size:11px;display:flex;gap:8px;flex-wrap:wrap;margin-top:2px">'+links.join('')+'</div>'
+        +(w.notes?'<div style="font-size:11px;color:var(--text3);margin-top:2px">'+escHtmlAttr(w.notes)+'</div>':'')
+      +'</td>'
+      +'<td>'+ligaCell+'</td>'
+      +'<td>'+intlCell+'</td>'
+      +'<td>'+landedCell+'</td>'
+      +'<td>'+diffCell+'</td>'
+      +'<td>'+offerCell+'</td>'
       +'<td><div class="actions-cell">'
-        +'<button class="btn-success" onclick="openWishlistCheck(\''+w.id+'\')" title="Revisar preco agora"><i class="ti ti-refresh"></i></button>'
+        +'<button class="btn-success" onclick="openWishlistCheck(\''+w.id+'\')" title="Atualizar preços"><i class="ti ti-refresh"></i></button>'
+        +'<button class="btn-small" onclick="wishToPurchase(\''+w.id+'\')" title="Comprei — lançar compra"><i class="ti ti-shopping-cart"></i></button>'
         +'<button class="btn-small" onclick="editWishlistItem(\''+w.id+'\')" title="Editar"><i class="ti ti-edit"></i></button>'
         +'<button class="btn-danger" onclick="deleteWishlistItem(\''+w.id+'\')" title="Remover"><i class="ti ti-trash"></i></button>'
       +'</div></td>'
@@ -3032,145 +3262,257 @@ function renderWishlist(){
   }).join('');
 }
 
+function wishFormItem(){
+  var g=function(id){return document.getElementById(id).value;};
+  return {
+    liga_price:g('w-liga-price')!==''?parseFloat(g('w-liga-price')):null,
+    intl_price:g('w-intl-price')!==''?parseFloat(g('w-intl-price')):null,
+    intl_shipping:parseFloat(g('w-intl-ship'))||0,
+    intl_currency:g('w-currency'),
+    import_route:g('w-route'),
+    extra_cost_pct:g('w-extra-pct')!==''?parseFloat(g('w-extra-pct')):null
+  };
+}
+function wishPreviewHtml(c){
+  if(!c.fx) return '<span style="color:var(--danger)">Sem cotação para '+c.cur+' — informe em Câmbio e custos.</span>';
+  var parts=[];
+  if(c.landed!=null) parts.push('Custo no Brasil: <b>'+fmt(c.landed)+'</b>');
+  if(c.diff!=null) parts.push('Diferença: <b style="color:'+(c.status==='opp'?'var(--success)':(c.status==='low'?'var(--amber-dark)':'var(--text2)'))+'">'+wishFmtPct(c.pct)+' ('+fmt(c.diff)+')</b>');
+  if(c.maxOffer!=null) parts.push('Oferta máx. p/ '+wishSettings.min_spread_pct+'%: <b>'+(c.maxOffer>0?wishFmtCur(c.maxOffer,c.cur):'inviável')+'</b>');
+  return parts.length?parts.join(' &nbsp;·&nbsp; '):'<span style="color:var(--text3)">Preencha o preço da Liga e o internacional para ver a diferença.</span>';
+}
+function wishPreview(){
+  var el=document.getElementById('w-preview'); if(!el) return;
+  el.innerHTML=wishPreviewHtml(wishCalc(wishFormItem()));
+}
+
+function wishFillForm(w){
+  w=w||{};
+  document.getElementById('w-id').value=w.id||'';
+  document.getElementById('w-product-id').value=w.product_id||'';
+  document.getElementById('w-img').value=w.image_url||'';
+  document.getElementById('w-name').value=w.name||'';
+  document.getElementById('w-set').value=w.set_name||'';
+  document.getElementById('w-lang').value=w.language||'EN';
+  document.getElementById('w-cond').value=w.condition||'NM';
+  document.getElementById('w-liga-price').value=w.liga_price!=null?w.liga_price:'';
+  document.getElementById('w-liga').value=w.liga_url||'';
+  document.getElementById('w-platform').value=w.intl_platform||(w.id?'':'eBay');
+  document.getElementById('w-currency').value=w.intl_currency||'USD';
+  document.getElementById('w-intl-price').value=w.intl_price!=null?w.intl_price:'';
+  document.getElementById('w-intl-ship').value=w.intl_shipping?w.intl_shipping:'';
+  document.getElementById('w-route').value=w.import_route||'maos';
+  document.getElementById('w-extra-pct').value=w.extra_cost_pct!=null?w.extra_cost_pct:'';
+  document.getElementById('w-intl-url').value=w.intl_url||'';
+  document.getElementById('w-notes').value=w.notes||'';
+  document.getElementById('w-liga-hint').innerHTML='';
+  wishPreview();
+}
+
 function openNewWishlist(){
-  document.getElementById('wishlistModalTitle').textContent='Nova carta desejada';
-  document.getElementById('w-id').value='';
-  document.getElementById('w-product-id').value='';
-  document.getElementById('w-img').value='';
-  document.getElementById('w-name').value='';
-  document.getElementById('w-type').value='Carta Avulsa';
-  document.getElementById('w-lang').value='PT-BR';
-  document.getElementById('w-cond').value='NM';
-  document.getElementById('w-set').value='';
-  document.getElementById('w-target').value='';
-  document.getElementById('w-lastprice').value='';
-  document.getElementById('w-freq').value='15';
-  document.getElementById('w-liga').value='';
-  document.getElementById('w-notes').value='';
+  document.getElementById('wishlistModalTitle').textContent='Nova carta';
+  wishFillForm(null);
   openModal('wishlistModal');
 }
 
 function editWishlistItem(id){
-  var w = wishlist.filter(function(x){ return x.id===id; })[0];
+  var w=wishlist.filter(function(x){return x.id===id;})[0];
   if(!w) return;
-  document.getElementById('wishlistModalTitle').textContent='Editar carta desejada';
-  document.getElementById('w-id').value=w.id;
-  document.getElementById('w-product-id').value=w.product_id||'';
-  document.getElementById('w-img').value=w.image_url||'';
-  document.getElementById('w-name').value=w.name;
-  document.getElementById('w-type').value=w.product_type||'Carta Avulsa';
-  document.getElementById('w-lang').value=w.language||'PT-BR';
-  document.getElementById('w-cond').value=w.condition||'NM';
-  document.getElementById('w-set').value=w.set_name||'';
-  document.getElementById('w-target').value=w.target_price||'';
-  document.getElementById('w-lastprice').value=w.last_price||'';
-  document.getElementById('w-freq').value=w.review_frequency_days||15;
-  document.getElementById('w-liga').value=w.liga_url||'';
-  document.getElementById('w-notes').value=w.notes||'';
+  document.getElementById('wishlistModalTitle').textContent='Editar carta';
+  wishFillForm(w);
   openModal('wishlistModal');
 }
 
 async function saveWishlistItem(){
   var name=document.getElementById('w-name').value.trim();
   if(!name){ showToast('Informe o nome da carta','error'); return; }
-
   var id=document.getElementById('w-id').value;
-  var existing = id ? wishlist.filter(function(x){return x.id===id;})[0] : null;
-  var lastPriceInput = document.getElementById('w-lastprice').value;
-  var lastPrice = lastPriceInput!=='' ? parseFloat(lastPriceInput) : null;
-  var lastPriceChanged = !existing || parseFloat(existing.last_price||0)!==(lastPrice||0);
+  var existing=id?wishlist.filter(function(x){return x.id===id;})[0]:null;
+  var f=wishFormItem();
+  var today=new Date().toISOString().slice(0,10);
+  var same=function(a,b){ return (a==null||a==='')&&(b==null||b==='') ? true : parseFloat(a)===parseFloat(b); };
 
-  var payload = {
-    user_id: currentUser.id,
-    name: name,
-    product_type: document.getElementById('w-type').value,
-    language: document.getElementById('w-lang').value,
-    condition: document.getElementById('w-cond').value,
-    set_name: document.getElementById('w-set').value||null,
-    product_id: document.getElementById('w-product-id').value||null,
-    target_price: parseFloat(document.getElementById('w-target').value)||null,
-    last_price: lastPrice,
-    review_frequency_days: parseInt(document.getElementById('w-freq').value)||15,
-    liga_url: document.getElementById('w-liga').value||null,
-    image_url: document.getElementById('w-img').value||null,
-    notes: document.getElementById('w-notes').value||null
-  };
-  // Preencher o preco conta como revisao feita agora
-  if(lastPrice!==null && lastPriceChanged){
-    payload.last_checked_date = new Date().toISOString().slice(0,10);
-  } else if(existing){
-    payload.last_checked_date = existing.last_checked_date||null;
-  }
+  var payload=Object.assign({
+    user_id:currentUser.id,
+    name:name,
+    language:document.getElementById('w-lang').value,
+    condition:document.getElementById('w-cond').value,
+    set_name:document.getElementById('w-set').value.trim()||null,
+    product_id:document.getElementById('w-product-id').value||null,
+    liga_url:document.getElementById('w-liga').value.trim()||null,
+    intl_platform:document.getElementById('w-platform').value.trim()||null,
+    intl_url:document.getElementById('w-intl-url').value.trim()||null,
+    image_url:document.getElementById('w-img').value||null,
+    notes:document.getElementById('w-notes').value.trim()||null
+  }, f);
 
-  var r = id ? await sb.from('wishlist').update(payload).eq('id',id)
-              : await sb.from('wishlist').insert(payload);
-  if(r.error){ showToast('Erro ao salvar','error'); return; }
-  showToast(id ? 'Carta atualizada!' : 'Carta adicionada a lista de desejos!');
+  if(f.liga_price!=null && (!existing || !same(existing.liga_price,f.liga_price))) payload.liga_checked_at=today;
+  if(f.intl_price!=null && (!existing || !same(existing.intl_price,f.intl_price) || !same(existing.intl_shipping,f.intl_shipping))) payload.intl_checked_at=today;
+
+  var r=id?await sb.from('wishlist').update(payload).eq('id',id).eq('user_id',currentUser.id)
+          :await sb.from('wishlist').insert(payload);
+  if(r.error){ showToast('Erro ao salvar: '+r.error.message,'error'); return; }
+  showToast(id?'Carta atualizada!':'Carta adicionada!');
   closeModal('wishlistModal');
   await loadWishlist();
 }
 
 async function deleteWishlistItem(id){
-  if(!confirm('Remover esta carta da lista de desejos?')) return;
-  await sb.from('wishlist').delete().eq('id',id);
+  if(!confirm('Remover esta carta dos desejos?')) return;
+  await sb.from('wishlist').delete().eq('id',id).eq('user_id',currentUser.id);
   showToast('Carta removida');
   await loadWishlist();
 }
 
 function openWishlistCheck(id){
-  var w = wishlist.filter(function(x){ return x.id===id; })[0];
+  var w=wishlist.filter(function(x){return x.id===id;})[0];
   if(!w) return;
   document.getElementById('wc-id').value=w.id;
   document.getElementById('wc-name').textContent=w.name;
-  document.getElementById('wc-price').value=w.last_price||'';
+  document.getElementById('wc-cur').textContent=WISH_CUR_SYM[w.intl_currency||'USD']||w.intl_currency;
+  document.getElementById('wc-liga').value=w.liga_price!=null?w.liga_price:'';
+  document.getElementById('wc-intl').value=w.intl_price!=null?w.intl_price:'';
+  document.getElementById('wc-ship').value=w.intl_shipping?w.intl_shipping:'';
+  var links=[];
+  if(w.liga_url) links.push('<a href="'+escHtmlAttr(w.liga_url)+'" target="_blank" style="color:var(--amber-dark)"><i class="ti ti-external-link"></i> Liga</a>');
+  if(w.intl_url) links.push('<a href="'+escHtmlAttr(w.intl_url)+'" target="_blank" style="color:var(--blue)"><i class="ti ti-external-link"></i> '+escHtmlAttr(w.intl_platform||'Anúncio')+'</a>');
+  links.push('<a href="'+wishEbaySoldUrl(w)+'" target="_blank" style="color:var(--text2)"><i class="ti ti-external-link"></i> eBay vendidos</a>');
+  document.getElementById('wc-links').innerHTML=links.join('');
+  wishCheckPreview();
   openModal('wishlistCheckModal');
 }
+function wishCheckItem(){
+  var id=document.getElementById('wc-id').value;
+  var w=wishlist.filter(function(x){return x.id===id;})[0]||{};
+  var g=function(i){return document.getElementById(i).value;};
+  return Object.assign({},w,{
+    liga_price:g('wc-liga')!==''?parseFloat(g('wc-liga')):null,
+    intl_price:g('wc-intl')!==''?parseFloat(g('wc-intl')):null,
+    intl_shipping:parseFloat(g('wc-ship'))||0
+  });
+}
+function wishCheckPreview(){ document.getElementById('wc-preview').innerHTML=wishPreviewHtml(wishCalc(wishCheckItem())); }
 
 async function saveWishlistCheck(){
   var id=document.getElementById('wc-id').value;
-  var price=parseFloat(document.getElementById('wc-price').value);
-  if(isNaN(price)||price<0){ showToast('Informe o preco encontrado','error'); return; }
-  var r = await sb.from('wishlist').update({
-    last_price: price,
-    last_checked_date: new Date().toISOString().slice(0,10)
-  }).eq('id', id);
-  if(r.error){ showToast('Erro ao salvar revisao','error'); return; }
-  showToast('Revisao registrada!');
+  var n=wishCheckItem();
+  var today=new Date().toISOString().slice(0,10);
+  var payload={liga_price:n.liga_price,intl_price:n.intl_price,intl_shipping:n.intl_shipping};
+  // Salvar aqui conta como checagem de hoje dos precos preenchidos
+  if(n.liga_price!=null) payload.liga_checked_at=today;
+  if(n.intl_price!=null) payload.intl_checked_at=today;
+  var r=await sb.from('wishlist').update(payload).eq('id',id).eq('user_id',currentUser.id);
+  if(r.error){ showToast('Erro ao salvar','error'); return; }
+  showToast('Preços atualizados!');
   closeModal('wishlistCheckModal');
   await loadWishlist();
 }
 
+// "Comprei": abre o Registrar compra ja preenchido
+function wishToPurchase(id){
+  var w=wishlist.filter(function(x){return x.id===id;})[0];
+  if(!w) return;
+  var c=wishCalc(w);
+  var set=function(i,v){ var el=document.getElementById(i); if(el) el.value=v; };
+  set('p-name',w.name); set('p-product-id',w.product_id||'');
+  if(typeof setCatalogPick==='function') setCatalogPick(null);
+  set('p-type','Carta Avulsa'); set('p-cond',w.condition&&w.condition!=='N/A'?w.condition:'NM');
+  set('p-lang',w.language&&w.language!=='N/A'?w.language:'EN');
+  set('p-qty',1); set('p-set',w.set_name||'');
+  set('p-amount',c.landed!=null?c.landed.toFixed(2):'');
+  set('p-date',new Date().toISOString().slice(0,10));
+  set('p-saleprice',c.liga!=null?c.liga:''); set('p-liga',w.liga_url||'');
+  set('p-notes',[w.intl_platform,w.intl_price!=null?wishFmtCur(w.intl_price,c.cur)+(c.ship?' + '+wishFmtCur(c.ship,c.cur)+' frete':''):'',c.fx?'câmbio '+c.fx.toFixed(4):''].filter(Boolean).join(' · '));
+  set('p-img-url',w.image_url||'');
+  var prev=document.getElementById('p-img-preview');
+  if(prev){ if(w.image_url){prev.src=w.image_url;prev.style.display='block';}else prev.style.display='none'; }
+  if(typeof orderPreselect!=='undefined') orderPreselect=null;
+  set('p-extras','');
+  showToast('Compra preenchida com o custo estimado — confira o valor pago real e o fornecedor');
+  openModal('purchaseModal');
+}
+
+// ---------- Configuracoes ----------
+async function openWishSettings(){
+  document.getElementById('ws-card').value=wishSettings.card_fee_pct;
+  document.getElementById('ws-tax').value=wishSettings.import_tax_pct;
+  document.getElementById('ws-min').value=wishSettings.min_spread_pct;
+  document.getElementById('ws-days').value=wishSettings.review_days;
+  var m=wishSettings.fx_manual||{};
+  ['USD','EUR','GBP','JPY'].forEach(function(k){
+    document.getElementById('ws-fx-'+k).value=m[k]||'';
+    var a=wishFxAuto[k];
+    document.getElementById('ws-fx-'+k).placeholder=a?a.toFixed(k==='JPY'?4:4):'';
+    document.getElementById('ws-auto-'+k).textContent=a?'(auto: '+a.toFixed(k==='JPY'?4:2).replace('.',',')+')':'';
+  });
+  document.getElementById('ws-fx-src').textContent=wishFxAutoAt?'Cotação automática (AwesomeAPI) de '+new Date(wishFxAutoAt).toLocaleString('pt-BR')+'. Atualiza sozinha a cada 6h.':'Não foi possível buscar a cotação automática — preencha à mão.';
+  openModal('wishSettingsModal');
+  // tenta renovar a cotacao em segundo plano
+  await wishLoadFx(true);
+}
+
+async function saveWishSettings(){
+  var num=function(id,def){ var v=parseFloat(document.getElementById(id).value); return isNaN(v)?def:v; };
+  var fx={}; var any=false;
+  ['USD','EUR','GBP','JPY'].forEach(function(k){ var v=parseFloat(document.getElementById('ws-fx-'+k).value); if(!isNaN(v)&&v>0){fx[k]=v;any=true;} });
+  var payload={
+    user_id:currentUser.id,
+    card_fee_pct:num('ws-card',3.5),
+    import_tax_pct:num('ws-tax',60),
+    min_spread_pct:num('ws-min',30),
+    review_days:Math.max(1,parseInt(document.getElementById('ws-days').value)||15),
+    fx_manual:any?fx:null,
+    updated_at:new Date().toISOString()
+  };
+  var r=await sb.from('wishlist_settings').upsert(payload,{onConflict:'user_id'});
+  if(r.error){ showToast('Erro ao salvar: '+r.error.message,'error'); return; }
+  wishSettings=Object.assign({},WISH_SETTINGS_DEFAULT,payload);
+  showToast('Configurações salvas!');
+  closeModal('wishSettingsModal');
+  renderWishlist();
+}
+
+// ---------- Autocomplete do cadastro ----------
 function wishlistAutocomplete(input){
-  var q = input.value.toLowerCase().trim();
-  var dd = document.getElementById('w-autocomplete');
+  var q=input.value.toLowerCase().trim();
+  var dd=document.getElementById('w-autocomplete');
   document.getElementById('w-product-id').value='';
   document.getElementById('w-img').value='';
   if(!q){ dd.style.display='none'; return; }
-  var matches = products.filter(function(p){
-    return p.name.toLowerCase().indexOf(q)!==-1;
-  }).slice(0,10);
+  var matches=products.filter(function(p){ return p.name.toLowerCase().indexOf(q)!==-1; }).slice(0,10);
   if(!matches.length){ dd.style.display='none'; return; }
   dd.style.display='block';
-  dd.innerHTML = matches.map(function(p){
-    var img = p.image_url ? '<img src="'+p.image_url+'" style="width:28px;height:38px;object-fit:cover;border-radius:3px;margin-right:8px;vertical-align:middle">' : '';
+  dd.innerHTML=matches.map(function(p){
+    var img=p.image_url?'<img src="'+p.image_url+'" style="width:28px;height:38px;object-fit:cover;border-radius:3px;margin-right:8px;vertical-align:middle">':'';
     return '<div onclick="selectWishlistProduct(\''+p.id+'\')" style="padding:8px 12px;cursor:pointer;display:flex;align-items:center;border-bottom:1px solid var(--border);font-size:13px" onmouseover="this.style.background=\'var(--bg2)\'" onmouseout="this.style.background=\'\'">'
-      + img + '<div><div style="font-weight:600">'+p.name+'</div>'
-      + (p.set_name?'<div style="font-size:11px;color:var(--text2)">'+p.set_name+'</div>':'')
-      + '</div></div>';
+      +img+'<div><div style="font-weight:600">'+escHtmlAttr(p.name)+'</div>'
+      +(p.set_name?'<div style="font-size:11px;color:var(--text2)">'+escHtmlAttr(p.set_name)+'</div>':'')
+      +'</div></div>';
   }).join('');
 }
 
 function selectWishlistProduct(id){
-  var p = products.filter(function(x){ return x.id===id; })[0];
+  var p=products.filter(function(x){return x.id===id;})[0];
   if(!p) return;
   document.getElementById('w-name').value=p.name;
   document.getElementById('w-product-id').value=p.id;
   document.getElementById('w-img').value=p.image_url||'';
   if(p.set_name) document.getElementById('w-set').value=p.set_name;
-  if(p.product_type) document.getElementById('w-type').value=p.product_type;
-  if(p.language) document.getElementById('w-lang').value=p.language;
-  if(p.liga_url) document.getElementById('w-liga').value=p.liga_url;
+  if(p.liga_url && !document.getElementById('w-liga').value) document.getElementById('w-liga').value=p.liga_url;
+  // sugere o Preco Mercado (ultima venda na Liga) do estoque/cadastro
+  var mkt=null, src='';
+  var lang=document.getElementById('w-lang').value, cond=document.getElementById('w-cond').value;
+  var invs=(typeof inventory!=='undefined'&&inventory)?inventory.filter(function(i){return i.name===p.name&&i.market_price!=null;}):[];
+  var exact=invs.filter(function(i){return i.language===lang&&i.condition===cond;})[0];
+  if(exact){ mkt=exact.market_price; src='Preço Mercado do estoque ('+lang+' '+cond+')'; }
+  else if(p.market_price){ mkt=p.market_price; src='Preço Mercado do cadastro'; }
+  else if(invs[0]){ mkt=invs[0].market_price; src='Preço Mercado do estoque ('+(invs[0].language||'')+' '+(invs[0].condition||'')+')'; }
+  var hint=document.getElementById('w-liga-hint');
+  if(mkt!=null){
+    hint.innerHTML='<a href="#" onclick="document.getElementById(\'w-liga-price\').value=\''+mkt+'\';wishPreview();return false;" style="color:var(--amber-dark)">Usar '+fmt(mkt)+'</a> — '+src;
+  } else hint.innerHTML='';
   document.getElementById('w-autocomplete').style.display='none';
+  wishPreview();
 }
 
 function loadAll(){
