@@ -1439,13 +1439,23 @@ tr:hover td{background:var(--bg2)}
 
 <!-- MODAL CLIENTE -->
 <div class="modal-bg" id="customerModal">
-  <div class="modal" style="max-width:480px">
+  <div class="modal" style="max-width:560px;max-height:92vh;overflow-y:auto">
     <h3 id="customerModalTitle">Novo Cliente</h3>
     <input type="hidden" id="cus-id">
     <div class="modal-grid">
-      <div class="form-field full"><label>Nome *</label><input type="text" id="cus-name" placeholder="Ex: João Silva"></div>
+      <div class="form-field"><label>Nome (apelido) *</label><input type="text" id="cus-name" placeholder="Ex: João Silva"></div>
       <div class="form-field"><label>WhatsApp</label><input type="text" id="cus-whatsapp" placeholder="55119..."></div>
+      <div class="form-field full" style="margin-top:6px;padding-top:10px;border-top:1px solid var(--border);font-size:12px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.04em"><i class="ti ti-truck"></i> Dados para envio <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--text3)">(opcional)</span></div>
+      <div class="form-field full"><label>Nome completo</label><input type="text" id="cus-full-name" placeholder="Como vai na etiqueta"></div>
+      <div class="form-field"><label>CPF</label><input type="text" id="cus-cpf" inputmode="numeric" maxlength="14" placeholder="000.000.000-00" oninput="maskCpfInput(this)"></div>
+      <div class="form-field"><label>CEP</label><input type="text" id="cus-cep" inputmode="numeric" maxlength="9" placeholder="00000-000" oninput="maskCepInput(this)"><div id="cus-cep-msg" style="font-size:11px;color:var(--text3);margin-top:4px">Preenche o endereço automaticamente</div></div>
+      <div class="form-field full"><label>Rua / Logradouro</label><input type="text" id="cus-street" placeholder="Ex: Av. Paulista"></div>
+      <div class="form-field"><label>Número</label><input type="text" id="cus-number" placeholder="Ex: 1000"></div>
+      <div class="form-field"><label>Complemento</label><input type="text" id="cus-complement" placeholder="Ex: Apto 12, Bloco B"></div>
+      <div class="form-field full"><label>Bairro</label><input type="text" id="cus-district"></div>
       <div class="form-field"><label>Cidade</label><input type="text" id="cus-city" placeholder="Ex: São Paulo"></div>
+      <div class="form-field"><label>UF</label><input type="text" id="cus-state" maxlength="2" placeholder="SP" style="text-transform:uppercase"></div>
+      <div class="form-field full" style="margin-top:6px;padding-top:10px;border-top:1px solid var(--border);font-size:12px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.04em"><i class="ti ti-message-heart"></i> Relacionamento</div>
       <div class="form-field full"><label>Interesses</label>
         <textarea id="cus-interests" rows="2" placeholder="Ex: Charizard, cartas JP, ETBs de Prismatic Evolutions..."></textarea>
       </div>
@@ -6947,7 +6957,8 @@ function openNewCustomer(){
   document.getElementById('cus-id').value='';
   document.getElementById('cus-name').value='';
   document.getElementById('cus-whatsapp').value='';
-  document.getElementById('cus-city').value='';
+  CUS_SHIP_FIELDS.forEach(function(f){document.getElementById(f[0]).value='';});
+  document.getElementById('cus-cep-msg').textContent='Preenche o endereço automaticamente';
   document.getElementById('cus-interests').value='';
   document.getElementById('cus-freq').value='30';
   document.getElementById('cus-last-contact').value='';
@@ -7060,7 +7071,7 @@ function renderCustomers(){
   var q=(document.getElementById('filterCustomerName').value||'').toLowerCase();
   var cf=(document.getElementById('filterCustomerContact')||{}).value||'';
   var list=customers.filter(function(c){
-    if(q&&(c.name+' '+(c.interests||'')).toLowerCase().indexOf(q)===-1)return false;
+    if(q&&(c.name+' '+(c.full_name||'')+' '+(c.interests||'')+' '+(c.city||'')).toLowerCase().indexOf(q)===-1)return false;
     var d=customerDaysUntilContact(c);
     if(cf==='atrasados'&&!(d!==null&&d<=0))return false;
     if(cf==='com-interesse'&&d===null)return false;
@@ -7102,13 +7113,14 @@ function renderCustomers(){
     return '<tr>'
       +'<td style="font-weight:600">'+c.name+'</td>'
       +'<td>'+(waLink||'-')+'</td>'
-      +'<td>'+(c.city||'-')+'</td>'
+      +'<td>'+(c.city?c.city+(c.state?'/'+c.state:''):'-')+'</td>'
       +'<td>'+interestsHtml+'</td>'
       +'<td>'+contactHtml+'</td>'
       +'<td><span class="badge badge-nm">'+st.qty+'</span></td>'
       +'<td style="white-space:nowrap;font-weight:600">'+(st.value>0?fmt(st.value):'<span style="color:var(--text3);font-weight:400">-</span>')+'</td>'
       +'<td><div class="actions-cell">'
       +(d!==null?'<button class="btn-success" onclick="registerCustomerContact(\''+c.id+'\')" title="Registrar contato feito hoje"><i class="ti ti-message-check"></i></button>':'')
+      +(customerHasShipping(c)?'<button class="btn-small" onclick="copyCustomerShipping(\''+c.id+'\')" title="Copiar dados de envio (nome completo, CPF, endereço)"><i class="ti ti-address-book"></i></button>':'')
       +'<button class="btn-small" onclick="editCustomer(\''+c.id+'\')" title="Editar"><i class="ti ti-edit"></i></button>'
       +'<button class="btn-danger" onclick="deleteCustomer(\''+c.id+'\')" title="Excluir"><i class="ti ti-trash"></i></button>'
       +'</div></td></tr>';
@@ -7132,21 +7144,78 @@ function editCustomer(id){
   document.getElementById('cus-id').value=c.id;
   document.getElementById('cus-name').value=c.name||'';
   document.getElementById('cus-whatsapp').value=c.whatsapp||'';
-  document.getElementById('cus-city').value=c.city||'';
+  CUS_SHIP_FIELDS.forEach(function(f){
+    var v=c[f[1]]||'';
+    if(f[1]==='cpf')v=fmtCpf(v);
+    if(f[1]==='cep')v=fmtCep(v);
+    document.getElementById(f[0]).value=v;
+  });
+  document.getElementById('cus-cep-msg').textContent='Preenche o endereço automaticamente';
   document.getElementById('cus-interests').value=c.interests||'';
   document.getElementById('cus-freq').value=String(c.contact_frequency_days||30);
   document.getElementById('cus-last-contact').value=c.last_contact_date||'';
   openModal('customerModal');
 }
 
+// ---- Dados de envio do cliente (etiqueta) ----
+var CUS_SHIP_FIELDS=[['cus-full-name','full_name'],['cus-cpf','cpf'],['cus-cep','cep'],['cus-street','address_street'],['cus-number','address_number'],['cus-complement','address_complement'],['cus-district','address_district'],['cus-city','city'],['cus-state','state']];
+function onlyDigits(v){return String(v||'').replace(/\D/g,'');}
+function fmtCpf(v){var d=onlyDigits(v).slice(0,11);return d.replace(/^(\d{3})(\d)/,'$1.$2').replace(/^(\d{3})\.(\d{3})(\d)/,'$1.$2.$3').replace(/\.(\d{3})(\d{1,2})$/,'.$1-$2');}
+function fmtCep(v){var d=onlyDigits(v).slice(0,8);return d.length>5?d.slice(0,5)+'-'+d.slice(5):d;}
+function maskCpfInput(el){el.value=fmtCpf(el.value);}
+function maskCepInput(el){el.value=fmtCep(el.value);if(onlyDigits(el.value).length===8)lookupCustomerCep();}
+function isValidCpf(d){
+  d=onlyDigits(d);if(d.length!==11||/^(\d)\1{10}$/.test(d))return false;
+  for(var t=9;t<11;t++){var s=0;for(var i=0;i<t;i++)s+=parseInt(d[i])*(t+1-i);var r=(s*10)%11%10;if(r!==parseInt(d[t]))return false;}
+  return true;
+}
+var cusCepLast='';
+async function lookupCustomerCep(){
+  var cep=onlyDigits(document.getElementById('cus-cep').value);
+  var msg=document.getElementById('cus-cep-msg');
+  if(cep.length!==8||cep===cusCepLast)return;
+  cusCepLast=cep;msg.textContent='Buscando endereço...';msg.style.color='var(--text3)';
+  try{
+    var r=await fetch('https://viacep.com.br/ws/'+cep+'/json/');
+    var j=await r.json();
+    if(j.erro){msg.textContent='CEP não encontrado — preencha manualmente';msg.style.color='var(--danger)';return;}
+    var set=function(id,v){if(v)document.getElementById(id).value=v;};
+    set('cus-street',j.logradouro);set('cus-district',j.bairro);set('cus-city',j.localidade);set('cus-state',j.uf);
+    if(j.complemento&&!document.getElementById('cus-complement').value)document.getElementById('cus-complement').value=j.complemento;
+    msg.textContent='Endereço preenchido — confira e informe o número';msg.style.color='var(--success)';
+    document.getElementById('cus-number').focus();
+  }catch(e){msg.textContent='Não foi possível buscar o CEP — preencha manualmente';msg.style.color='var(--danger)';cusCepLast='';}
+}
+function customerHasShipping(c){return !!(c&&(c.full_name||c.cpf||c.cep||c.address_street));}
+function customerShippingText(c){
+  var l1=[c.address_street,c.address_number].filter(Boolean).join(', ')+(c.address_complement?' - '+c.address_complement:'');
+  var l2=[c.address_district,(c.city||'')+(c.state?'/'+c.state:'')].filter(Boolean).join(' - ');
+  return [c.full_name||c.name,c.cpf?'CPF: '+fmtCpf(c.cpf):'',l1,l2,c.cep?'CEP: '+fmtCep(c.cep):''].filter(function(x){return x&&x.trim();}).join('\n');
+}
+function copyCustomerShipping(id){
+  var c=customers.filter(function(x){return x.id===id;})[0];if(!c)return;
+  var missing=[];if(!c.full_name)missing.push('nome completo');if(!c.cpf)missing.push('CPF');if(!c.cep)missing.push('CEP');if(!c.address_number)missing.push('número');
+  navigator.clipboard.writeText(customerShippingText(c)).then(function(){
+    showToast(missing.length?'Copiado — falta: '+missing.join(', '):'Dados de envio copiados!',missing.length?'error':undefined);
+  },function(){showToast('Não foi possível copiar','error');});
+}
+
 async function saveCustomer(){
   var name=document.getElementById('cus-name').value.trim();
   if(!name){showToast('Nome obrigatorio','error');return;}
   var id=document.getElementById('cus-id').value;
-  var payload={user_id:currentUser.id,name:name,whatsapp:document.getElementById('cus-whatsapp').value||null,city:document.getElementById('cus-city').value||null,
+  var cpfDigits=onlyDigits(document.getElementById('cus-cpf').value);
+  if(cpfDigits&&!isValidCpf(cpfDigits)&&!confirm('O CPF '+fmtCpf(cpfDigits)+' parece inválido. Salvar mesmo assim?'))return;
+  var payload={user_id:currentUser.id,name:name,whatsapp:document.getElementById('cus-whatsapp').value||null,
     interests:document.getElementById('cus-interests').value.trim()||null,
     contact_frequency_days:parseInt(document.getElementById('cus-freq').value)||30,
     last_contact_date:document.getElementById('cus-last-contact').value||null};
+  CUS_SHIP_FIELDS.forEach(function(f){
+    var v=document.getElementById(f[0]).value.trim();
+    if(f[1]==='cpf'||f[1]==='cep')v=onlyDigits(v);
+    if(f[1]==='state')v=v.toUpperCase();
+    payload[f[1]]=v||null;
+  });
   var r=id?await sb.from('customers').update(payload).eq('id',id):await sb.from('customers').insert(payload);
   if(r.error){console.error('Erro ao salvar cliente:',r.error);showToast('Erro ao salvar: '+(r.error.message||'ver console'),'error');return;}
   showToast(id?'Cliente atualizado!':'Cliente criado!');
