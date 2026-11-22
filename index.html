@@ -313,7 +313,7 @@ tr:hover td{background:var(--bg2)}
       <div class="section-header">
         <h3>Vendas</h3>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <button class="btn-secondary" onclick="exportSales()"><i class="ti ti-download"></i> CSV</button>
+          <a class="btn-secondary" style="width:auto;text-decoration:none;display:inline-flex;align-items:center;gap:4px" href="/pedido" target="_blank" title="Ver o pedido de um cliente com as fotos das cartas (para mandar no WhatsApp)"><i class="ti ti-clipboard-list"></i> Ver pedido</a><button class="btn-secondary" onclick="exportSales()"><i class="ti ti-download"></i> CSV</button>
           <button class="btn-secondary" style="width:auto;background:#E8B422;color:#2C1A00;border-color:#E8B422;font-weight:700" onclick="openVendaRapida()"><i class="ti ti-bolt"></i> Venda Rapida</button>
           <button class="btn-secondary" style="width:auto" onclick="openModal('importSalesModal')"><i class="ti ti-table-import"></i> Importar Excel</button>
           <button class="btn-secondary" onclick="openMpSaleModal()"><i class="ti ti-list-check"></i> Venda multipla</button>
@@ -2133,7 +2133,7 @@ function orderCell(kind,n){
   if(n==null)return '<span style="color:var(--text3)">-</span>';
   var target=kind==='sale'?'filterSaleOrder':'filterPurOrder';
   var render=kind==='sale'?'renderSales':'renderPurchases';
-  return '<span class="order-badge" title="Mostrar só este pedido" onclick="event.stopPropagation();document.getElementById(\''+target+'\').value=\''+n+'\';'+render+'()">'+orderCode(kind,n)+'</span>';
+  return '<span class="order-badge" title="Mostrar só este pedido" onclick="event.stopPropagation();document.getElementById(\''+target+'\').value=\''+n+'\';'+render+'()">'+orderCode(kind,n)+'</span>'+(kind==='sale'?' <a href="/pedido?pv='+n+'" target="_blank" title="Ver pedido com fotos" onclick="event.stopPropagation()" style="color:var(--text3);text-decoration:none"><i class="ti ti-photo"></i></a>':'');
 }
 // Filtro da coluna: aceita "198", "PV-0198", "pv198"
 function orderFilterMatch(kind,n,q){
