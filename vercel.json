@@ -13,6 +13,10 @@
       "destination": "/anuncio.html"
     },
     {
+      "source": "/pedido",
+      "destination": "/pedido.html"
+    },
+    {
       "source": "/",
       "destination": "/index.html"
     }
