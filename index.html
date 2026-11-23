@@ -1054,6 +1054,7 @@ tr:hover td{background:var(--bg2)}
     <div style="overflow-x:auto">
       <table class="mp-table">
         <thead><tr>
+          <th style="width:52px"></th>
           <th style="width:46%">Item do estoque *</th>
           <th style="width:12%">Qtd</th>
           <th style="width:20%">Preco venda (R$) *</th>
@@ -5170,6 +5171,7 @@ function addMpSaleRow(){
   var tr=document.createElement('tr');
   tr.setAttribute('data-row-id',rid);
   tr.innerHTML=
+    '<td style="vertical-align:top"><div class="mp-s-thumb">'+mpSaleThumbHtml('')+'</div></td>'+
     '<td style="position:relative">'+
       '<input type="text" class="mp-s-search" placeholder="Digite o nome do item..." oninput="filterMpSaleSuggestions('+rid+')" autocomplete="off">'+
       '<input type="hidden" class="mp-s-invid">'+
@@ -5181,6 +5183,21 @@ function addMpSaleRow(){
     '<td><input type="number" class="mp-s-cost" placeholder="0.00" step="0.01" readonly style="background:var(--bg2)"></td>'+
     '<td><button class="mp-rm" onclick="removeMpSaleRow(this)" title="Remover linha"><i class="ti ti-trash"></i></button></td>';
   document.getElementById('mpSaleRows').appendChild(tr);
+}
+
+// Imagem da carta para conferir na venda: estoque primeiro, depois o cadastro do produto
+function mpSaleImgUrl(inv){
+  if(!inv)return '';
+  if(inv.image_url)return inv.image_url;
+  var prod=inv.product_id?products.filter(function(p){return p.id===inv.product_id&&p.image_url;})[0]:null;
+  if(!prod&&inv.name){var n=inv.name.toLowerCase();prod=products.filter(function(p){return p.name&&p.image_url&&p.name.toLowerCase()===n;})[0];}
+  return prod?prod.image_url:'';
+}
+
+function mpSaleThumbHtml(url,small){
+  var w=small?30:44,h=small?42:61;
+  if(!url)return '<div style="width:'+w+'px;height:'+h+'px;background:var(--bg2);border-radius:4px;display:flex;align-items:center;justify-content:center;color:var(--text3)"><i class="ti ti-photo-off"></i></div>';
+  return '<img src="'+escHtmlAttr(url)+'" style="width:'+w+'px;height:'+h+'px;object-fit:cover;border-radius:4px;cursor:zoom-in;display:block" onclick="openLightbox(event,this.src)" onerror="this.style.visibility=\'hidden\'">';
 }
 
 function removeMpSaleRow(btn){
@@ -5206,7 +5223,8 @@ function filterMpSaleSuggestions(rid){
   box.style.display='block';
   box.innerHTML=matches.map(function(i){
     return '<div class="suggest-item" onclick="selectMpSaleItem('+rid+',\''+i.id+'\')">'
-      +'<div class="suggest-item-info">'
+      +'<div style="flex:none;margin-right:8px" onclick="event.stopPropagation()">'+mpSaleThumbHtml(mpSaleImgUrl(i),true)+'</div>'
+      +'<div class="suggest-item-info" style="flex:1">'
       +'<span class="suggest-item-name">'+i.name+'</span>'
       +'<span class="suggest-item-sub">'+typeBadge(i.product_type)+' '+(i.set_name||'')+' '+condBadge(i.condition,i.condition_mod)+'</span>'
       +'</div>'
@@ -5229,6 +5247,7 @@ function selectMpSaleItem(rid,invId){
   tr.querySelector('.mp-s-price').dataset.basePrice=inv.sale_price||'';
   tr.querySelector('.mp-s-cost').value=inv.cost_price||0;
   tr.querySelector('.mp-s-avail').textContent=inv.quantity_available+' disponivel(is)';
+  tr.querySelector('.mp-s-thumb').innerHTML=mpSaleThumbHtml(mpSaleImgUrl(inv));
   document.getElementById('mp-s-sugg-'+rid).style.display='none';
   renderMpSaleSummary();
 }
