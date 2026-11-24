@@ -288,7 +288,7 @@ tr:hover td{background:var(--bg2)}
       </div>
       <div id="invSummary" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:1.25rem"></div>
       <div class="filters">
-        <input type="text" id="filterInvName" placeholder="Buscar por carta, fornecedor, set, condição..." oninput="renderInventory()" style="width:190px">
+        <input type="text" id="filterInvName" placeholder="Buscar por carta, fornecedor, set, condição..." oninput="renderInventory()" style="width:190px"><input type="text" id="filterInvOrder" placeholder="Pedido (ex: 182, 222)" title="Numero do pedido de compra (PC). Aceita varios separados por virgula ou espaco." oninput="renderInventory()" style="width:140px">
         <select id="filterInvType" onchange="renderInventory()"><option value="">Todos tipos</option><option>Carta Avulsa</option><option>Lacrado</option><option>Acessorio</option><option>Lote</option></select>
         <select id="filterInvLang" onchange="renderInventory()"><option value="">Todos idiomas</option><option>PT-BR</option><option>EN</option><option>JP</option><option>FR</option><option>CH</option></select>
         <select id="filterInvCond" onchange="renderInventory()"><option value="">Todas condicoes</option><option>M</option><option>NM</option><option>SP</option><option>MP</option><option>HP</option><option>D</option></select>
@@ -4285,7 +4285,16 @@ function renderInventory(){
   var supplierF=document.getElementById('filterInvSupplier').value;
   var setF=document.getElementById('filterInvSet').value;
   var catF=document.getElementById('filterInvCat').value;
+  // Filtro por pedido de compra (PC): aceita "182", "PC-0182" e varios numeros ("182, 222")
+  var ordF=(document.getElementById('filterInvOrder').value||'').match(/\d+/g);
+  var ordPurIds=null;
+  if(ordF){
+    var ordNos=ordF.map(function(x){return parseInt(x,10);});
+    ordPurIds={};
+    purchases.forEach(function(p){if(p.order_no!=null&&ordNos.indexOf(p.order_no)!==-1)ordPurIds[p.id]=true;});
+  }
   var filtered=inventory.filter(function(i){
+    if(ordPurIds&&!(i.purchase_id&&ordPurIds[i.purchase_id]))return false;
     if(setF&&(i.set_name||'').trim()!==setF)return false;
     if(catF==='__none__'?!!i.card_category:(catF&&i.card_category!==catF))return false;
     if(hideZeroStock && (i.quantity_available||0) === 0) return false;
